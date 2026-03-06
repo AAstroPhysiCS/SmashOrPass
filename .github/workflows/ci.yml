@@ -46,6 +46,14 @@ jobs:
             libdbus-1-dev \
             libgl1-mesa-dev
 
+      - name: Clone vcpkg
+        shell: bash
+        run: |
+          if [ ! -f vcpkg/bootstrap-vcpkg.sh ] && [ ! -f vcpkg/bootstrap-vcpkg.bat ]; then
+            rm -rf vcpkg
+            git clone https://github.com/microsoft/vcpkg.git vcpkg
+          fi
+
       - name: Restore cache
         uses: actions/cache@v4
         with:
@@ -58,13 +66,6 @@ jobs:
             ${{ runner.os }}-${{ matrix.build_type }}-
             ${{ runner.os }}-
 
-      - name: Clone vcpkg
-        shell: bash
-        run: |
-          if [ ! -d vcpkg ]; then
-            git clone https://github.com/microsoft/vcpkg.git
-          fi
-
       - name: Bootstrap vcpkg (Linux)
         if: runner.os == 'Linux'
         shell: bash
@@ -73,7 +74,7 @@ jobs:
       - name: Bootstrap vcpkg (Windows)
         if: runner.os == 'Windows'
         shell: cmd
-        run: vcpkg\bootstrap-vcpkg.bat
+        run: call vcpkg\bootstrap-vcpkg.bat
 
       - name: Configure CMake (Linux)
         if: runner.os == 'Linux'
