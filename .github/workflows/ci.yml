@@ -72,8 +72,8 @@ jobs:
 
       - name: Bootstrap vcpkg (Windows)
         if: runner.os == 'Windows'
-        shell: pwsh
-        run: .\vcpkg\bootstrap-vcpkg.bat
+        shell: cmd
+        run: vcpkg\bootstrap-vcpkg.bat
 
       - name: Configure CMake (Linux)
         if: runner.os == 'Linux'
@@ -85,11 +85,11 @@ jobs:
 
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
-        shell: pwsh
+        shell: cmd
         run: >
           cmake -S . -B build
           -A x64
-          -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}\vcpkg\scripts\buildsystems\vcpkg.cmake
+          -DCMAKE_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\vcpkg\scripts\buildsystems\vcpkg.cmake
 
       - name: Build
         run: cmake --build build --config ${{ matrix.build_type }}
