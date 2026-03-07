@@ -1,0 +1,9 @@
+Combining all pngs in a dir to a spritesheet:
+
+Nearest neighbour:
+
+magick montage *.png -background none -filter point -tile x1 -geometry '256x256>+0+0' miff:- | magick miff:- -alpha set -channel A -threshold 50% +channel spritesheet.png
+
+Interpolated:
+
+magick montage *.png -background none -filter Lanczos -tile x1 -geometry '256x256>+0+0' miff:- | magick miff:- -alpha set -channel A -threshold 50% +channel spritesheet.png
