@@ -9,7 +9,8 @@ VCPKG_ROOT="${VCPKG_ROOT:-${DEV_ROOT}/vcpkg}"
 BUILD_DIR="${PROJECT_PATH}/build"
 BUILD_TYPE="Debug"
 GENERATOR="Ninja"
-APT_UPDATED=0
+PKG_MANAGER=""
+PKG_DB_SYNCED=0
 
 say() {
   printf '\n==> %s\n' "$1"
@@ -50,51 +51,157 @@ run_root() {
   fi
 }
 
-apt_update_once() {
-  if [ "$APT_UPDATED" -eq 0 ]; then
-    say "Updating apt package index"
-    run_root apt-get update
-    APT_UPDATED=1
+detect_pkg_manager() {
+  local os_id="" os_like=""
+
+  if [ -r /etc/os-release ]; then
+    # shellcheck disable=SC1091
+    . /etc/os-release
+    os_id="${ID:-}"
+    os_like="${ID_LIKE:-}"
   fi
+
+  case " ${os_id} ${os_like} " in
+    *" arch "*)
+      PKG_MANAGER="pacman"
+      ;;
+    *" debian "*|*" ubuntu "*)
+      PKG_MANAGER="apt"
+      ;;
+    *)
+      if have_cmd apt-get; then
+        PKG_MANAGER="apt"
+      elif have_cmd pacman; then
+        PKG_MANAGER="pacman"
+      else
+        fail "Unsupported system. This script currently supports Debian/Ubuntu (apt) and Arch Linux (pacman)."
+      fi
+      ;;
+  esac
+
+  info "Using package manager: ${PKG_MANAGER}"
+}
+
+pkg_update_once() {
+  if [ "$PKG_DB_SYNCED" -ne 0 ]; then
+    return 0
+  fi
+
+  case "$PKG_MANAGER" in
+    apt)
+      say "Updating apt package index"
+      run_root apt-get update
+      ;;
+    pacman)
+      say "Synchronizing pacman databases and upgrading installed packages"
+      run_root pacman -Syu --noconfirm
+      ;;
+    *)
+      fail "Unknown package manager: $PKG_MANAGER"
+      ;;
+  esac
+
+  PKG_DB_SYNCED=1
 }
 
 ensure_apt_pkg() {
   local cmd="$1"
   local pkg="$2"
+
   if have_cmd "$cmd"; then
     info "$cmd already installed."
     return 0
   fi
-  have_cmd apt-get || fail "Automatic install requires apt-get on this Linux script."
-  apt_update_once
+
+  pkg_update_once
   say "Installing ${pkg}"
   run_root apt-get install -y "$pkg"
   have_cmd "$cmd" || fail "${pkg} was installed but ${cmd} is still unavailable."
 }
 
+ensure_pacman_pkg() {
+  local cmd="$1"
+  local pkg="$2"
+
+  if have_cmd "$cmd"; then
+    info "$cmd already installed."
+    return 0
+  fi
+
+  pkg_update_once
+  say "Installing ${pkg}"
+  run_root pacman -S --noconfirm --needed "$pkg"
+  have_cmd "$cmd" || fail "${pkg} was installed but ${cmd} is still unavailable."
+}
+
+ensure_system_pkg() {
+  local cmd="$1"
+  local apt_pkg="$2"
+  local pacman_pkg="$3"
+
+  case "$PKG_MANAGER" in
+    apt)
+      ensure_apt_pkg "$cmd" "$apt_pkg"
+      ;;
+    pacman)
+      ensure_pacman_pkg "$cmd" "$pacman_pkg"
+      ;;
+    *)
+      fail "Unknown package manager: $PKG_MANAGER"
+      ;;
+  esac
+}
+
 ensure_base_tools() {
-  ensure_apt_pkg git git
-  ensure_apt_pkg cmake cmake
-  ensure_apt_pkg g++ g++
-  ensure_apt_pkg ninja ninja-build
-  ensure_apt_pkg pkg-config pkg-config
-  ensure_apt_pkg make make
-  ensure_apt_pkg curl curl
-  ensure_apt_pkg tar tar
-  ensure_apt_pkg unzip unzip
-  ensure_apt_pkg zip zip
+  ensure_system_pkg git git git
+  ensure_system_pkg cmake cmake cmake
+  ensure_system_pkg g++ g++ gcc
+  ensure_system_pkg ninja ninja-build ninja
+  ensure_system_pkg pkg-config pkg-config pkgconf
+  ensure_system_pkg make make make
+  ensure_system_pkg curl curl curl
+  ensure_system_pkg tar tar tar
+  ensure_system_pkg unzip unzip unzip
+  ensure_system_pkg zip zip zip
 }
 
 ensure_vcpkg_prereqs() {
-  have_cmd apt-get || return 0
-  local packages=(ca-certificates build-essential)
-  apt_update_once
-  say "Ensuring vcpkg build prerequisites"
-  run_root apt-get install -y "${packages[@]}"
+  case "$PKG_MANAGER" in
+    apt)
+      local packages=(
+        ca-certificates
+        build-essential
+        autoconf
+        autoconf-archive
+        automake
+        libtool
+      )
+      pkg_update_once
+      say "Ensuring vcpkg build prerequisites"
+      run_root apt-get install -y "${packages[@]}"
+      ;;
+    pacman)
+      local packages=(
+        ca-certificates
+        base-devel
+        autoconf
+        autoconf-archive
+        automake
+        libtool
+      )
+      pkg_update_once
+      say "Ensuring vcpkg build prerequisites"
+      run_root pacman -S --noconfirm --needed "${packages[@]}"
+      ;;
+    *)
+      fail "Unknown package manager: $PKG_MANAGER"
+      ;;
+  esac
 }
 
 ensure_vcpkg() {
   mkdir -p "$DEV_ROOT"
+
   if [ -x "$VCPKG_ROOT/vcpkg" ]; then
     info "vcpkg already present at $VCPKG_ROOT"
   else
@@ -106,7 +213,7 @@ ensure_vcpkg() {
       warn "Directory $VCPKG_ROOT exists but is not a git checkout. Reusing it."
     else
       say "Cloning vcpkg"
-      git clone https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
+      git clone --depth 1 https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
     fi
   fi
 
@@ -124,10 +231,12 @@ ensure_vcpkg() {
 configure_project() {
   local toolchain="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
   [ -f "$toolchain" ] || fail "vcpkg toolchain file not found at $toolchain"
+
   say "Configuring ${PROJECT_NAME}"
   if [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
     info "Existing CMake cache found. Re-configuring in place."
   fi
+
   cmake -S "$PROJECT_PATH" -B "$BUILD_DIR" \
     -G "$GENERATOR" \
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
@@ -140,7 +249,7 @@ build_project() {
 }
 
 main() {
-  have_cmd apt-get || fail "This script currently supports Debian/Ubuntu style systems with apt-get."
+  detect_pkg_manager
   ensure_base_tools
   ensure_vcpkg_prereqs
   ensure_vcpkg
