@@ -1,6 +1,6 @@
 # Game Specification
 
-We descripe a simple 2D platform fighter, similar to Super Mario Smash Bros.
+We describe a simple 2D platform fighter, similar to Super Mario Smash Bros.
 
 It is a local multiplayer game, where the objective is to throw the opponent off a platform,
 the first player to achieve this 3 times wins.
