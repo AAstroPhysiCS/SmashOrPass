@@ -178,3 +178,8 @@ Fallback assets are especially useful during development. Instead of crashing wh
   * Visualization of hit boxes, hurt boxes, and collision boxes
   * Basic runtime statistics or asset inspection tools
   * Optional cheat / testing helpers for development
+
+* **BONUS: (1) AI System**
+
+  * Simple ai for npc enemies
+  
