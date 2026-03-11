@@ -2,10 +2,10 @@
 
 We describe a simple 2D platform fighter, similar to Super Mario Smash Bros.
 
-It is a local multiplayer game, where the objective is to throw the opponent off a platform,
-the first player to achieve this 3 times wins.
+It is a local multiplayer game, where the objective is to either throw the opponent off a platform or reduce their hp to 0,
+the first player to achieve this n times wins.
 
-You can choose from 4 different characters that have unique stats and abilities.
+You can choose from different characters that have unique stats and abilities.
 
 
 ## Goals (10-12 Points)
