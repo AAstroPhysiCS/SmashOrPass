@@ -143,7 +143,6 @@ target_include_directories(smashorpass_core
 target_link_libraries(smashorpass_core
     PUBLIC
         SDL2::SDL2
-        fmt::fmt
         spdlog::spdlog
         glm::glm
         nlohmann_json::nlohmann_json
