@@ -72,20 +72,72 @@ if(SOP_ENABLE_SANITIZERS AND NOT MSVC)
     target_link_options(sop_project_options INTERFACE -fsanitize=address,undefined)
 endif()
 
-add_library(smashorpass_core
-    src/app/Application.cpp
-    src/core/Game.cpp
-    src/debug/DebugOverlay.cpp
-    src/platform/Window.cpp
-    src/rendering/Renderer.cpp
+# -----------------------------
+# Auto-discover source/header files
+# -----------------------------
+
+# Public headers intended for consumers of the library.
+file(GLOB_RECURSE SOP_PUBLIC_HEADERS CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hxx"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/*.inl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/*.ipp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/*.tpp"
 )
 
+# Private/internal headers under src/ so they also show in Visual Studio.
+file(GLOB_RECURSE SOP_PRIVATE_HEADERS CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hxx"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.inl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.ipp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.tpp"
+)
+
+# All implementation files under src/.
+file(GLOB_RECURSE SOP_CORE_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cxx"
+)
+
+# EntryPoint.cpp belongs only to the executable, not the core library.
+list(FILTER SOP_CORE_SOURCES EXCLUDE REGEX [[(^|[/\\])EntryPoint\.(c|cc|cpp|cxx)$]])
+
+# Unit tests.
+file(GLOB_RECURSE SOP_TEST_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cxx"
+)
+
+# -----------------------------
+# Core library
+# -----------------------------
+
+add_library(smashorpass_core)
 add_library(SmashOrPass::Core ALIAS smashorpass_core)
+
+target_sources(smashorpass_core
+    PRIVATE
+        ${SOP_CORE_SOURCES}
+        ${SOP_PRIVATE_HEADERS}
+    PUBLIC
+        FILE_SET HEADERS
+        BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        FILES ${SOP_PUBLIC_HEADERS}
+)
 
 target_include_directories(smashorpass_core
     PUBLIC
-        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-        "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 target_link_libraries(smashorpass_core
@@ -110,13 +162,47 @@ if(WIN32)
     target_compile_definitions(smashorpass_core PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
 endif()
 
-add_executable(smashorpass
-    src/EntryPoint.cpp
-)
+# -----------------------------
+# Main executable
+# -----------------------------
 
+add_executable(smashorpass
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/EntryPoint.cpp"
+)
 add_executable(SmashOrPass::Game ALIAS smashorpass)
 
 target_link_libraries(smashorpass PRIVATE SmashOrPass::Core)
+
+# -----------------------------
+# Visual Studio / IDE grouping
+# -----------------------------
+
+source_group(
+    TREE "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    PREFIX "Header Files"
+    FILES ${SOP_PUBLIC_HEADERS}
+)
+
+source_group(
+    TREE "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    PREFIX "Source Files"
+    FILES
+        ${SOP_CORE_SOURCES}
+        ${SOP_PRIVATE_HEADERS}
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/EntryPoint.cpp"
+)
+
+if(SOP_BUILD_TESTS AND SOP_TEST_SOURCES)
+    source_group(
+        TREE "${CMAKE_CURRENT_SOURCE_DIR}/tests"
+        PREFIX "Test Files"
+        FILES ${SOP_TEST_SOURCES}
+    )
+endif()
+
+# -----------------------------
+# Tests
+# -----------------------------
 
 if(SOP_BUILD_TESTS)
     include(CTest)
@@ -124,20 +210,28 @@ if(SOP_BUILD_TESTS)
 
     find_package(Catch2 CONFIG REQUIRED)
 
-    add_executable(smashorpass_tests
-        tests/GameConfigTests.cpp
-    )
+    if(SOP_TEST_SOURCES)
+        add_executable(smashorpass_tests ${SOP_TEST_SOURCES})
+        target_link_libraries(smashorpass_tests PRIVATE SmashOrPass::Core Catch2::Catch2WithMain)
 
-    target_link_libraries(smashorpass_tests
-        PRIVATE
-            SmashOrPass::Core
-            Catch2::Catch2WithMain
-    )
-
-    include(Catch)
-    catch_discover_tests(smashorpass_tests)
+        include(Catch)
+        catch_discover_tests(smashorpass_tests)
+    else()
+        message(STATUS "SOP_BUILD_TESTS is ON, but no test source files were found under tests/")
+    endif()
 endif()
 
+# -----------------------------
+# Install
+# -----------------------------
 
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(TARGETS smashorpass_core
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
+install(TARGETS smashorpass
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
