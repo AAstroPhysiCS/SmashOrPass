@@ -34,7 +34,7 @@ if(SOP_ENABLE_LTO)
     endif()
 endif()
 
-find_package(SDL2 CONFIG REQUIRED)
+find_package(SDL3 CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
@@ -142,7 +142,7 @@ target_include_directories(smashorpass_core
 
 target_link_libraries(smashorpass_core
     PUBLIC
-        SDL2::SDL2
+        SDL3::SDL3
         spdlog::spdlog
         glm::glm
         nlohmann_json::nlohmann_json

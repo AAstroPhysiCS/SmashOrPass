@@ -1,6 +1,6 @@
 #pragma once
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #include <cstdlib>
 #include <iostream>
@@ -68,4 +68,4 @@ namespace sop::detail {
             ::sop::detail::report_assert(#expr, message, __FILE__, __LINE__);                      \
             std::abort();                                                                          \
         }                                                                                          \
-    } while (false)                                                                                \
+    } while (false)                                                                                
