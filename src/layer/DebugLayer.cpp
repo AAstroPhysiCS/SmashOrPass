@@ -1,4 +1,4 @@
-#include "smashorpass/debug/DebugOverlay.hpp"
+#include "smashorpass/layer/DebugLayer.hpp"
 
 #include "smashorpass/core/Base.hpp"
 #include "smashorpass/platform/Window.hpp"
@@ -12,7 +12,7 @@
 
 namespace sop {
 
-    DebugOverlay::DebugOverlay(Window& window, Renderer& renderer)
+    DebugLayer::DebugLayer(Window& window, Renderer& renderer)
         : m_Window(window), m_Renderer(renderer) {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -30,30 +30,45 @@ namespace sop {
         SOP_VERIFY(rendererInitialized, "Failed to initialize ImGui SDLRenderer3 backend");
     }
 
-    DebugOverlay::~DebugOverlay() {
+    DebugLayer::~DebugLayer() {
         ImGui_ImplSDLRenderer3_Shutdown();
         ImGui_ImplSDL3_Shutdown();
         ImGui::DestroyContext();
     }
 
-    void DebugOverlay::OnEvent(const SDL_Event& event) {
-        ImGui_ImplSDL3_ProcessEvent(&event);
-    }
-
-    void DebugOverlay::BeginFrame() {
+    void DebugLayer::BeginFrame() {
         ImGui_ImplSDLRenderer3_NewFrame();
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
     }
 
-    void DebugOverlay::Draw() {
+    void DebugLayer::Draw() {
 #ifdef SOP_ENABLE_IMGUI_DEMO
         ImGui::ShowDemoWindow();
 #endif
     }
 
-    void DebugOverlay::EndFrame() {
+    void DebugLayer::EndFrame() {
         ImGui::Render();
         ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), m_Renderer.nativeHandle());
+    }
+    
+    void DebugLayer::OnEvent(const Event& event) 
+    {
+        if (event.RawEvent == nullptr)
+            return;
+        ImGui_ImplSDL3_ProcessEvent(event.RawEvent);
+    }
+    
+    void DebugLayer::OnUpdate() 
+    {
+        
+    }
+
+    void DebugLayer::OnRender() 
+    {
+        BeginFrame();
+        Draw();
+        EndFrame();
     }
 }

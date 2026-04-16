@@ -1,9 +1,6 @@
 #pragma once
 
-#include <cstdint>
-#include <optional>
-#include <utility>
-#include <variant>
+#include "Base.hpp"
 
 #include "GameState.hpp"
 
@@ -46,7 +43,15 @@ namespace sop {
         GameState NextState = GameState::MainMenu;
     };
 
-    using Event = std::variant<KeyEvent, MouseButtonEvent, MouseMovedEvent, WindowResizeEvent, ControllerButtonEvent, GameStateChangeEvent>;
+    struct NullEvent {
+    };
+
+    using EventPayload = std::variant<KeyEvent, MouseButtonEvent, MouseMovedEvent, WindowResizeEvent, ControllerButtonEvent, GameStateChangeEvent, NullEvent>;
+
+    struct Event {
+        EventPayload Payload;
+        const SDL_Event* RawEvent = nullptr;
+    };
 
     class EventDispatcher final {
     public:
@@ -55,7 +60,7 @@ namespace sop {
 
         template <typename TEvent, typename TFunc>
         bool Dispatch(TFunc&& function) const {
-            if (const auto* event = std::get_if<TEvent>(&m_Event)) {
+            if (const auto* event = std::get_if<TEvent>(&m_Event.Payload)) {
                 std::forward<TFunc>(function)(*event);
                 return true;
             }
@@ -65,23 +70,34 @@ namespace sop {
         const Event& m_Event;
     };
 
-    inline static constexpr std::optional<Event> TranslateSDLEvent(const SDL_Event& event) {
+    inline static constexpr Event TranslateSDLEvent(const SDL_Event& event) {
+        Event result{};
+        result.RawEvent = &event;
+
         switch (event.type) {
             case SDL_EVENT_KEY_DOWN:
             case SDL_EVENT_KEY_UP:
-                return KeyEvent { .Key = event.key.key, .Down = event.key.down, .Repeat = event.key.repeat};
+                result.Payload = KeyEvent{.Key = event.key.key, .Down = event.key.down, .Repeat = event.key.repeat};
+                break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
             case SDL_EVENT_MOUSE_BUTTON_UP:
-                return MouseButtonEvent { .Button = event.button.button, .Down = event.button.down, .X = event.button.x, .Y = event.button.y};
+                result.Payload = MouseButtonEvent{.Button = event.button.button, .Down = event.button.down, .X = event.button.x, .Y = event.button.y};
+                break;
             case SDL_EVENT_MOUSE_MOTION:
-                return MouseMovedEvent { .X = event.motion.x, .Y = event.motion.y, .XRel = event.motion.xrel, .YRel = event.motion.yrel};
+                result.Payload = MouseMovedEvent{.X = event.motion.x, .Y = event.motion.y, .XRel = event.motion.xrel, .YRel = event.motion.yrel};
+                break;
             case SDL_EVENT_WINDOW_RESIZED:
-                return WindowResizeEvent { .Width = event.window.data1, .Height = event.window.data2};
+                result.Payload = WindowResizeEvent{.Width = event.window.data1, .Height = event.window.data2};
+                break;
             case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
             case SDL_EVENT_GAMEPAD_BUTTON_UP:
-                return ControllerButtonEvent { .Button = event.gbutton.button, .Down = event.gbutton.down};
+                result.Payload = ControllerButtonEvent{.Button = event.gbutton.button, .Down = event.gbutton.down};
+                break;
             default:
-                return std::nullopt;
+                result.Payload = NullEvent{};
+                break;
         }
+
+        return result;
     }
 }

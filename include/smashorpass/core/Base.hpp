@@ -2,8 +2,11 @@
 
 #include <SDL3/SDL.h>
 
-#include <cstdlib>
 #include <iostream>
+#include <cstdint>
+#include <optional>
+#include <utility>
+#include <variant>
 
 #if defined(_MSC_VER)
     #define SOP_DEBUG_BREAK() __debugbreak()

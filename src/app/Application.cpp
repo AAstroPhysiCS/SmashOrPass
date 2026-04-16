@@ -1,9 +1,6 @@
 #include "smashorpass/app/Application.hpp"
 
-#include "smashorpass/core/Game.hpp"
-#include "smashorpass/debug/DebugOverlay.hpp"
-#include "smashorpass/platform/Window.hpp"
-#include "smashorpass/rendering/Renderer.hpp"
+#include "smashorpass/layer/DebugLayer.hpp"
 
 #include <SDL3/SDL.h>
 #include <spdlog/spdlog.h>
@@ -12,8 +9,15 @@ namespace sop
 {
     Application::Application() 
         : m_Window(WindowCreateInfo{ .Width = 1280, .Height = 720, .Title = "Smash Or Pass - The Game" }), 
-        m_Renderer(m_Window),
-        m_DebugOverlay(m_Window, m_Renderer) {
+        m_Renderer(m_Window)
+    {
+        PushLayer<DebugLayer>(m_Window, m_Renderer);
+    }
+
+    Application::~Application() {
+        while (!m_Layers.empty()) {
+            m_Layers.pop_back();
+        }
     }
 
     int Application::Run() {
@@ -33,29 +37,28 @@ namespace sop
     void Application::ProcessEvents(bool& running) {
         SDL_Event event{};
         while (SDL_PollEvent(&event) != 0) {
-            m_DebugOverlay.OnEvent(event);
+            const auto& translatedEvent = TranslateSDLEvent(event);
+            for (auto it = m_Layers.rbegin(); it != m_Layers.rend(); ++it) {
+                (*it)->OnEvent(translatedEvent);
+            }
 
             if (event.type == SDL_EVENT_QUIT) {
                 running = false;
-            }
-
-			if (const auto translatedEvent = TranslateSDLEvent(event)) {
-                m_Game.OnEvent(*translatedEvent);
             }
         }
     }
 
     void Application::Update() {
-        m_Game.Update();
+        for (auto it = m_Layers.rbegin(); it != m_Layers.rend(); ++it) {
+            (*it)->OnUpdate();
+        }
     }
 
     void Application::Render() {
         m_Renderer.BeginFrame();
-        
-        m_DebugOverlay.BeginFrame();
-        m_DebugOverlay.Draw();
-        m_DebugOverlay.EndFrame();
-
+        for (auto it = m_Layers.rbegin(); it != m_Layers.rend(); ++it) {
+            (*it)->OnRender();
+        }
         m_Renderer.EndFrame();
     }
 }
