@@ -25,6 +25,13 @@ namespace sop {
         float Y = 0.0f;
     };
 
+    struct MouseMovedEvent {
+        float X = 0.0f;
+        float Y = 0.0f;
+        float XRel = 0.0f;
+        float YRel = 0.0f;
+    };
+
     struct WindowResizeEvent {
         int32_t Width = 0;
         int32_t Height = 0;
@@ -39,7 +46,7 @@ namespace sop {
         GameState NextState = GameState::MainMenu;
     };
 
-    using Event = std::variant<KeyEvent, MouseButtonEvent, WindowResizeEvent, ControllerButtonEvent, GameStateChangeEvent>;
+    using Event = std::variant<KeyEvent, MouseButtonEvent, MouseMovedEvent, WindowResizeEvent, ControllerButtonEvent, GameStateChangeEvent>;
 
     class EventDispatcher final {
     public:
@@ -62,15 +69,17 @@ namespace sop {
         switch (event.type) {
             case SDL_EVENT_KEY_DOWN:
             case SDL_EVENT_KEY_UP:
-                return KeyEvent{.Key = event.key.key, .Down = event.key.down, .Repeat = event.key.repeat};
+                return KeyEvent { .Key = event.key.key, .Down = event.key.down, .Repeat = event.key.repeat};
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
             case SDL_EVENT_MOUSE_BUTTON_UP:
-                return MouseButtonEvent{.Button = event.button.button, .Down = event.button.down, .X = event.button.x, .Y = event.button.y};
+                return MouseButtonEvent { .Button = event.button.button, .Down = event.button.down, .X = event.button.x, .Y = event.button.y};
+            case SDL_EVENT_MOUSE_MOTION:
+                return MouseMovedEvent { .X = event.motion.x, .Y = event.motion.y, .XRel = event.motion.xrel, .YRel = event.motion.yrel};
             case SDL_EVENT_WINDOW_RESIZED:
-                return WindowResizeEvent{.Width = event.window.data1, .Height = event.window.data2};
+                return WindowResizeEvent { .Width = event.window.data1, .Height = event.window.data2};
             case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
             case SDL_EVENT_GAMEPAD_BUTTON_UP:
-                return ControllerButtonEvent{.Button = event.gbutton.button, .Down = event.gbutton.down};
+                return ControllerButtonEvent { .Button = event.gbutton.button, .Down = event.gbutton.down};
             default:
                 return std::nullopt;
         }

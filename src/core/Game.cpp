@@ -4,6 +4,8 @@
 
 #include "smashorpass/core/Event.hpp"
 
+#include "spdlog/spdlog.h"
+
 namespace sop {
 
     void Game::OnEvent(const Event& event) {
@@ -14,7 +16,8 @@ namespace sop {
                 return;
 
             if (keyEvent.Key == SDLK_ESCAPE) {
-                if (m_State == GameState::Playing) {
+                //TODO: Delete MainMenu path, testing only rn
+                if (m_State == GameState::Playing || m_State == GameState::MainMenu) {
                     ChangeState(GameState::Paused);
                 } else if (m_State == GameState::Paused) {
                     ChangeState(GameState::Playing);
@@ -36,7 +39,28 @@ namespace sop {
     }
 
 	void Game::Update()	{
-
+        switch (m_State) {
+            case GameState::MainMenu:
+                spdlog::info("In main menu");
+                // TODO: main menu, handle menu input, etc.
+                break;
+            case GameState::CharacterSelect:
+                spdlog::info("In character select");
+                // TODO: character select, handle character select input, etc.
+                break;
+            case GameState::Playing:
+                spdlog::info("Playing");
+                // TODO: update game world, handle player input, etc.
+                break;
+            case GameState::Paused:
+                spdlog::info("Paused");
+                // TODO: pause menu, handle pause menu input, etc.
+                break;
+            case GameState::GameOver:
+                spdlog::info("Game over");
+                // TODO: game over screen, handle game over screen input, etc.
+                break;
+        }
 	}
 
 	void Game::ChangeState(GameState newState) {
