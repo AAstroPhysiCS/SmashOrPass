@@ -12,7 +12,7 @@ namespace sop {
         DebugOverlay(Window& window, Renderer& renderer);
         ~DebugOverlay();
 
-        void ProcessEvent(const SDL_Event& event);
+        void OnEvent(const SDL_Event& event);
         void BeginFrame();
         void Draw();
         void EndFrame();

@@ -1,14 +1,44 @@
 ---
-BasedOnStyle: LLVM
-ColumnLimit: 120
+Language: Cpp
+BasedOnStyle: Google
+
 IndentWidth: 4
 TabWidth: 4
-UseTab: ForIndentation
-AlignEscapedNewlines: DontAlign
-AllowShortFunctionsOnASingleLine: Inline
-AlwaysBreakTemplateDeclarations: true
-BreakBeforeBinaryOperators: NonAssignment
-BreakBeforeBraces: Custom
-BraceWrapping:
-  AfterFunction: true
+UseTab: Never
+
+ColumnLimit: 100
+ContinuationIndentWidth: 4
+
+DerivePointerAlignment: false
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+
+IndentCaseLabels: true
+IndentAccessModifiers: false
+
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpaceInEmptyParentheses: false
+SpacesInContainerLiterals: false
+
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignTrailingComments: true
+
+BinPackArguments: false
+BinPackParameters: false
+
+SortIncludes: true
+IncludeBlocks: Regroup
+
+NamespaceIndentation: None
+FixNamespaceComments: true
+
+Cpp11BracedListStyle: true
+Standard: Latest
 ...

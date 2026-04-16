@@ -33,10 +33,14 @@ namespace sop
     void Application::ProcessEvents(bool& running) {
         SDL_Event event{};
         while (SDL_PollEvent(&event) != 0) {
-            m_DebugOverlay.ProcessEvent(event);
+            m_DebugOverlay.OnEvent(event);
 
             if (event.type == SDL_EVENT_QUIT) {
                 running = false;
+            }
+
+			if (const auto translatedEvent = TranslateSDLEvent(event)) {
+                m_Game.OnEvent(*translatedEvent);
             }
         }
     }

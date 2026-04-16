@@ -36,7 +36,7 @@ namespace sop {
         ImGui::DestroyContext();
     }
 
-    void DebugOverlay::ProcessEvent(const SDL_Event& event) {
+    void DebugOverlay::OnEvent(const SDL_Event& event) {
         ImGui_ImplSDL3_ProcessEvent(&event);
     }
 
