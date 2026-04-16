@@ -6,43 +6,43 @@
 #include "smashorpass/asset/SpriteSheet.hpp"
 
 namespace sop {
-enum class CharacterId {
-	Robot,
-};
 
-enum class CharacterAnimation {
-	Ascending,
-	Attacks,
-	Dash,
-	Falling,
-	Idle,
-	Jump,
-	Walk,
-};
+	enum class CharacterId {
+		Robot,
+	};
 
-struct EnumClassHash {
-	template <typename T>
-	[[nodiscard]] std::size_t operator()(T value) const noexcept
-	{
-		return static_cast<std::size_t>(value);
-	}
-};
+	enum class CharacterAnimation {
+		Ascending,
+		Attacks,
+		Dash,
+		Falling,
+		Idle,
+		Jump,
+		Walk,
+	};
 
-class AssetManager {
-  public:
-	explicit AssetManager(std::filesystem::path assetRootDir);
-	AssetManager(const AssetManager &) = delete;
-	AssetManager &operator=(const AssetManager &) = delete;
-	AssetManager(AssetManager &&) = delete;
-	AssetManager &operator=(AssetManager &&) = delete;
+	struct EnumClassHash {
+		template <typename T>
+		std::size_t operator()(T value) const
+		{
+			return static_cast<std::size_t>(value);
+		}
+	};
 
-	[[nodiscard]] const SpriteSheet &getSpriteSheet(CharacterId character, CharacterAnimation animation);
+	class AssetManager {
+	public:
+		explicit AssetManager(std::filesystem::path assetRootDir);
+		AssetManager(const AssetManager &) = delete;
+		AssetManager &operator=(const AssetManager &) = delete;
+		AssetManager(AssetManager &&) = delete;
+		AssetManager &operator=(AssetManager &&) = delete;
 
-  private:
-	[[nodiscard]] const SpriteSheet &loadSpriteSheet(CharacterId character, CharacterAnimation animation);
+		[[nodiscard]] const SpriteSheet& getSpriteSheet(CharacterId character, CharacterAnimation animation);
+	private:
+		[[nodiscard]] const SpriteSheet& loadSpriteSheet(CharacterId character, CharacterAnimation animation);
 
-	std::filesystem::path m_AssetRootDir;
-	std::unordered_map<CharacterId, std::unordered_map<CharacterAnimation, SpriteSheet, EnumClassHash>, EnumClassHash>
-	    m_SpriteSheets;
-};
+		std::filesystem::path m_AssetRootDir;
+		std::unordered_map<CharacterId, std::unordered_map<CharacterAnimation, SpriteSheet, EnumClassHash>, EnumClassHash>
+			m_SpriteSheets;
+	};
 } // namespace sop
