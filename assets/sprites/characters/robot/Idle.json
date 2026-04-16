@@ -1,0 +1,244 @@
+{
+    "frames": [
+        {
+            "x_left": 0,
+            "x_right": 2048,
+            "y_top": 0,
+            "y_bottom": 2048,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 1024,
+            "center_y": 1024
+        },
+        {
+            "x_left": 0,
+            "x_right": 2048,
+            "y_top": 488,
+            "y_bottom": 2536,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 1024,
+            "center_y": 1512
+        },
+        {
+            "x_left": 151,
+            "x_right": 2199,
+            "y_top": 0,
+            "y_bottom": 2048,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 1175,
+            "center_y": 1024
+        },
+        {
+            "x_left": 151,
+            "x_right": 2199,
+            "y_top": 488,
+            "y_bottom": 2536,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 1175,
+            "center_y": 1512
+        },
+        {
+            "x_left": 302,
+            "x_right": 2350,
+            "y_top": 0,
+            "y_bottom": 2048,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 1326,
+            "center_y": 1024
+        },
+        {
+            "x_left": 302,
+            "x_right": 2350,
+            "y_top": 488,
+            "y_bottom": 2536,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 1326,
+            "center_y": 1512
+        },
+        {
+            "x_left": 453,
+            "x_right": 2501,
+            "y_top": 0,
+            "y_bottom": 2048,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 1477,
+            "center_y": 1024
+        },
+        {
+            "x_left": 453,
+            "x_right": 2501,
+            "y_top": 488,
+            "y_bottom": 2536,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 1477,
+            "center_y": 1512
+        },
+        {
+            "x_left": 604,
+            "x_right": 2652,
+            "y_top": 0,
+            "y_bottom": 2048,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 1628,
+            "center_y": 1024
+        },
+        {
+            "x_left": 604,
+            "x_right": 2652,
+            "y_top": 488,
+            "y_bottom": 2536,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 1628,
+            "center_y": 1512
+        },
+        {
+            "x_left": 755,
+            "x_right": 2803,
+            "y_top": 0,
+            "y_bottom": 2048,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 1779,
+            "center_y": 1024
+        },
+        {
+            "x_left": 906,
+            "x_right": 2954,
+            "y_top": 0,
+            "y_bottom": 2048,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 1930,
+            "center_y": 1024
+        },
+        {
+            "x_left": 1057,
+            "x_right": 3105,
+            "y_top": 0,
+            "y_bottom": 2048,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 2081,
+            "center_y": 1024
+        },
+        {
+            "x_left": 755,
+            "x_right": 2803,
+            "y_top": 488,
+            "y_bottom": 2536,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 1779,
+            "center_y": 1512
+        },
+        {
+            "x_left": 906,
+            "x_right": 2954,
+            "y_top": 488,
+            "y_bottom": 2536,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 1930,
+            "center_y": 1512
+        },
+        {
+            "x_left": 1057,
+            "x_right": 3105,
+            "y_top": 488,
+            "y_bottom": 2536,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 2081,
+            "center_y": 1512
+        },
+        {
+            "x_left": 1330,
+            "x_right": 3378,
+            "y_top": 0,
+            "y_bottom": 2048,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 2354,
+            "center_y": 1024
+        },
+        {
+            "x_left": 1330,
+            "x_right": 3378,
+            "y_top": 488,
+            "y_bottom": 2536,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 2354,
+            "center_y": 1512
+        },
+        {
+            "x_left": 1481,
+            "x_right": 3529,
+            "y_top": 0,
+            "y_bottom": 2048,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 2505,
+            "center_y": 1024
+        },
+        {
+            "x_left": 1481,
+            "x_right": 3529,
+            "y_top": 488,
+            "y_bottom": 2536,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 2505,
+            "center_y": 1512
+        },
+        {
+            "x_left": 1632,
+            "x_right": 3680,
+            "y_top": 0,
+            "y_bottom": 2048,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 2656,
+            "center_y": 1024
+        },
+        {
+            "x_left": 1632,
+            "x_right": 3680,
+            "y_top": 488,
+            "y_bottom": 2536,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 2656,
+            "center_y": 1512
+        },
+        {
+            "x_left": 1783,
+            "x_right": 3831,
+            "y_top": 0,
+            "y_bottom": 2048,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 2807,
+            "center_y": 1024
+        },
+        {
+            "x_left": 1783,
+            "x_right": 3831,
+            "y_top": 488,
+            "y_bottom": 2536,
+            "source_w": 2048,
+            "source_h": 2048,
+            "center_x": 2807,
+            "center_y": 1512
+        }
+    ]
+}
