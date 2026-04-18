@@ -17,7 +17,7 @@ namespace sop {
         Window(const WindowCreateInfo& createInfo);
         ~Window();
 
-        [[nodiscard]] inline SDL_Window *nativeHandle() const noexcept { return m_NativeHandle; }
+        [[nodiscard]] inline SDL_Window *NativeHandle() const noexcept { return m_NativeHandle; }
       private:
         WindowCreateInfo m_CreateInfo;
 

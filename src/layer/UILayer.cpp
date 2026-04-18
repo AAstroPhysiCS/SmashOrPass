@@ -1,10 +1,35 @@
 #include "smashorpass/layer/UILayer.hpp"
 
+#include "smashorpass/ui/MenuScreen.hpp"
+#include "smashorpass/ui/UIBuilder.hpp"
+
 namespace sop {
 
-	void UILayer::OnEvent(const Event& event) {}
+	UILayer::UILayer(Renderer& renderer, const Window& window, EventDispatcher& eventDispatcher) 
+		: Layer(renderer, window, eventDispatcher) 
+	{
+		m_Screens.emplace_back(std::make_unique<MainMenuScreen>(eventDispatcher));
+        // m_Screens.emplace_back(std::make_unique<GameOverScreen>(eventDispatcher));
+        // m_Screens.emplace_back(std::make_unique<PauseScreen>(eventDispatcher));
 
-	void UILayer::OnUpdate() {}
+		for (const auto& screen : m_Screens) {
+			UIBuilder builder(*screen);
+			screen->Build(builder);
+		}
+	}
 
-	void UILayer::OnRender() {}
+	void UILayer::OnEvent(const Event& event) {
+		for (const auto& component : m_Screens)
+			component->OnEvent(event);
+	}
+
+	void UILayer::OnUpdate(ApplicationContext& ctx) {
+        for (const auto& component : m_Screens)
+            component->OnUpdate();
+	}
+
+	void UILayer::OnRender(ApplicationContext& ctx) {
+        for (const auto& component : m_Screens)
+            component->OnRender(GetRenderer());
+	}
 }  // namespace sop

@@ -1,6 +1,7 @@
 #include "smashorpass/layer/DebugLayer.hpp"
 
 #include "smashorpass/core/Base.hpp"
+
 #include "smashorpass/platform/Window.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
 
@@ -12,8 +13,8 @@
 
 namespace sop {
 
-    DebugLayer::DebugLayer(Window& window, Renderer& renderer)
-        : m_Window(window), m_Renderer(renderer) {
+    DebugLayer::DebugLayer(Renderer& renderer, const Window& window, EventDispatcher& eventDispatcher)
+        : Layer(renderer, window, eventDispatcher) {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
 
@@ -23,10 +24,11 @@ namespace sop {
 
         ImGui::StyleColorsDark();
 
-        const bool sdl3Initialized = ImGui_ImplSDL3_InitForSDLRenderer(m_Window.nativeHandle(), m_Renderer.nativeHandle());
+        const bool sdl3Initialized =
+            ImGui_ImplSDL3_InitForSDLRenderer(window.NativeHandle(), renderer.NativeHandle());
         SOP_VERIFY(sdl3Initialized, "Failed to initialize ImGui SDL3 backend");
 
-        const bool rendererInitialized = ImGui_ImplSDLRenderer3_Init(m_Renderer.nativeHandle());
+        const bool rendererInitialized = ImGui_ImplSDLRenderer3_Init(renderer.NativeHandle());
         SOP_VERIFY(rendererInitialized, "Failed to initialize ImGui SDLRenderer3 backend");
     }
 
@@ -49,8 +51,10 @@ namespace sop {
     }
 
     void DebugLayer::EndFrame() {
+        const auto& renderer = GetRenderer();
+
         ImGui::Render();
-        ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), m_Renderer.nativeHandle());
+        ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer.NativeHandle());
     }
     
     void DebugLayer::OnEvent(const Event& event) 
@@ -60,13 +64,14 @@ namespace sop {
         ImGui_ImplSDL3_ProcessEvent(event.RawEvent);
     }
     
-    void DebugLayer::OnUpdate() 
+    void DebugLayer::OnUpdate(ApplicationContext& ctx) 
     {
         
     }
 
-    void DebugLayer::OnRender() 
+    void DebugLayer::OnRender(ApplicationContext& ctx) 
     {
+        return;
         BeginFrame();
         Draw();
         EndFrame();
