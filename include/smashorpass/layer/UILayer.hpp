@@ -10,7 +10,7 @@ namespace sop {
 
 	class UILayer : public Layer {
 	public:
-        UILayer(Renderer& renderer, const Window& window);
+        UILayer(Renderer& renderer, const Window& window, EventDispatcher& eventDispatcher);
 		virtual ~UILayer() = default;
 
 		void OnEvent(const Event& event) final override;

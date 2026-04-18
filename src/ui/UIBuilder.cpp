@@ -18,7 +18,7 @@ namespace sop {
         return RowNode{m_Screen, m_Screen.Create(WidgetKind::Row, RowData{})};
     }
 
-    AlignNode UIBuilder::Align(Alignment alignment, NodeBase&& child) {
+    AlignNode UIBuilder::Align(Alignment alignment, const NodeBase& child) {
         AlignNode node(m_Screen, m_Screen.Create(WidgetKind::Align, AlignData{alignment}));
         m_Screen.AddChild(node.GetId(), child.GetId());
         return node;

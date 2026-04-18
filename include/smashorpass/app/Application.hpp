@@ -17,7 +17,7 @@ namespace sop {
 
         template <IsLayer TLayer, typename... TArgs>
         inline void PushLayer(TArgs&&... args) {
-            m_Layers.push_back(std::make_unique<TLayer>(m_Renderer, m_Window, std::forward<TArgs>(args)...));
+            m_Layers.push_back(std::make_unique<TLayer>(m_Renderer, m_Window, m_EventDispatcher, std::forward<TArgs>(args)...));
         }
 
         int Run();
@@ -29,6 +29,7 @@ namespace sop {
         /* The order is important! */
         Window m_Window;
         Renderer m_Renderer;
+        EventDispatcher m_EventDispatcher;
 
         std::vector<std::unique_ptr<Layer>> m_Layers;
     };

@@ -7,11 +7,15 @@
 #include "smashorpass/rendering/Renderer.hpp"
 
 namespace sop {
+    
+    UIScreen::UIScreen(EventDispatcher& dispatcher) 
+        : m_EventDispatcher(dispatcher) 
+    {
+    }
 
     void UIScreen::OnEvent(const Event& event) 
     {
-        EventDispatcher dispatcher(event);
-        dispatcher.Dispatch<MouseButtonEvent>([this](const MouseButtonEvent& e) {
+        EventDispatcher::Dispatch<MouseButtonEvent>(event, [this](const MouseButtonEvent& e) {
             if (!e.Down)
                 return;
             Vec2 mousePos{e.X, e.Y};
@@ -25,11 +29,11 @@ namespace sop {
 
                 const auto& d = std::get<ButtonData>(w.Data);
                 if (d.OnClick)
-                    d.OnClick();
+                    d.OnClick(m_EventDispatcher);
             }
         });
 
-        dispatcher.Dispatch<MouseMovedEvent>([this](const MouseMovedEvent& e) {
+        EventDispatcher::Dispatch<MouseMovedEvent>(event, [this](const MouseMovedEvent& e) {
             Vec2 mousePos{e.X, e.Y};
 
             for (const UIWidget& w : m_Widgets) {
@@ -39,7 +43,7 @@ namespace sop {
                 const bool hover = PointInRect(mousePos, w.LayoutRect);
                 const auto& d = std::get<ButtonData>(w.Data);
                 if (hover && d.OnHover)
-                    d.OnHover();
+                    d.OnHover(m_EventDispatcher);
             }
         });
     }
@@ -167,6 +171,20 @@ namespace sop {
                 w.Measured = SDL_FRect{0, 0, totalW, maxH};
                 return Vec2{totalW, maxH};
             }
+            case WidgetKind::Stack: {
+                float maxW = 0.0f;
+                float maxH = 0.0f;
+
+                for (UIWidgetId c = w.FirstChild; c != g_InvalidWidgetId;
+                     c = GetWidgetById(c).NextSibling) {
+                    Vec2 cs = MeasureWidget(c);
+                    maxW = std::max(maxW, cs.x);
+                    maxH = std::max(maxH, cs.y);
+                }
+
+                w.Measured = SDL_FRect{0, 0, maxW, maxH};
+                return Vec2{maxW, maxH};
+            }
             case WidgetKind::Align: {
                 if (w.FirstChild == g_InvalidWidgetId) {
                     w.Measured = SDL_FRect{0, 0, 0, 0};
@@ -246,6 +264,13 @@ namespace sop {
                     x += child.Measured.w + d.Spacing;
                 }
                 break;
+            }
+            case WidgetKind::Stack: {
+                for (UIWidgetId c = w.FirstChild; c != g_InvalidWidgetId;
+                     c = GetWidgetById(c).NextSibling) {
+                    LayoutWidget(c, rect);
+                }
+                return;
             }
             case WidgetKind::Align: {
                 auto& d = std::get<AlignData>(w.Data);

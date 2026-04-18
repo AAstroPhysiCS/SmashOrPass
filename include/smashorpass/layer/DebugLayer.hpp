@@ -11,7 +11,7 @@ namespace sop {
 
     class DebugLayer : public Layer {
     public:
-        DebugLayer(Renderer& renderer, const Window& window);
+        DebugLayer(Renderer& renderer, const Window& window, EventDispatcher& eventDispatcher);
         ~DebugLayer();
 
         void BeginFrame();

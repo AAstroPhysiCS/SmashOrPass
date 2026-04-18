@@ -12,8 +12,8 @@
 
 namespace sop {
 
-    DebugLayer::DebugLayer(Renderer& renderer, const Window& window)
-        : Layer(renderer, window) {
+    DebugLayer::DebugLayer(Renderer& renderer, const Window& window, EventDispatcher& eventDispatcher)
+        : Layer(renderer, window, eventDispatcher) {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
 

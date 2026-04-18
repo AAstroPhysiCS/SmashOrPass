@@ -7,9 +7,9 @@
 
 namespace sop {
 
-	UILayer::UILayer(Renderer& renderer, const Window& window) 
-		: Layer(renderer, window) {
-		m_Screens.emplace_back(std::make_unique<MenuScreen>());
+	UILayer::UILayer(Renderer& renderer, const Window& window, EventDispatcher& eventDispatcher) 
+		: Layer(renderer, window, eventDispatcher) {
+		m_Screens.emplace_back(std::make_unique<MenuScreen>(eventDispatcher));
 
 		for (const auto& screen : m_Screens) {
 			UIBuilder builder(*screen);

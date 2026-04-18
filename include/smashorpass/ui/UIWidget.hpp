@@ -7,10 +7,12 @@ namespace sop {
     using UIWidgetId = uint64_t;
     inline constexpr UIWidgetId g_InvalidWidgetId = std::numeric_limits<UIWidgetId>::max();
 
+    class EventDispatcher;
+
     // maybe change the function signature to pass the widget id or reference to the widget itself,
     // so that the callback can modify it if needed (e.g. for toggle buttons)
-    using OnClickFunc = std::function<void()>;
-    using OnHoverFunc = std::function<void()>;
+    using OnClickFunc = std::function<void(EventDispatcher&)>;
+    using OnHoverFunc = std::function<void(EventDispatcher&)>;
 
     enum class Alignment : uint8_t {
         TopLeft,

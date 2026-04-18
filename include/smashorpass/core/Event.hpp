@@ -1,5 +1,7 @@
 #pragma once
 
+#include <deque>
+
 #include "Base.hpp"
 
 #include "GameState.hpp"
@@ -55,19 +57,29 @@ namespace sop {
 
     class EventDispatcher final {
     public:
-        explicit EventDispatcher(const Event& event) 
-            : m_Event(event) {}
+        ~EventDispatcher() = default;
+
+        template <typename TPayload>
+        void Enqueue(TPayload&& payload) {
+            // nullptr since this is a custom event, not directly from SDL
+            m_EventQueue.emplace_back(payload, nullptr);
+        }
 
         template <typename TEvent, typename TFunc>
-        bool Dispatch(TFunc&& function) const {
-            if (const auto* event = std::get_if<TEvent>(&m_Event.Payload)) {
+        static bool Dispatch(const Event& evt, TFunc&& function) {
+            if (const auto* event = std::get_if<TEvent>(&evt.Payload)) {
                 std::forward<TFunc>(function)(*event);
                 return true;
             }
             return false;
         }
     private:
-        const Event& m_Event;
+        EventDispatcher() = default;
+      
+        // only application can administer the event queue, create event dispatcher etc... the ownership is application class only!
+        std::deque<Event> m_EventQueue;
+
+        friend class Application;
     };
 
     inline static constexpr Event TranslateSDLEvent(const SDL_Event& event) {

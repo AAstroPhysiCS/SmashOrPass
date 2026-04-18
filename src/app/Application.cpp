@@ -36,9 +36,23 @@ namespace sop
     void Application::ProcessEvents(bool& running) {
         SDL_Event event{};
         while (SDL_PollEvent(&event) != 0) {
-            const auto& translatedEvent = TranslateSDLEvent(event);
-            for (auto it = m_Layers.rbegin(); it != m_Layers.rend(); ++it) {
-                (*it)->OnEvent(translatedEvent);
+            // SDL events
+            {
+                const auto& translatedEvent = TranslateSDLEvent(event);
+                for (auto it = m_Layers.rbegin(); it != m_Layers.rend(); ++it) {
+                    (*it)->OnEvent(translatedEvent);
+                }
+            }
+
+            // Custom events
+            {
+                while (!m_EventDispatcher.m_EventQueue.empty()) {
+                    Event customEvent = std::move(m_EventDispatcher.m_EventQueue.front());
+                    m_EventDispatcher.m_EventQueue.pop_front();
+                    for (auto it = m_Layers.rbegin(); it != m_Layers.rend(); ++it) {
+                        (*it)->OnEvent(customEvent);
+                    }
+                }
             }
 
             if (event.type == SDL_EVENT_QUIT) {

@@ -13,7 +13,7 @@ namespace sop {
 
 	class UIScreen {
     public:
-        UIScreen() = default;
+        UIScreen(EventDispatcher& dispatcher);
         virtual ~UIScreen() = default;
         
         inline UIWidget& GetWidgetById(UIWidgetId id) {
@@ -35,6 +35,8 @@ namespace sop {
         virtual void OnEvent(const Event& event);
         virtual void OnUpdate();
         virtual void OnRender(Renderer& renderer);
+    protected:
+        inline EventDispatcher& GetEventDispatcher() { return m_EventDispatcher; }
     private:
         Vec2 MeasureWidget(UIWidgetId id);
         void LayoutWidget(UIWidgetId id, SDL_FRect rect);
@@ -58,6 +60,7 @@ namespace sop {
             return id;
         }
 
+        EventDispatcher& m_EventDispatcher;
         std::vector<UIWidget> m_Widgets;
         UIWidgetId m_Root = g_InvalidWidgetId;
 

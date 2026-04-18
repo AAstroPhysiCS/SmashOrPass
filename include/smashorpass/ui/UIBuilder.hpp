@@ -107,7 +107,7 @@ namespace sop {
         StackNode Stack();
         ColumnNode Column();
         RowNode Row();
-        AlignNode Align(Alignment alignment, NodeBase&& child);
+        AlignNode Align(Alignment alignment, const NodeBase& child);
         ImageNode Image(uint64_t textureId);
         LabelNode Label(std::string text);
         ButtonNode Button(std::string text);

@@ -8,8 +8,8 @@
 namespace sop {
 
 	struct Layer {
-        Layer(Renderer& renderer, const Window& window) 
-            : m_Renderer(renderer), m_Window(window) {}
+        Layer(Renderer& renderer, const Window& window, EventDispatcher& eventDispatcher) 
+            : m_Renderer(renderer), m_Window(window), m_EventDispatcher(eventDispatcher) {}
 		virtual ~Layer() = default;
 
 		virtual void OnEvent(const Event& event) = 0;
@@ -21,6 +21,7 @@ namespace sop {
     private:
         Renderer& m_Renderer;
         const Window& m_Window;
+        EventDispatcher& m_EventDispatcher;
 	};
 
     template <typename TLayer>
