@@ -1,6 +1,11 @@
 #include "smashorpass/layer/GameLayer.hpp"
 
 namespace sop {
+	
+	GameLayer::GameLayer(Renderer& renderer, const Window& window) 
+		: Layer(renderer, window) 
+	{
+	}
 
 	void GameLayer::OnEvent(const Event& event) 
 	{

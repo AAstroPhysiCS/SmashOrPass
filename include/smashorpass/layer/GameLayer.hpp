@@ -7,6 +7,7 @@
 namespace sop {
     class GameLayer : public Layer {
     public:
+        GameLayer(Renderer& renderer, const Window& window);
         virtual ~GameLayer() {}
 
         void OnEvent(const Event& event) final override;

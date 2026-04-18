@@ -41,23 +41,23 @@ namespace sop {
 	void Game::Update()	{
         switch (m_State) {
             case GameState::MainMenu:
-                spdlog::info("In main menu");
+                //spdlog::info("In main menu");
                 // TODO: main menu, handle menu input, etc.
                 break;
             case GameState::CharacterSelect:
-                spdlog::info("In character select");
+                //spdlog::info("In character select");
                 // TODO: character select, handle character select input, etc.
                 break;
             case GameState::Playing:
-                spdlog::info("Playing");
+                //spdlog::info("Playing");
                 // TODO: update game world, handle player input, etc.
                 break;
             case GameState::Paused:
-                spdlog::info("Paused");
+                //spdlog::info("Paused");
                 // TODO: pause menu, handle pause menu input, etc.
                 break;
             case GameState::GameOver:
-                spdlog::info("Game over");
+                //spdlog::info("Game over");
                 // TODO: game over screen, handle game over screen input, etc.
                 break;
         }

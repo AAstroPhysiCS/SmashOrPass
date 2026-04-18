@@ -11,7 +11,6 @@ namespace sop
         : m_Window(WindowCreateInfo{ .Width = 1280, .Height = 720, .Title = "Smash Or Pass - The Game" }), 
         m_Renderer(m_Window)
     {
-        PushLayer<DebugLayer>(m_Window, m_Renderer);
     }
 
     Application::~Application() {

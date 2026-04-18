@@ -17,7 +17,7 @@ namespace sop {
 
         template <IsLayer TLayer, typename... TArgs>
         inline void PushLayer(TArgs&&... args) {
-            m_Layers.push_back(std::make_unique<TLayer>(std::forward<TArgs>(args)...));
+            m_Layers.push_back(std::make_unique<TLayer>(m_Renderer, m_Window, std::forward<TArgs>(args)...));
         }
 
         int Run();

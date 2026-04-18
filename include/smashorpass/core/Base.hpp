@@ -4,9 +4,13 @@
 
 #include <iostream>
 #include <cstdint>
+#include <algorithm>
+#include <vector>
+#include <functional>
 #include <optional>
 #include <utility>
 #include <variant>
+#include <span>
 
 #if defined(_MSC_VER)
     #define SOP_DEBUG_BREAK() __debugbreak()

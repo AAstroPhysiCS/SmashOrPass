@@ -11,10 +11,9 @@ namespace sop {
 
     class DebugLayer : public Layer {
     public:
-        DebugLayer(Window& window, Renderer& renderer);
+        DebugLayer(Renderer& renderer, const Window& window);
         ~DebugLayer();
 
-        void OnEvent(const SDL_Event& event);
         void BeginFrame();
         void Draw();
         void EndFrame();
@@ -22,8 +21,5 @@ namespace sop {
         void OnEvent(const Event& event) final override;
         void OnUpdate() final override;
         void OnRender() final override;
-    private:
-        Window& m_Window;
-        Renderer& m_Renderer;
     };
 }
