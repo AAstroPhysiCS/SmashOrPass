@@ -89,6 +89,13 @@ namespace sop {
             data.OnClick = std::forward<TFn>(callback);
             return *this;
         }
+
+        template <typename TFn>
+        ButtonNode& OnHover(TFn&& callback) {
+            auto& data = std::get<ButtonData>(this->GetScreen().GetWidgetById(this->GetId()).Data);
+            data.OnHover = std::forward<TFn>(callback);
+            return *this;
+        }
     };
 
     class UIBuilder {

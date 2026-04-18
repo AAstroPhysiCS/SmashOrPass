@@ -7,7 +7,10 @@ namespace sop {
     using UIWidgetId = uint64_t;
     inline constexpr UIWidgetId g_InvalidWidgetId = std::numeric_limits<UIWidgetId>::max();
 
+    // maybe change the function signature to pass the widget id or reference to the widget itself,
+    // so that the callback can modify it if needed (e.g. for toggle buttons)
     using OnClickFunc = std::function<void()>;
+    using OnHoverFunc = std::function<void()>;
 
     enum class Alignment : uint8_t {
         TopLeft,
@@ -115,6 +118,7 @@ namespace sop {
         std::string Text;
         FontId FontId = FontId::Body;
         OnClickFunc OnClick;
+        OnHoverFunc OnHover;
     };
 
     using WidgetData = std::variant<StackData, ColumnData, RowData, AlignData, ImageData, LabelData, ButtonData>;

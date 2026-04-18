@@ -28,6 +28,20 @@ namespace sop {
                     d.OnClick();
             }
         });
+
+        dispatcher.Dispatch<MouseMovedEvent>([this](const MouseMovedEvent& e) {
+            Vec2 mousePos{e.X, e.Y};
+
+            for (const UIWidget& w : m_Widgets) {
+                if (w.Kind != WidgetKind::Button)
+                    continue;
+
+                const bool hover = PointInRect(mousePos, w.LayoutRect);
+                const auto& d = std::get<ButtonData>(w.Data);
+                if (hover && d.OnHover)
+                    d.OnHover();
+            }
+        });
     }
 
     void UIScreen::OnUpdate() 
