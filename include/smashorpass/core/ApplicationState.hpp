@@ -4,11 +4,11 @@
 
 namespace sop {
 
-    enum class GameState : uint8_t { 
+    enum class ApplicationState : uint8_t { 
         MainMenu, 
         Playing, 
         CharacterSelect,
         Paused, 
-        GameOver 
+        GameOver
     };
 }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Event.hpp"
-#include "GameState.hpp"
+#include "ApplicationState.hpp"
 
 namespace sop {
 
@@ -31,18 +31,12 @@ namespace sop {
     class Game final {
     public:
         void OnEvent(const Event& event);
-        void Update();
-        void Render(Renderer& renderer);
-
-        inline GameState State() const { return m_State; }
+        void Update(ApplicationState state);
+        void Render(ApplicationState state, Renderer& renderer);
     private:
         void RenderWorld(Renderer& renderer);
         void RenderStage(Renderer& renderer);
         void RenderPlayers(Renderer& renderer);
         void RenderEffects(Renderer& renderer);
-
-        void ChangeState(GameState newState);
-
-        GameState m_State = GameState::MainMenu;
     };
 }

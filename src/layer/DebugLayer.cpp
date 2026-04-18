@@ -1,6 +1,7 @@
 #include "smashorpass/layer/DebugLayer.hpp"
 
 #include "smashorpass/core/Base.hpp"
+
 #include "smashorpass/platform/Window.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
 
@@ -45,7 +46,7 @@ namespace sop {
 
     void DebugLayer::Draw() {
 #ifdef SOP_ENABLE_IMGUI_DEMO
-        //ImGui::ShowDemoWindow();
+        ImGui::ShowDemoWindow();
 #endif
     }
 
@@ -63,13 +64,14 @@ namespace sop {
         ImGui_ImplSDL3_ProcessEvent(event.RawEvent);
     }
     
-    void DebugLayer::OnUpdate() 
+    void DebugLayer::OnUpdate(ApplicationContext& ctx) 
     {
         
     }
 
-    void DebugLayer::OnRender() 
+    void DebugLayer::OnRender(ApplicationContext& ctx) 
     {
+        return;
         BeginFrame();
         Draw();
         EndFrame();

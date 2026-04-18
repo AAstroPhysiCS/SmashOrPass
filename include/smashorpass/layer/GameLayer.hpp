@@ -14,8 +14,8 @@ namespace sop {
         virtual ~GameLayer() {}
 
         void OnEvent(const Event& event) final override;
-        void OnUpdate() final override;
-        void OnRender() final override;
+        void OnUpdate(ApplicationContext& ctx) final override;
+        void OnRender(ApplicationContext& ctx) final override;
     private:
         Game m_Game;
 

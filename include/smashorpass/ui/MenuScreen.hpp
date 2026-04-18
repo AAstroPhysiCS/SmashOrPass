@@ -4,10 +4,10 @@
 
 namespace sop {
 
-	class MenuScreen : public UIScreen {
+	class MainMenuScreen : public UIScreen {
 	public:
-        MenuScreen(EventDispatcher& dispatcher);
-		virtual ~MenuScreen() = default;
+        MainMenuScreen(EventDispatcher& dispatcher);
+		virtual ~MainMenuScreen() = default;
 
         void Build(UIBuilder& builder) final override;
 	};

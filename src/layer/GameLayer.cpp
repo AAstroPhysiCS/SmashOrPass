@@ -9,7 +9,7 @@ namespace sop {
 		: Layer(renderer, window, eventDispatcher) 
 	{
 		m_Screens.emplace_back(std::make_unique<GameScreen>(eventDispatcher));
-
+        
 		for (const auto& screen : m_Screens) {
 			UIBuilder builder(*screen);
 			screen->Build(builder);
@@ -23,18 +23,24 @@ namespace sop {
 		m_Game.OnEvent(event);
 	}
 
-	void GameLayer::OnUpdate() 
+	void GameLayer::OnUpdate(ApplicationContext& ctx) 
 	{
+        if (ctx.CurrentState != ApplicationState::Playing)
+            return;
+
         for (const auto& component : m_Screens)
             component->OnUpdate();
-        m_Game.Update();
+        m_Game.Update(ctx.CurrentState);
 	}
 
-	void GameLayer::OnRender() 
+	void GameLayer::OnRender(ApplicationContext& ctx) 
 	{
+        if (ctx.CurrentState != ApplicationState::Playing)
+            return;
+
         auto& renderer = GetRenderer();
         for (const auto& component : m_Screens)
             component->OnRender(renderer);
-        m_Game.Render(renderer);
+        m_Game.Render(ctx.CurrentState, renderer);
 	}
 }  // namespace sop

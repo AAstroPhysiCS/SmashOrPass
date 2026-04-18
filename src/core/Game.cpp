@@ -10,62 +10,39 @@
 namespace sop {
 
     void Game::OnEvent(const Event& event) {
-        /*EventDispatcher::Dispatch<KeyEvent>(event, [this](const KeyEvent& keyEvent) {
-            if (!keyEvent.Down)
-                return;
-
-            if (keyEvent.Key == SDLK_ESCAPE) {
-                //TODO: Delete MainMenu path, testing only rn
-                if (m_State == GameState::Playing || m_State == GameState::MainMenu) {
-                    ChangeState(GameState::Paused);
-                } else if (m_State == GameState::Paused) {
-                    ChangeState(GameState::Playing);
-                }
-            }
-
-            if (keyEvent.Key == SDLK_RETURN && m_State == GameState::MainMenu) {
-                ChangeState(GameState::Playing);
-            }
-        });*/
-
-        EventDispatcher::Dispatch<GameStateChangeEvent>(event, [this](const GameStateChangeEvent& stateEvent) {
-            ChangeState(stateEvent.NextState);
-            spdlog::info("Current state: {}", static_cast<int>(m_State));
-        });
-
         EventDispatcher::Dispatch<WindowResizeEvent>(event, [](const WindowResizeEvent& resizeEvent) {
             // Later: update viewport / UI layout / camera projection.
         });
     }
 
-	void Game::Update()	{
-        switch (m_State) {
-            case GameState::MainMenu:
+	void Game::Update(ApplicationState state) {
+        switch (state) {
+            case ApplicationState::MainMenu:
                 //spdlog::info("In main menu");
                 // TODO: main menu, handle menu input, etc.
                 break;
-            case GameState::CharacterSelect:
+            case ApplicationState::CharacterSelect:
                 //spdlog::info("In character select");
                 // TODO: character select, handle character select input, etc.
                 break;
-            case GameState::Playing:
+            case ApplicationState::Playing:
                 //spdlog::info("Playing");
                 // TODO: update game world, handle player input, etc.
                 break;
-            case GameState::Paused:
+            case ApplicationState::Paused:
                 //spdlog::info("Paused");
                 // TODO: pause menu, handle pause menu input, etc.
                 break;
-            case GameState::GameOver:
+            case ApplicationState::GameOver:
                 //spdlog::info("Game over");
                 // TODO: game over screen, handle game over screen input, etc.
                 break;
         }
     }
 
-    void Game::Render(Renderer& renderer) {
-        switch (m_State) {
-            case GameState::Playing: {
+    void Game::Render(ApplicationState state, Renderer& renderer) {
+        switch (state) {
+            case ApplicationState::Playing: {
                 RenderWorld(renderer);
                 break;
             }
@@ -123,8 +100,4 @@ namespace sop {
         // dust
         // particles
     }
-
-	void Game::ChangeState(GameState newState) {
-		m_State = newState; 
-	}
 }

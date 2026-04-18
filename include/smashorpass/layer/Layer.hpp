@@ -4,6 +4,7 @@
 #include "smashorpass/rendering/Renderer.hpp"
 
 #include "smashorpass/core/Event.hpp"
+#include "smashorpass/core/ApplicationContext.hpp"
 
 namespace sop {
 
@@ -13,8 +14,8 @@ namespace sop {
 		virtual ~Layer() = default;
 
 		virtual void OnEvent(const Event& event) = 0;
-        virtual void OnUpdate() = 0;
-        virtual void OnRender() = 0;
+        virtual void OnUpdate(ApplicationContext& ctx) = 0;
+        virtual void OnRender(ApplicationContext& ctx) = 0;
 
         [[nodiscard]] inline Renderer& GetRenderer() { return m_Renderer; }
         [[nodiscard]] inline const Window& GetWindow() const { return m_Window; }

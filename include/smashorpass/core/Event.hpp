@@ -4,7 +4,7 @@
 
 #include "Base.hpp"
 
-#include "GameState.hpp"
+#include "ApplicationState.hpp"
 
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keycode.h>
@@ -41,14 +41,14 @@ namespace sop {
         bool Down = false;
     };
 
-    struct GameStateChangeEvent {
-        GameState NextState = GameState::MainMenu;
+    struct ApplicationStateChangeEvent {
+        ApplicationState NextState = ApplicationState::MainMenu;
     };
 
     struct NullEvent {
     };
 
-    using EventPayload = std::variant<KeyEvent, MouseButtonEvent, MouseMovedEvent, WindowResizeEvent, ControllerButtonEvent, GameStateChangeEvent, NullEvent>;
+    using EventPayload = std::variant<KeyEvent, MouseButtonEvent, MouseMovedEvent, WindowResizeEvent, ControllerButtonEvent, ApplicationStateChangeEvent, NullEvent>;
 
     struct Event {
         EventPayload Payload;
