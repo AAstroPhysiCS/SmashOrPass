@@ -119,7 +119,7 @@ namespace sop {
         switch (w.Kind) {
             case WidgetKind::Label: {
                 auto& d = std::get<LabelData>(w.Data);
-                Vec2 s = MeasureText(d.FontId, d.Text);
+                Vec2 s = MeasureText(d.Font, d.Text);
                 w.Measured = SDL_FRect{0, 0, s.x, s.y};
                 return s;
             }
@@ -128,7 +128,7 @@ namespace sop {
                 constexpr float padY = 10.0f;
 
                 auto& d = std::get<ButtonData>(w.Data);
-                Vec2 text = MeasureText(d.FontId, d.Text);
+                Vec2 text = MeasureText(d.Font, d.Text);
                 
                 w.Measured = SDL_FRect{0, 0, text.x + padX * 2.0f, text.y + padY * 2.0f};
                 return Vec2{w.Measured.w, w.Measured.h};
@@ -283,7 +283,7 @@ namespace sop {
                 float childX = rect.x;
                 float childY = rect.y;
 
-                switch (GetHorizontalAlign(d.Alignment)) {
+                switch (GetHorizontalAlign(d.Anchor)) {
                     case HorizontalAlign::Left:
                         childX = rect.x;
                         break;
@@ -295,7 +295,7 @@ namespace sop {
                         break;
                 }
 
-                switch (GetVerticalAlign(d.Alignment)) {
+                switch (GetVerticalAlign(d.Anchor)) {
                     case VerticalAlign::Top:
                         childY = rect.y;
                         break;
@@ -383,4 +383,3 @@ namespace sop {
         m_Root = id;
     }
 } // namespace sop
-

@@ -75,7 +75,7 @@ namespace sop {
 
         LabelNode& Font(FontId fontId) {
             auto& data = std::get<LabelData>(this->GetScreen().GetWidgetById(this->GetId()).Data);
-            data.FontId = fontId;
+            data.Font = fontId;
             return *this;
         }
     };

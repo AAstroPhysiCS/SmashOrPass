@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "smashorpass/core/Game.hpp"
 
 #include "smashorpass/layer/Layer.hpp"

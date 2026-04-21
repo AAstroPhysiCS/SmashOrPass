@@ -104,7 +104,7 @@ namespace sop {
     };
 
     struct AlignData {
-        Alignment Alignment = Alignment::Center;
+        Alignment Anchor = Alignment::Center;
     };
 
     struct ImageData {
@@ -113,12 +113,12 @@ namespace sop {
 
     struct LabelData {
         std::string Text;
-        FontId FontId = FontId::Body;
+        FontId Font = FontId::Body;
     };
 
     struct ButtonData {
         std::string Text;
-        FontId FontId = FontId::Body;
+        FontId Font = FontId::Body;
         OnClickFunc OnClick;
         OnHoverFunc OnHover;
     };

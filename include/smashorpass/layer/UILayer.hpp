@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "smashorpass/layer/Layer.hpp"
 
 #include "smashorpass/core/Base.hpp"
