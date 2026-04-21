@@ -11,9 +11,10 @@
 
 namespace sop {
 
-	AssetManager::AssetManager(std::filesystem::path assetRootDir) 
-		: m_AssetRootDir(std::move(assetRootDir)) 
+	AssetManager::AssetManager(std::filesystem::path assetRootDir, SDL_Renderer *renderer)
+		: m_AssetRootDir(std::move(assetRootDir)), m_Renderer(renderer)
 	{
+		SOP_ASSERT(m_Renderer != nullptr, "Asset manager requires a valid SDL renderer");
 	}
 
 	const SpriteSheet &AssetManager::getSpriteSheet(CharacterId character, CharacterAnimation animation)
@@ -31,8 +32,8 @@ namespace sop {
 
 	const SpriteSheet &AssetManager::loadSpriteSheet(CharacterId character, CharacterAnimation animation)
 	{
-		const auto AnimationBaseName = [](CharacterAnimation animation) -> std::string_view {
-			switch (animation) {
+		const auto AnimationBaseName = [](CharacterAnimation animationId) -> std::string_view {
+			switch (animationId) {
 				case CharacterAnimation::Ascending:
 					return "Ascending";
 				case CharacterAnimation::Attacks:
@@ -61,29 +62,31 @@ namespace sop {
 										std::istreambuf_iterator<char>());
 		};
 
-		const auto CharacterDirName = [](CharacterId character) -> std::string_view {
-            switch (character) {
-                case CharacterId::Robot: {
-                    return "robot";
-                }
-                default: {
-                    SOP_ASSERT(false, "Unhandled character id");
-                }
-            }
+		const auto CharacterDirName = [](CharacterId characterId) -> std::string_view {
+			switch (characterId) {
+				case CharacterId::Robot: {
+					return "robot";
+				}
+				default: {
+					SOP_ASSERT(false, "Unhandled character id");
+				}
+			}
 			return "";
 		};
 
 		const std::filesystem::path basePath = m_AssetRootDir / "sprites" / "characters" /
-                                               CharacterDirName(character) /
-                                               AnimationBaseName(animation);
+											   CharacterDirName(character) /
+											   AnimationBaseName(animation);
 
 		const auto spriteBytes		= ReadBytes(basePath.string() + ".png");
 		const auto hitboxBytes		= ReadBytes(basePath.string() + "_boxes.png");
 		const auto metadataBytes	= ReadBytes(basePath.string() + ".json");
 
-		auto& animations = m_SpriteSheets[character];
-		auto [it, inserted] =
-			animations.try_emplace(animation, SpriteSheet::parse(spriteBytes, hitboxBytes, metadataBytes));
+		auto &animations = m_SpriteSheets[character];
+		SpriteSheet spriteSheet = SpriteSheet::parse(spriteBytes, hitboxBytes, metadataBytes);
+		spriteSheet.createSpriteTexture(m_Renderer);
+
+		auto [it, inserted] = animations.try_emplace(animation, std::move(spriteSheet));
 
 		SOP_ASSERT(inserted, "Sprite sheet should only be loaded once");
 

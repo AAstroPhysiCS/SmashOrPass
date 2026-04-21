@@ -156,6 +156,7 @@ target_link_libraries(smashorpass_core
 
 target_compile_definitions(smashorpass_core
     PUBLIC
+        SOP_ASSET_ROOT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/assets\"
         $<$<BOOL:${SOP_ENABLE_IMGUI_DEMO}>:SOP_ENABLE_IMGUI_DEMO>
 )
 

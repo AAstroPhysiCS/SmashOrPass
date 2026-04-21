@@ -1,5 +1,7 @@
 #pragma once
 
+#include <SDL3/SDL_render.h>
+
 #include <filesystem>
 #include <unordered_map>
 
@@ -31,7 +33,7 @@ namespace sop {
 
 	class AssetManager {
 	public:
-		explicit AssetManager(std::filesystem::path assetRootDir);
+		explicit AssetManager(std::filesystem::path assetRootDir, SDL_Renderer *renderer);
 		AssetManager(const AssetManager &) = delete;
 		AssetManager &operator=(const AssetManager &) = delete;
 		AssetManager(AssetManager &&) = delete;
@@ -42,6 +44,7 @@ namespace sop {
 		[[nodiscard]] const SpriteSheet& loadSpriteSheet(CharacterId character, CharacterAnimation animation);
 
 		std::filesystem::path m_AssetRootDir;
+		SDL_Renderer *m_Renderer = nullptr;
 		std::unordered_map<CharacterId, std::unordered_map<CharacterAnimation, SpriteSheet, EnumClassHash>, EnumClassHash>
 			m_SpriteSheets;
 	};

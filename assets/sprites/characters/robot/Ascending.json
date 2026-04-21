@@ -1,14 +1,19 @@
 {
-    "frames": [
-        {
-            "x_left": 0,
-            "x_right": 2048,
-            "y_top": 0,
-            "y_bottom": 2048,
-            "source_w": 2048,
-            "source_h": 2048,
-            "center_x": 1024,
-            "center_y": 1024
-        }
-    ]
+  "character": "robot",
+  "animation": "Ascending",
+  "sheet_width": 169,
+  "sheet_height": 538,
+  "frames": [
+    {
+      "source": "0001.png",
+      "x_left": 1,
+      "x_right": 168,
+      "y_top": 1,
+      "y_bottom": 537,
+      "source_w": 167,
+      "source_h": 536,
+      "center_x": 84,
+      "center_y": 269
+    }
+  ]
 }
