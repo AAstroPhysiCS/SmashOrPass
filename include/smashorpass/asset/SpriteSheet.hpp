@@ -1,5 +1,6 @@
 #pragma once
 
+#include <SDL3/SDL_render.h>
 #include <SDL3/SDL_surface.h>
 
 #include <cstdint>
@@ -34,39 +35,43 @@ namespace sop {
 		SpriteSheet(const SpriteSheet &) = delete;
 		SpriteSheet &operator=(const SpriteSheet &) = delete;
 
+		void createSpriteTexture(SDL_Renderer *renderer);
+
+		[[nodiscard]] SDL_Texture *getSpriteTexture() const { return m_SpriteTexture; }
+		[[nodiscard]] SDL_Surface *getHitboxSurface() const { return m_HitboxSheet; }
+		[[nodiscard]] std::span<const SpriteSheetFrame> getFrames() const { return m_Frames; }
+
 		SpriteSheet(SpriteSheet &&other) noexcept
-			: m_SpriteSheet(other.m_SpriteSheet), m_HitboxSheet(other.m_HitboxSheet), m_Frames(std::move(other.m_Frames))
+			: m_SpriteSurface(other.m_SpriteSurface), m_SpriteTexture(other.m_SpriteTexture),
+			  m_HitboxSheet(other.m_HitboxSheet), m_Frames(std::move(other.m_Frames))
 		{
-			other.m_SpriteSheet = nullptr;
+			other.m_SpriteSurface = nullptr;
+			other.m_SpriteTexture = nullptr;
 			other.m_HitboxSheet = nullptr;
 		}
 
 		SpriteSheet &operator=(SpriteSheet &&other) noexcept
 		{
 			if (this != &other) {
-				if (m_SpriteSheet != nullptr)
-					SDL_DestroySurface(m_SpriteSheet);
-				if (m_HitboxSheet != nullptr)
-					SDL_DestroySurface(m_HitboxSheet);
-				m_SpriteSheet = other.m_SpriteSheet;
+				destroyOwnedResources();
+				m_SpriteSurface = other.m_SpriteSurface;
+				m_SpriteTexture = other.m_SpriteTexture;
 				m_HitboxSheet = other.m_HitboxSheet;
 				m_Frames = std::move(other.m_Frames);
-				other.m_SpriteSheet = nullptr;
+				other.m_SpriteSurface = nullptr;
+				other.m_SpriteTexture = nullptr;
 				other.m_HitboxSheet = nullptr;
 			}
 			return *this;
 		}
 
-		~SpriteSheet()
-		{
-			if (m_SpriteSheet != nullptr)
-				SDL_DestroySurface(m_SpriteSheet);
-			if (m_HitboxSheet != nullptr)
-				SDL_DestroySurface(m_HitboxSheet);
-		}
+		~SpriteSheet() { destroyOwnedResources(); }
 
 	  private:
-		SDL_Surface *m_SpriteSheet = nullptr;
+		void destroyOwnedResources();
+
+		SDL_Surface *m_SpriteSurface = nullptr;
+		SDL_Texture *m_SpriteTexture = nullptr;
 		SDL_Surface *m_HitboxSheet = nullptr;
 		std::vector<SpriteSheetFrame> m_Frames;
 	};

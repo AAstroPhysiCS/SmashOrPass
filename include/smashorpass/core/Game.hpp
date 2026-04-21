@@ -1,10 +1,14 @@
 #pragma once
 
+#include <cstdint>
+#include <string>
+
 #include "Event.hpp"
 #include "ApplicationState.hpp"
 
 namespace sop {
 
+    class AssetManager;
     class Renderer;
 
     struct GameConfig {
@@ -32,11 +36,11 @@ namespace sop {
     public:
         void OnEvent(const Event& event);
         void Update(ApplicationState state);
-        void Render(ApplicationState state, Renderer& renderer);
+        void Render(ApplicationState state, Renderer& renderer, AssetManager& assetManager);
     private:
-        void RenderWorld(Renderer& renderer);
+        void RenderWorld(Renderer& renderer, AssetManager& assetManager);
         void RenderStage(Renderer& renderer);
-        void RenderPlayers(Renderer& renderer);
+        void RenderPlayers(Renderer& renderer, AssetManager& assetManager);
         void RenderEffects(Renderer& renderer);
     };
 }

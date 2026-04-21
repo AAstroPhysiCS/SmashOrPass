@@ -1,4 +1,6 @@
 #include "smashorpass/core/Game.hpp"
+
+#include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/core/Event.hpp"
 
 #include <SDL3/SDL_keycode.h>
@@ -8,6 +10,34 @@
 #include "spdlog/spdlog.h"
 
 namespace sop {
+
+    namespace {
+        constexpr float kPlaceholderWidth = 44.0f;
+        constexpr float kPlaceholderHeight = 72.0f;
+
+        SDL_FRect MakeSourceRect(const SpriteSheetFrame& frame) {
+            return SDL_FRect{
+                static_cast<float>(frame.x_left),
+                static_cast<float>(frame.y_top),
+                static_cast<float>(frame.x_right - frame.x_left),
+                static_cast<float>(frame.y_bottom - frame.y_top),
+            };
+        }
+
+        SDL_FRect MakePlayerDestinationRect(const SDL_FRect& placeholderRect, const SpriteSheetFrame& frame) {
+            const float scale = kPlaceholderHeight / static_cast<float>(frame.source_h);
+            const float width = static_cast<float>(frame.source_w) * scale;
+            const float groundY = placeholderRect.y + placeholderRect.h;
+            const float centerX = placeholderRect.x + (placeholderRect.w * 0.5f);
+
+            return SDL_FRect{
+                centerX - (width * 0.5f),
+                groundY - kPlaceholderHeight,
+                width,
+                kPlaceholderHeight,
+            };
+        }
+    } // namespace
 
     void Game::OnEvent(const Event& event) {
         EventDispatcher::Dispatch<WindowResizeEvent>(event, [](const WindowResizeEvent& resizeEvent) {
@@ -40,18 +70,18 @@ namespace sop {
         }
     }
 
-    void Game::Render(ApplicationState state, Renderer& renderer) {
+    void Game::Render(ApplicationState state, Renderer& renderer, AssetManager& assetManager) {
         switch (state) {
             case ApplicationState::Playing: {
-                RenderWorld(renderer);
+                RenderWorld(renderer, assetManager);
                 break;
             }
         }
     }
     
-    void Game::RenderWorld(Renderer& renderer) {
+    void Game::RenderWorld(Renderer& renderer, AssetManager& assetManager) {
         RenderStage(renderer);
-        RenderPlayers(renderer);
+        RenderPlayers(renderer, assetManager);
         RenderEffects(renderer);
     }
 
@@ -84,13 +114,26 @@ namespace sop {
                           Color{90, 90, 100, 255});
     }
 
-    void Game::RenderPlayers(Renderer& renderer) {
-        // TODO: Placeholder fighters until sprite rendering is hooked up.
-        renderer.FillRect(SDL_FRect{260.0f, 420.0f, 44.0f, 72.0f}, Color{220, 90, 90, 255});
-        renderer.DrawRect(SDL_FRect{260.0f, 420.0f, 44.0f, 72.0f}, Color{255, 255, 255, 255});
+    void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
+        const SpriteSheet& spriteSheet = assetManager.getSpriteSheet(CharacterId::Robot, CharacterAnimation::Idle);
+        const std::span<const SpriteSheetFrame> frames = spriteSheet.getFrames();
+        SOP_ASSERT(!frames.empty(), "Robot idle sprite sheet has no frames");
 
-        renderer.FillRect(SDL_FRect{520.0f, 420.0f, 44.0f, 72.0f}, Color{90, 140, 240, 255});
-        renderer.DrawRect(SDL_FRect{520.0f, 420.0f, 44.0f, 72.0f}, Color{255, 255, 255, 255});
+        const SpriteSheetFrame& frame0 = frames.front();
+        const SDL_FRect sourceRect = MakeSourceRect(frame0);
+
+        TextureDrawParams player1Params{};
+        player1Params.src = &sourceRect;
+        player1Params.dst = MakePlayerDestinationRect(SDL_FRect{260.0f, 420.0f, kPlaceholderWidth, kPlaceholderHeight},
+                                                      frame0);
+        SOP_ASSERT(renderer.DrawTexture(spriteSheet.getSpriteTexture(), player1Params), "Failed to draw player 1 sprite");
+
+        TextureDrawParams player2Params{};
+        player2Params.src = &sourceRect;
+        player2Params.dst = MakePlayerDestinationRect(SDL_FRect{520.0f, 420.0f, kPlaceholderWidth, kPlaceholderHeight},
+                                                      frame0);
+        player2Params.flip = SDL_FLIP_HORIZONTAL;
+        SOP_ASSERT(renderer.DrawTexture(spriteSheet.getSpriteTexture(), player2Params), "Failed to draw player 2 sprite");
     }
 
     void Game::RenderEffects(Renderer& renderer) {

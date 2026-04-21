@@ -1,5 +1,6 @@
 #include "smashorpass/layer/GameLayer.hpp"
 
+#include "smashorpass/core/Base.hpp"
 #include "smashorpass/ui/GameScreen.hpp"
 #include "smashorpass/ui/UIBuilder.hpp"
 
@@ -38,9 +39,11 @@ namespace sop {
         if (ctx.CurrentState != ApplicationState::Playing)
             return;
 
+        SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+
         auto& renderer = GetRenderer();
         for (const auto& component : m_Screens)
             component->OnRender(renderer);
-        m_Game.Render(ctx.CurrentState, renderer);
+        m_Game.Render(ctx.CurrentState, renderer, *ctx.Assets);
 	}
 }  // namespace sop

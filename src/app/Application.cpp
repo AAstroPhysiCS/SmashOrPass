@@ -1,5 +1,6 @@
 #include "smashorpass/app/Application.hpp"
 
+#include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/layer/DebugLayer.hpp"
 #include "smashorpass/layer/UILayer.hpp"
 #include "smashorpass/layer/GameLayer.hpp"
@@ -13,6 +14,7 @@ namespace sop
         : m_Window(WindowCreateInfo{ .Width = 1280, .Height = 720, .Title = "Smash Or Pass - The Game" }), 
         m_Renderer(m_Window)
     {
+        m_Context.Assets = std::make_unique<AssetManager>(SOP_ASSET_ROOT_DIR, m_Renderer.NativeHandle());
         ChangeState(ApplicationState::MainMenu);
     }
 

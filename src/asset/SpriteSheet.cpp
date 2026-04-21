@@ -7,28 +7,28 @@
 #include <nlohmann/json.hpp>
 
 namespace sop {
-	
 	SpriteSheet SpriteSheet::parse(std::span<const uint8_t> spriteSheet, std::span<const uint8_t> hitboxSheet,
 								   std::span<const uint8_t> metadata)
 	{
-		const auto LoadSurfaceFromBytes = [](std::span<const uint8_t> bytes, const char* name) {
-            SDL_IOStream* io = SDL_IOFromConstMem(bytes.data(), bytes.size());
-            SOP_ASSERT(io != nullptr, "Failed to create IO stream");
+		const auto LoadSurfaceFromBytes = [](std::span<const uint8_t> bytes, const char *name) {
+			SDL_IOStream *io = SDL_IOFromConstMem(bytes.data(), bytes.size());
+			SOP_ASSERT(io != nullptr, "Failed to create IO stream");
 
-            SDL_Surface* surface = IMG_Load_IO(io, true);
-            SOP_ASSERT(io != nullptr, "Failed to load img");
+			SDL_Surface *surface = IMG_LoadPNG_IO(io);
+			SOP_SDL_ASSERT(SDL_CloseIO(io), "SDL_CloseIO");
+			SOP_SDL_ASSERT(surface != nullptr, name);
 
-            return surface;
-        };
+			return surface;
+		};
 
 		const auto getU32 = [](const nlohmann::json& j, const char* key) {
 			return j.at(key).get<uint32_t>();
-        };
+		};
 
 		SpriteSheet result;
 
-		result.m_SpriteSheet = LoadSurfaceFromBytes(spriteSheet, "sprite sheet");
-        result.m_HitboxSheet = LoadSurfaceFromBytes(hitboxSheet, "hitbox sheet");
+		result.m_SpriteSurface = LoadSurfaceFromBytes(spriteSheet, "sprite sheet");
+		result.m_HitboxSheet = LoadSurfaceFromBytes(hitboxSheet, "hitbox sheet");
 
 		const auto json = nlohmann::json::parse(metadata.begin(), metadata.end());
 		const auto& framesJson = json.at("frames");
@@ -49,5 +49,36 @@ namespace sop {
 		}
 
 		return result;
+	}
+
+	void SpriteSheet::createSpriteTexture(SDL_Renderer *renderer)
+	{
+		SOP_ASSERT(renderer != nullptr, "Asset manager requires a valid SDL renderer");
+		SOP_ASSERT(m_SpriteTexture == nullptr, "Sprite texture should only be created once");
+		SOP_ASSERT(m_SpriteSurface != nullptr, "Sprite surface should exist before creating texture");
+
+		m_SpriteTexture = SDL_CreateTextureFromSurface(renderer, m_SpriteSurface);
+		SOP_SDL_ASSERT(m_SpriteTexture != nullptr, "SDL_CreateTextureFromSurface");
+
+		SDL_DestroySurface(m_SpriteSurface);
+		m_SpriteSurface = nullptr;
+	}
+
+	void SpriteSheet::destroyOwnedResources()
+	{
+		if (m_SpriteSurface != nullptr) {
+			SDL_DestroySurface(m_SpriteSurface);
+			m_SpriteSurface = nullptr;
+		}
+
+		if (m_SpriteTexture != nullptr) {
+			SDL_DestroyTexture(m_SpriteTexture);
+			m_SpriteTexture = nullptr;
+		}
+
+		if (m_HitboxSheet != nullptr) {
+			SDL_DestroySurface(m_HitboxSheet);
+			m_HitboxSheet = nullptr;
+		}
 	}
 } // namespace sop
