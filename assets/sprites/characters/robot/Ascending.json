@@ -6,12 +6,12 @@
   "frames": [
     {
       "source": "0001.png",
-      "x_left": 1,
-      "x_right": 168,
-      "y_top": 1,
-      "y_bottom": 537,
-      "source_w": 167,
-      "source_h": 536,
+      "x_left": 2,
+      "x_right": 167,
+      "y_top": 2,
+      "y_bottom": 536,
+      "source_w": 165,
+      "source_h": 534,
       "center_x": 84,
       "center_y": 269
     }
