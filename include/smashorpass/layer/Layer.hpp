@@ -14,6 +14,8 @@ namespace sop {
 		virtual ~Layer() = default;
 
 		virtual void OnEvent(const Event& event) = 0;
+        virtual void OnGameplayTick(ApplicationContext&) {}
+        virtual void OnAnimationTick(ApplicationContext&) {}
         virtual void OnUpdate(ApplicationContext& ctx) = 0;
         virtual void OnRender(ApplicationContext& ctx) = 0;
 
