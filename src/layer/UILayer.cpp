@@ -23,12 +23,12 @@ namespace sop {
 			component->OnEvent(event);
 	}
 
-	void UILayer::OnUpdate(ApplicationContext& ctx) {
+	void UILayer::OnUpdate(ApplicationContext&) {
         for (const auto& component : m_Screens)
             component->OnUpdate();
 	}
 
-	void UILayer::OnRender(ApplicationContext& ctx) {
+	void UILayer::OnRender(ApplicationContext&) {
         for (const auto& component : m_Screens)
             component->OnRender(GetRenderer());
 	}

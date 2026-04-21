@@ -64,12 +64,12 @@ namespace sop {
         ImGui_ImplSDL3_ProcessEvent(event.RawEvent);
     }
     
-    void DebugLayer::OnUpdate(ApplicationContext& ctx) 
+    void DebugLayer::OnUpdate(ApplicationContext&) 
     {
         
     }
 
-    void DebugLayer::OnRender(ApplicationContext& ctx) 
+    void DebugLayer::OnRender(ApplicationContext&) 
     {
         return;
         BeginFrame();

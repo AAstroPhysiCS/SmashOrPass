@@ -6,6 +6,7 @@
 #include "smashorpass/layer/GameLayer.hpp"
 
 #include <SDL3/SDL.h>
+#include <chrono>
 #include <spdlog/spdlog.h>
 
 namespace sop
@@ -27,11 +28,23 @@ namespace sop
 
     int Application::Run() 
     {
+        using Clock = std::chrono::steady_clock;
+
         bool running = true;
+        Clock::time_point previousFrameTime = Clock::now();
         spdlog::info("Starting the game");
 
         while(running) {
             ProcessEvents(running);
+            const Clock::time_point currentFrameTime = Clock::now();
+            const auto elapsed = std::chrono::duration_cast<FixedStepScheduler::Duration>(currentFrameTime - previousFrameTime);
+            previousFrameTime = currentFrameTime;
+
+            if (m_Context.CurrentState == ApplicationState::Playing) {
+                TickGameplay(elapsed);
+                TickAnimation(elapsed);
+            }
+
             Update();
             Render();
         }
@@ -62,6 +75,28 @@ namespace sop
             m_EventDispatcher.m_EventQueue.pop_front();
             OnEvent(customEvent);
             m_CurrentLayer->OnEvent(customEvent);
+        }
+    }
+
+    void Application::TickGameplay(FixedStepScheduler::Duration elapsed)
+    {
+        const uint32_t ticksDue = m_GameplayScheduler.Advance(elapsed);
+        const uint64_t tickBase = m_GameplayScheduler.GetTotalTicks() - static_cast<uint64_t>(ticksDue);
+
+        for (uint32_t tickIndex = 0; tickIndex < ticksDue; ++tickIndex) {
+            m_Context.GameplayTickCount = tickBase + static_cast<uint64_t>(tickIndex) + 1ULL;
+            m_CurrentLayer->OnGameplayTick(m_Context);
+        }
+    }
+
+    void Application::TickAnimation(FixedStepScheduler::Duration elapsed)
+    {
+        const uint32_t ticksDue = m_AnimationScheduler.Advance(elapsed);
+        const uint64_t tickBase = m_AnimationScheduler.GetTotalTicks() - static_cast<uint64_t>(ticksDue);
+
+        for (uint32_t tickIndex = 0; tickIndex < ticksDue; ++tickIndex) {
+            m_Context.AnimationTickCount = tickBase + static_cast<uint64_t>(tickIndex) + 1ULL;
+            m_CurrentLayer->OnAnimationTick(m_Context);
         }
     }
 

@@ -16,6 +16,8 @@ namespace sop {
         virtual ~GameLayer() {}
 
         void OnEvent(const Event& event) final override;
+        void OnGameplayTick(ApplicationContext& ctx) final override;
+        void OnAnimationTick(ApplicationContext& ctx) final override;
         void OnUpdate(ApplicationContext& ctx) final override;
         void OnRender(ApplicationContext& ctx) final override;
     private:

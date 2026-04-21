@@ -24,6 +24,23 @@ namespace sop {
 		m_Game.OnEvent(event);
 	}
 
+	void GameLayer::OnGameplayTick(ApplicationContext& ctx)
+	{
+        if (ctx.CurrentState != ApplicationState::Playing)
+            return;
+
+        m_Game.GameplayTick(ctx.CurrentState);
+	}
+
+	void GameLayer::OnAnimationTick(ApplicationContext& ctx)
+	{
+        if (ctx.CurrentState != ApplicationState::Playing)
+            return;
+
+        SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+        m_Game.AnimationTick(ctx.CurrentState, *ctx.Assets);
+	}
+
 	void GameLayer::OnUpdate(ApplicationContext& ctx) 
 	{
         if (ctx.CurrentState != ApplicationState::Playing)
@@ -31,7 +48,6 @@ namespace sop {
 
         for (const auto& component : m_Screens)
             component->OnUpdate();
-        m_Game.Update(ctx.CurrentState);
 	}
 
 	void GameLayer::OnRender(ApplicationContext& ctx) 

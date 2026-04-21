@@ -1,8 +1,10 @@
 #pragma once
 
-#include <vector>
+#include <chrono>
 #include <memory>
+#include <vector>
 
+#include "smashorpass/core/FixedStepScheduler.hpp"
 #include "smashorpass/layer/Layer.hpp"
 
 #include "smashorpass/platform/Window.hpp"
@@ -25,6 +27,8 @@ namespace sop {
         int Run();
     private:
         void ProcessEvents(bool& running);
+        void TickGameplay(FixedStepScheduler::Duration elapsed);
+        void TickAnimation(FixedStepScheduler::Duration elapsed);
         void Update();
         void Render();
 
@@ -38,6 +42,8 @@ namespace sop {
         EventDispatcher m_EventDispatcher;
 
         ApplicationContext m_Context{};
+        FixedStepScheduler m_GameplayScheduler{120};
+        FixedStepScheduler m_AnimationScheduler{30};
 
         //std::vector<std::unique_ptr<Overlay>> m_Overlays;
         std::unique_ptr<Layer> m_CurrentLayer;
