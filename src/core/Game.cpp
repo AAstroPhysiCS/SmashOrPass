@@ -92,7 +92,7 @@ void Game::RenderStage(Renderer& renderer) {
     renderer.FillRect(m_ArenaRect, Color{32, 36, 52, 255});
     renderer.DrawRect(m_ArenaRect, Color{180, 180, 190, 255});
 
-    const float floorY = m_PlayerConfig.GroundY + m_Player.PlaceholderRect.h;
+    const float floorY = m_ArenaRect.y + (m_ArenaRect.h * kDefaultPlayerFloorLineRatio);
 
     renderer.DrawLine(
         m_ArenaRect.x, floorY, m_ArenaRect.x + m_ArenaRect.w, floorY, Color{180, 180, 190, 255});
@@ -100,13 +100,15 @@ void Game::RenderStage(Renderer& renderer) {
 
 void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
     const auto DrawPlayer = [&](const PlayerCharacterState& player,
-                                const SDL_FRect& placeholderRect) {
+                                const SDL_FRect& designPlaceholderRect) {
         const SpriteSheet& spriteSheet =
             assetManager.getSpriteSheet(player.Character, player.Animation.GetAnimation());
         const std::span<const SpriteSheetFrame> frames = spriteSheet.getFrames();
         SOP_ASSERT(!frames.empty(), "Character sprite sheet has no frames");
 
         const SpriteSheetFrame& frame = frames[player.Animation.GetFrameIndex() % frames.size()];
+        const SDL_FRect placeholderRect =
+            MapDesignRectToArena(designPlaceholderRect, m_ArenaRect);
         const detail::PlayerSpritePlacement placement = detail::MakePlayerSpritePlacement(
             placeholderRect, frame, player.FacingRight, m_PlayerConfig.RenderReferenceSourceHeight);
 

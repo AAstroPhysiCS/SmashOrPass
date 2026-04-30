@@ -3,17 +3,18 @@
 #include <SDL3/SDL_rect.h>
 
 #include "smashorpass/asset/AssetManager.hpp"
+#include "smashorpass/core/Arena.hpp"
 #include "smashorpass/core/Event.hpp"
 #include "smashorpass/core/SpriteAnimationPlayer.hpp"
 
 namespace sop {
 
+inline constexpr float kDefaultPlayerScreenWidth = kDefaultArenaWidth;
+inline constexpr float kDefaultPlayerScreenHeight = kDefaultArenaHeight;
 inline constexpr float kDefaultPlayerPlaceholderWidth = 116.0f;
 inline constexpr float kDefaultPlayerPlaceholderHeight = 192.0f;
 inline constexpr float kDefaultPlayerStartX = 260.0f;
 inline constexpr float kDefaultPlayerGroundY = 420.0f;
-inline constexpr float kDefaultPlayerScreenWidth = 1280.0f;
-inline constexpr float kDefaultPlayerScreenHeight = 720.0f;
 inline constexpr float kDefaultPlayerFloorLineY =
     kDefaultPlayerGroundY + kDefaultPlayerPlaceholderHeight;
 inline constexpr float kDefaultPlayerFloorLineRatio =

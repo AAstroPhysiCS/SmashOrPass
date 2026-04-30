@@ -79,23 +79,23 @@ void TickPlayer(PlayerCharacterState& player,
 void ApplyPlayerViewport(PlayerControlConfig& config,
                          PlayerCharacterState& player,
                          SDL_FPoint logicalViewportSize) {
+    (void)logicalViewportSize;
+
     ApplyPlayerViewport(
-        config, player, SDL_FRect{0.0f, 0.0f, logicalViewportSize.x, logicalViewportSize.y});
+        config, player, SDL_FRect{0.0f, 0.0f, kDefaultArenaWidth, kDefaultArenaHeight});
 }
 
 void ApplyPlayerViewport(PlayerControlConfig& config,
                          PlayerCharacterState& player,
                          const SDL_FRect& arenaRect) {
-    const float arenaWidth = std::max(arenaRect.w, player.PlaceholderRect.w);
-    const float arenaHeight = std::max(arenaRect.h, player.PlaceholderRect.h);
-    const float arenaBottom = arenaRect.y + arenaHeight;
-    const float floorLineY = arenaRect.y + (arenaHeight * kDefaultPlayerFloorLineRatio);
+    (void)arenaRect;
 
-    config.MinX = arenaRect.x;
-    config.MaxX = arenaRect.x + std::max(0.0f, arenaWidth - player.PlaceholderRect.w);
+    config.MinX = 0.0f;
+    config.MaxX = std::max(config.MinX, kDefaultArenaWidth - player.PlaceholderRect.w);
     config.GroundY = std::max(
-        arenaRect.y,
-        std::min(arenaBottom - player.PlaceholderRect.h, floorLineY - player.PlaceholderRect.h));
+        0.0f,
+        std::min(kDefaultArenaHeight - player.PlaceholderRect.h,
+                 kDefaultPlayerFloorLineY - player.PlaceholderRect.h));
 
     player.PlaceholderRect.x = std::clamp(player.PlaceholderRect.x, config.MinX, config.MaxX);
 
