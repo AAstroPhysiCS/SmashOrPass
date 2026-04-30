@@ -2,26 +2,29 @@
 
 #include <SDL3/SDL_keycode.h>
 
-#include "PlayerSpritePlacement.hpp"
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/core/Event.hpp"
+#include "smashorpass/core/PlayerController.hpp"
+#include "smashorpass/core/PlayerSpritePlacement.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
 #include "spdlog/spdlog.h"
 
 namespace sop {
 
-namespace {
-constexpr float kPlaceholderWidth = 116.0f;
-constexpr float kPlaceholderHeight = 192.0f;
-}  // namespace
-
 void Game::OnEvent(const Event& event) {
-    EventDispatcher::Dispatch<WindowResizeEvent>(event, [](const WindowResizeEvent&) {
-        // Later: update viewport / UI layout / camera projection.
+    EventDispatcher::Dispatch<KeyEvent>(event, [this](const KeyEvent& keyEvent) {
+        ApplyPlayerKeyEvent(m_PlayerInput, m_Player, keyEvent, m_PlayerConfig);
     });
+
+    EventDispatcher::Dispatch<WindowMetricsChangedEvent>(
+        event, [this](const WindowMetricsChangedEvent& e) { SetDisplayMetrics(e.Metrics); });
 }
 
-void Game::GameplayTick(ApplicationState state) {
+void Game::SetDisplayMetrics(const DisplayMetrics& metrics) {
+    UpdateArena(metrics.LogicalSize());
+}
+
+void Game::GameplayTick(ApplicationState state, double stepSeconds) {
     switch (state) {
         case ApplicationState::MainMenu:
             // spdlog::info("In main menu");
@@ -33,7 +36,7 @@ void Game::GameplayTick(ApplicationState state) {
             break;
         case ApplicationState::Playing:
             // spdlog::info("Playing");
-            //  TODO: update game world, handle player input, etc.
+            TickPlayer(m_Player, m_PlayerInput, stepSeconds, m_PlayerConfig);
             break;
         case ApplicationState::Paused:
             // spdlog::info("Paused");
@@ -51,8 +54,7 @@ void Game::AnimationTick(ApplicationState state, AssetManager& assetManager) {
         return;
     }
 
-    AdvancePlayerAnimation(m_Player1Visual, assetManager);
-    AdvancePlayerAnimation(m_Player2Visual, assetManager);
+    AdvancePlayerAnimation(m_Player, assetManager);
 }
 
 void Game::Render(ApplicationState state, Renderer& renderer, AssetManager& assetManager) {
@@ -61,7 +63,7 @@ void Game::Render(ApplicationState state, Renderer& renderer, AssetManager& asse
     }
 }
 
-void Game::AdvancePlayerAnimation(CharacterVisualState& player, AssetManager& assetManager) {
+void Game::AdvancePlayerAnimation(PlayerCharacterState& player, AssetManager& assetManager) {
     const SpriteSheet& spriteSheet =
         assetManager.getSpriteSheet(player.Character, player.Animation.GetAnimation());
     const std::span<const SpriteSheetFrame> frames = spriteSheet.getFrames();
@@ -71,41 +73,33 @@ void Game::AdvancePlayerAnimation(CharacterVisualState& player, AssetManager& as
 }
 
 void Game::RenderWorld(Renderer& renderer, AssetManager& assetManager) {
+    UpdateArena(renderer.GetLogicalOutputSize());
     RenderStage(renderer);
     RenderPlayers(renderer, assetManager);
     RenderEffects(renderer);
 }
 
+void Game::UpdateArena(SDL_FPoint logicalSize) {
+    m_ArenaRect = MakeContainedArenaRect(logicalSize);
+    ApplyPlayerViewport(m_PlayerConfig, m_Player, m_ArenaRect);
+}
+
 void Game::RenderStage(Renderer& renderer) {
-    const SDL_Point size = renderer.GetCurrentOutputSize();
+    const SDL_FPoint size = renderer.GetLogicalOutputSize();
 
-    // Sky/background
-    renderer.FillRect(SDL_FRect{0.0f, 0.0f, static_cast<float>(size.x), static_cast<float>(size.y)},
-                      Color{32, 36, 52, 255});
+    renderer.FillRect(SDL_FRect{0.0f, 0.0f, size.x, size.y}, Color{18, 18, 24, 255});
 
-    // Main platform
-    renderer.FillRect(SDL_FRect{static_cast<float>(size.x) * 0.25f,
-                                static_cast<float>(size.y) * 0.72f,
-                                static_cast<float>(size.x) * 0.50f,
-                                24.0f},
-                      Color{110, 110, 120, 255});
+    renderer.FillRect(m_ArenaRect, Color{32, 36, 52, 255});
+    renderer.DrawRect(m_ArenaRect, Color{180, 180, 190, 255});
 
-    renderer.DrawRect(SDL_FRect{static_cast<float>(size.x) * 0.25f,
-                                static_cast<float>(size.y) * 0.72f,
-                                static_cast<float>(size.x) * 0.50f,
-                                24.0f},
-                      Color{180, 180, 190, 255});
+    const float floorY = m_PlayerConfig.GroundY + m_Player.PlaceholderRect.h;
 
-    // floating platform
-    renderer.FillRect(SDL_FRect{static_cast<float>(size.x) * 0.42f,
-                                static_cast<float>(size.y) * 0.52f,
-                                static_cast<float>(size.x) * 0.16f,
-                                16.0f},
-                      Color{90, 90, 100, 255});
+    renderer.DrawLine(
+        m_ArenaRect.x, floorY, m_ArenaRect.x + m_ArenaRect.w, floorY, Color{180, 180, 190, 255});
 }
 
 void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
-    const auto DrawPlayer = [&](const CharacterVisualState& player,
+    const auto DrawPlayer = [&](const PlayerCharacterState& player,
                                 const SDL_FRect& placeholderRect) {
         const SpriteSheet& spriteSheet =
             assetManager.getSpriteSheet(player.Character, player.Animation.GetAnimation());
@@ -114,7 +108,7 @@ void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
 
         const SpriteSheetFrame& frame = frames[player.Animation.GetFrameIndex() % frames.size()];
         const detail::PlayerSpritePlacement placement = detail::MakePlayerSpritePlacement(
-            placeholderRect, frame, player.FacingRight, kPlaceholderHeight);
+            placeholderRect, frame, player.FacingRight, m_PlayerConfig.RenderReferenceSourceHeight);
 
         TextureDrawParams drawParams{};
         drawParams.src = &placement.SourceRect;
@@ -125,12 +119,7 @@ void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
         return renderer.DrawTexture(spriteSheet.getSpriteTexture(), drawParams);
     };
 
-    SOP_ASSERT(DrawPlayer(m_Player1Visual,
-                          SDL_FRect{260.0f, 420.0f, kPlaceholderWidth, kPlaceholderHeight}),
-               "Failed to draw player 1 sprite");
-    SOP_ASSERT(DrawPlayer(m_Player2Visual,
-                          SDL_FRect{520.0f, 420.0f, kPlaceholderWidth, kPlaceholderHeight}),
-               "Failed to draw player 2 sprite");
+    SOP_ASSERT(DrawPlayer(m_Player, m_Player.PlaceholderRect), "Failed to draw player sprite");
 }
 
 void Game::RenderEffects(Renderer&) {

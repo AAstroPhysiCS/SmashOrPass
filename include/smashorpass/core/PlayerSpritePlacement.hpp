@@ -16,6 +16,6 @@ struct PlayerSpritePlacement {
 [[nodiscard]] PlayerSpritePlacement MakePlayerSpritePlacement(const SDL_FRect& placeholderRect,
                                                               const SpriteSheetFrame& frame,
                                                               bool facingRight,
-                                                              float placeholderHeight);
+                                                              float referenceSourceHeight);
 
 }  // namespace sop::detail

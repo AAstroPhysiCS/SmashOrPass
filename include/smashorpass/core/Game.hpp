@@ -6,6 +6,8 @@
 #include "ApplicationState.hpp"
 #include "Event.hpp"
 #include "smashorpass/asset/AssetManager.hpp"
+#include "smashorpass/core/Arena.hpp"
+#include "smashorpass/core/PlayerController.hpp"
 #include "smashorpass/core/SpriteAnimationPlayer.hpp"
 
 namespace sop {
@@ -31,26 +33,22 @@ inline static GameConfig loadDefault() {
 class Game final {
    public:
     void OnEvent(const Event& event);
-    void GameplayTick(ApplicationState state);
+    void SetDisplayMetrics(const DisplayMetrics& metrics);
+    void GameplayTick(ApplicationState state, double stepSeconds);
     void AnimationTick(ApplicationState state, AssetManager& assetManager);
     void Render(ApplicationState state, Renderer& renderer, AssetManager& assetManager);
 
    private:
-    struct CharacterVisualState {
-        CharacterId Character = CharacterId::Robot;
-        SpriteAnimationPlayer Animation;
-        bool FacingRight = true;
-    };
-
-    void AdvancePlayerAnimation(CharacterVisualState& player, AssetManager& assetManager);
+    void UpdateArena(SDL_FPoint logicalSize);
+    void AdvancePlayerAnimation(PlayerCharacterState& player, AssetManager& assetManager);
     void RenderWorld(Renderer& renderer, AssetManager& assetManager);
     void RenderStage(Renderer& renderer);
     void RenderPlayers(Renderer& renderer, AssetManager& assetManager);
     void RenderEffects(Renderer& renderer);
 
-    CharacterVisualState m_Player1Visual{
-        CharacterId::Robot, SpriteAnimationPlayer{CharacterAnimation::Attacks}, true};
-    CharacterVisualState m_Player2Visual{
-        CharacterId::Robot, SpriteAnimationPlayer{CharacterAnimation::Attacks}, false};
+    PlayerControlConfig m_PlayerConfig;
+    PlayerInputState m_PlayerInput;
+    PlayerCharacterState m_Player;
+    SDL_FRect m_ArenaRect{0.0f, 0.0f, kDefaultPlayerScreenWidth, kDefaultPlayerScreenHeight};
 };
 }  // namespace sop

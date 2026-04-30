@@ -1,9 +1,8 @@
-#include "smashorpass/core/SpriteAnimationPlayer.hpp"
-
 #include <catch2/catch_test_macros.hpp>
 
-TEST_CASE("sprite animation frame advances modulo the frame count")
-{
+#include "smashorpass/core/SpriteAnimationPlayer.hpp"
+
+TEST_CASE("sprite animation frame advances modulo the frame count") {
     sop::SpriteAnimationPlayer player(sop::CharacterAnimation::Idle);
 
     player.Advance(4);
@@ -17,8 +16,7 @@ TEST_CASE("sprite animation frame advances modulo the frame count")
     REQUIRE(player.GetTickCount() == 4);
 }
 
-TEST_CASE("changing animation resets sprite playback to the first frame")
-{
+TEST_CASE("changing animation resets sprite playback to the first frame") {
     sop::SpriteAnimationPlayer player(sop::CharacterAnimation::Idle);
 
     player.Advance(6);

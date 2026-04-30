@@ -1,40 +1,41 @@
 #pragma once
 
-#include "smashorpass/ui/UIScreen.hpp"
-
 #include "smashorpass/core/Game.hpp"
+#include "smashorpass/ui/UIScreen.hpp"
 
 namespace sop {
 
-    class GameScreen : public UIScreen {
-    public:
-        GameScreen(EventDispatcher& dispatcher);
-        virtual ~GameScreen() = default;
+class GameScreen : public UIScreen {
+   public:
+    GameScreen(EventDispatcher& dispatcher);
+    virtual ~GameScreen() = default;
 
-        void Build(UIBuilder& builder) final override;
-        void OnEvent(const Event& event) final override;
-        void OnUpdate() final override;
-        void OnRender(Renderer& renderer) final override;
-    private:
-        void UpdateHudText();
+    void Build(UIBuilder& builder) final override;
+    void OnEvent(const Event& event) final override;
+    void OnUpdate() final override;
+    void OnRender(Renderer& renderer) final override;
 
-        std::string MakePlayerText(const PlayerMatchState& player) const;
-        std::string MakeCenterText() const;
-    private:
-        GameMode m_Mode = GameMode::Smash;
+   private:
+    void UpdateHudText();
 
-        PlayerMatchState m_Player1{"P1", 100, 3, 0, true};
-        PlayerMatchState m_Player2{"P2", 100, 3, 0, false};
+    std::string MakePlayerText(const PlayerMatchState& player) const;
+    std::string MakeCenterText() const;
 
-        int32_t m_TargetRoundsToWin = 3;
-        int32_t m_CurrentRound = 1;
+   private:
+    GameMode m_Mode = GameMode::Smash;
 
-        bool m_Paused = false;
-        bool m_DebugDraw = false;
+    PlayerMatchState m_Player1{"P1", 100, 3, 0, true};
+    PlayerMatchState m_Player2{"P2", 100, 3, 0, false};
 
-        UIWidgetId m_P1Label = g_InvalidWidgetId;
-        UIWidgetId m_CenterLabel = g_InvalidWidgetId;
-        UIWidgetId m_P2Label = g_InvalidWidgetId;
-        UIWidgetId m_BottomHintLabel = g_InvalidWidgetId;
-    };
+    int32_t m_TargetRoundsToWin = 3;
+    int32_t m_CurrentRound = 1;
+
+    bool m_Paused = false;
+    bool m_DebugDraw = false;
+
+    UIWidgetId m_P1Label = g_InvalidWidgetId;
+    UIWidgetId m_CenterLabel = g_InvalidWidgetId;
+    UIWidgetId m_P2Label = g_InvalidWidgetId;
+    UIWidgetId m_BottomHintLabel = g_InvalidWidgetId;
+};
 }  // namespace sop

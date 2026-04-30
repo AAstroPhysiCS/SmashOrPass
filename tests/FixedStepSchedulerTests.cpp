@@ -1,11 +1,9 @@
-#include "smashorpass/core/FixedStepScheduler.hpp"
-
 #include <catch2/catch_test_macros.hpp>
-
 #include <chrono>
 
-TEST_CASE("120 hz gameplay scheduler advances twice for a 60 hz frame")
-{
+#include "smashorpass/core/FixedStepScheduler.hpp"
+
+TEST_CASE("120 hz gameplay scheduler advances twice for a 60 hz frame") {
     sop::FixedStepScheduler scheduler(120);
 
     const uint32_t ticksDue = scheduler.Advance(std::chrono::duration<double>(1.0 / 60.0));
@@ -14,8 +12,7 @@ TEST_CASE("120 hz gameplay scheduler advances twice for a 60 hz frame")
     REQUIRE(scheduler.GetTotalTicks() == 2);
 }
 
-TEST_CASE("30 hz animation scheduler accumulates independently across frames")
-{
+TEST_CASE("30 hz animation scheduler accumulates independently across frames") {
     sop::FixedStepScheduler gameplayScheduler(120);
     sop::FixedStepScheduler animationScheduler(30);
 
@@ -31,8 +28,7 @@ TEST_CASE("30 hz animation scheduler accumulates independently across frames")
     REQUIRE(animationScheduler.GetTotalTicks() == 1);
 }
 
-TEST_CASE("scheduler produces the same total ticks for irregular frame pacing")
-{
+TEST_CASE("scheduler produces the same total ticks for irregular frame pacing") {
     sop::FixedStepScheduler steadyScheduler(120);
     sop::FixedStepScheduler unevenScheduler(120);
 
@@ -45,8 +41,7 @@ TEST_CASE("scheduler produces the same total ticks for irregular frame pacing")
     REQUIRE(steadyScheduler.GetTotalTicks() == unevenScheduler.GetTotalTicks());
 }
 
-TEST_CASE("scheduler clamps large frame spikes before generating ticks")
-{
+TEST_CASE("scheduler clamps large frame spikes before generating ticks") {
     sop::FixedStepScheduler scheduler(120);
 
     const uint32_t ticksDue = scheduler.Advance(std::chrono::seconds(1));
