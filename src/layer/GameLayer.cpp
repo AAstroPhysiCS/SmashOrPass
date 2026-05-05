@@ -55,7 +55,7 @@ void GameLayer::OnRender(ApplicationContext& ctx) {
 
     auto& renderer = GetRenderer();
     m_Game.SetDisplayMetrics(ctx.Display);
-    m_Game.Render(ctx.CurrentState, renderer, *ctx.Assets);
+    m_Game.Render(ctx.CurrentState, renderer, *ctx.Assets, ctx.RenderCollisionBoxes);
 
     for (const auto& component : m_Screens)
         component->OnRender(renderer);

@@ -14,7 +14,7 @@ class DebugLayer : public Layer {
     ~DebugLayer();
 
     void BeginFrame();
-    void Draw(const ApplicationContext& ctx);
+    void Draw(ApplicationContext& ctx);
     void EndFrame();
 
     void OnEvent(const Event& event) final override;

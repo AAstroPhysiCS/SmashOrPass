@@ -17,6 +17,7 @@ struct ApplicationContext final {
     double GameplayStepSeconds = 1.0 / 120.0;
     double AnimationStepSeconds = 1.0 / 60.0;
     DisplayMetrics Display{};
+    bool RenderCollisionBoxes = false;
     // - AudioSystem AudioSystem;
     // Add more stuff later here, any singleton-like stuff that needs to be accessed globally by
     // multiple layers / components etc. can go here, but try to avoid this as much as possible and

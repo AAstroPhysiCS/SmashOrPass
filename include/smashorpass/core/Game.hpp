@@ -36,14 +36,18 @@ class Game final {
     void SetDisplayMetrics(const DisplayMetrics& metrics);
     void GameplayTick(ApplicationState state, double stepSeconds, AssetManager& assetManager);
     void AnimationTick(ApplicationState state, AssetManager& assetManager);
-    void Render(ApplicationState state, Renderer& renderer, AssetManager& assetManager);
+    void Render(ApplicationState state,
+                Renderer& renderer,
+                AssetManager& assetManager,
+                bool renderCollisionBoxes);
 
    private:
     void UpdateArena(SDL_FPoint logicalSize);
     void AdvancePlayerAnimation(PlayerCharacterState& player, AssetManager& assetManager);
-    void RenderWorld(Renderer& renderer, AssetManager& assetManager);
+    void RenderWorld(Renderer& renderer, AssetManager& assetManager, bool renderCollisionBoxes);
     void RenderStage(Renderer& renderer, AssetManager& assetManager);
     void RenderPlayers(Renderer& renderer, AssetManager& assetManager);
+    void RenderArenaCollisionBoxes(Renderer& renderer, AssetManager& assetManager);
     void RenderEffects(Renderer& renderer);
 
     PlayerControlConfig m_PlayerConfig;

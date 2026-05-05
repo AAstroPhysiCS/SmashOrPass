@@ -61,7 +61,7 @@ void DebugLayer::BeginFrame() {
     ImGui::NewFrame();
 }
 
-void DebugLayer::Draw(const ApplicationContext& ctx) {
+void DebugLayer::Draw(ApplicationContext& ctx) {
     const ImGuiIO& io = ImGui::GetIO();
     const SDL_FPoint logicalSize = ctx.Display.LogicalSize();
     const double frameMilliseconds = static_cast<double>(io.DeltaTime) * 1000.0;
@@ -87,6 +87,9 @@ void DebugLayer::Draw(const ApplicationContext& ctx) {
     ImGui::Separator();
     ImGui::Text("Gameplay ticks: %llu", static_cast<unsigned long long>(ctx.GameplayTickCount));
     ImGui::Text("Animation ticks: %llu", static_cast<unsigned long long>(ctx.AnimationTickCount));
+
+    ImGui::Separator();
+    ImGui::Checkbox("Render collision boxes", &ctx.RenderCollisionBoxes);
     ImGui::End();
 }
 

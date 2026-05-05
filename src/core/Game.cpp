@@ -61,9 +61,12 @@ void Game::AnimationTick(ApplicationState state, AssetManager& assetManager) {
     AdvancePlayerAnimation(m_Player, assetManager);
 }
 
-void Game::Render(ApplicationState state, Renderer& renderer, AssetManager& assetManager) {
+void Game::Render(ApplicationState state,
+                  Renderer& renderer,
+                  AssetManager& assetManager,
+                  bool renderCollisionBoxes) {
     if (state == ApplicationState::Playing) {
-        RenderWorld(renderer, assetManager);
+        RenderWorld(renderer, assetManager, renderCollisionBoxes);
     }
 }
 
@@ -76,10 +79,15 @@ void Game::AdvancePlayerAnimation(PlayerCharacterState& player, AssetManager& as
     player.Animation.Advance(frames.size());
 }
 
-void Game::RenderWorld(Renderer& renderer, AssetManager& assetManager) {
+void Game::RenderWorld(Renderer& renderer,
+                       AssetManager& assetManager,
+                       bool renderCollisionBoxes) {
     UpdateArena(renderer.GetLogicalOutputSize());
     RenderStage(renderer, assetManager);
     RenderPlayers(renderer, assetManager);
+    if (renderCollisionBoxes) {
+        RenderArenaCollisionBoxes(renderer, assetManager);
+    }
     RenderEffects(renderer);
 }
 
@@ -122,6 +130,16 @@ void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
 
     const bool playerDrawn = DrawPlayer(m_Player, m_Player.PlaceholderRect);
     SOP_VERIFY(playerDrawn, "Failed to draw player sprite");
+}
+
+void Game::RenderArenaCollisionBoxes(Renderer& renderer, AssetManager& assetManager) {
+    constexpr Color kCollisionBoxColor{0, 255, 0, 255};
+
+    for (const SDL_FRect& designRect : assetManager.getArenaCollisionBoxes(m_Arena)) {
+        const SDL_FRect arenaRect = MapDesignRectToArena(designRect, m_ArenaRect);
+        const bool boxDrawn = renderer.DrawRect(arenaRect, kCollisionBoxColor);
+        SOP_VERIFY(boxDrawn, "Failed to draw arena collision box");
+    }
 }
 
 void Game::RenderEffects(Renderer&) {
