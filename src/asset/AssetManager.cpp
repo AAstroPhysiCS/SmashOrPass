@@ -1,5 +1,6 @@
 #include "smashorpass/asset/AssetManager.hpp"
 
+#include <array>
 #include <cstdint>
 #include <fstream>
 #include <iterator>
@@ -27,6 +28,22 @@ const SpriteSheet& AssetManager::getSpriteSheet(CharacterId character,
     }
 
     return loadSpriteSheet(character, animation);
+}
+
+void AssetManager::preloadCharacterSpriteSheets(CharacterId character) {
+    constexpr std::array kAnimations{
+        CharacterAnimation::Ascending,
+        CharacterAnimation::Attacks,
+        CharacterAnimation::Dash,
+        CharacterAnimation::Falling,
+        CharacterAnimation::Idle,
+        CharacterAnimation::Jump,
+        CharacterAnimation::Walk,
+    };
+
+    for (const CharacterAnimation animation : kAnimations) {
+        (void)getSpriteSheet(character, animation);
+    }
 }
 
 const SpriteSheet& AssetManager::loadSpriteSheet(CharacterId character,

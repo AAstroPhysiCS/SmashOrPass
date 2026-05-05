@@ -40,6 +40,7 @@ class AssetManager {
 
     [[nodiscard]] const SpriteSheet& getSpriteSheet(CharacterId character,
                                                     CharacterAnimation animation);
+    void preloadCharacterSpriteSheets(CharacterId character);
 
    private:
     [[nodiscard]] const SpriteSheet& loadSpriteSheet(CharacterId character,

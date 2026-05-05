@@ -207,6 +207,10 @@ void Application::OnApplicationStageChangeEvent() {
 }
 
 void Application::ChangeState(ApplicationState newState) {
+    if (newState == ApplicationState::Playing && m_Context.Assets != nullptr) {
+        m_Context.Assets->preloadCharacterSpriteSheets(CharacterId::Robot);
+    }
+
     m_Context.CurrentState = newState;
     OnApplicationStageChangeEvent();
 }
