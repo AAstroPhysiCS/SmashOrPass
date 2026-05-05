@@ -211,7 +211,7 @@ void Application::ChangeState(ApplicationState newState) {
     if (newState == ApplicationState::Playing && m_Context.Assets != nullptr) {
         (void)m_Context.Assets->getArenaBackgroundTexture(ArenaId::Chains);
         (void)m_Context.Assets->getArenaForegroundTexture(ArenaId::Chains);
-        m_Context.Assets->preloadCharacterSpriteSheets(CharacterId::Robot);
+        m_Context.Assets->preloadCharacterSpriteSheets(kDefaultCharacterId);
     }
 
     m_Context.CurrentState = newState;

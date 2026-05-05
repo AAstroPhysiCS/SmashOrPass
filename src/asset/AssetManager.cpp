@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <fstream>
 #include <iterator>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -13,16 +14,112 @@
 #include <vector>
 
 #include "smashorpass/core/Base.hpp"
+#include "spdlog/spdlog.h"
 
 namespace sop {
 namespace {
 
-[[nodiscard]] std::vector<uint8_t> ReadBytes(const std::filesystem::path& path) {
+struct SpriteSheetBytes {
+    std::vector<uint8_t> Sprite;
+    std::vector<uint8_t> Hitbox;
+    std::vector<uint8_t> Metadata;
+};
+
+[[nodiscard]] std::optional<std::vector<uint8_t>> TryReadBytes(const std::filesystem::path& path) {
     std::ifstream file(path, std::ios::binary);
-    SOP_ASSERT(file.is_open(), "Failed to open asset file");
+    if (!file.is_open()) {
+        return std::nullopt;
+    }
 
     return std::vector<uint8_t>(std::istreambuf_iterator<char>(file),
                                 std::istreambuf_iterator<char>());
+}
+
+[[nodiscard]] std::vector<uint8_t> ReadBytes(const std::filesystem::path& path) {
+    std::optional<std::vector<uint8_t>> bytes = TryReadBytes(path);
+    SOP_VERIFY(bytes.has_value(), "Failed to open asset file");
+
+    return std::move(*bytes);
+}
+
+void AppendPath(std::string& paths, const std::filesystem::path& path) {
+    if (!paths.empty()) {
+        paths += ", ";
+    }
+
+    paths += path.string();
+}
+
+[[nodiscard]] std::vector<uint8_t> MakeErrorSpriteSheetMetadata() {
+    constexpr std::string_view kMetadata = R"json({
+  "character": "error",
+  "animation": "error",
+  "sheet_width": 2048,
+  "sheet_height": 2048,
+  "frames": [
+    {
+      "source": "ERROR.png",
+      "x_left": 0,
+      "x_right": 482,
+      "y_top": 0,
+      "y_bottom": 482,
+      "source_w": 482,
+      "source_h": 482,
+      "center_x": 241,
+      "center_y": 241
+    }
+  ]
+})json";
+
+    std::vector<uint8_t> bytes;
+    bytes.reserve(kMetadata.size());
+    for (const char c : kMetadata) {
+        bytes.push_back(static_cast<uint8_t>(c));
+    }
+    return bytes;
+}
+
+[[nodiscard]] SpriteSheetBytes ReadCharacterSpriteSheetBytes(
+    const std::filesystem::path& assetRootDir,
+    const std::filesystem::path& spritePath,
+    const std::filesystem::path& hitboxPath,
+    const std::filesystem::path& metadataPath) {
+    std::optional<std::vector<uint8_t>> spriteBytes = TryReadBytes(spritePath);
+    std::optional<std::vector<uint8_t>> hitboxBytes = TryReadBytes(hitboxPath);
+    std::optional<std::vector<uint8_t>> metadataBytes = TryReadBytes(metadataPath);
+
+    if (spriteBytes.has_value() && hitboxBytes.has_value() && metadataBytes.has_value()) {
+        return SpriteSheetBytes{
+            .Sprite = std::move(*spriteBytes),
+            .Hitbox = std::move(*hitboxBytes),
+            .Metadata = std::move(*metadataBytes),
+        };
+    }
+
+    std::string missingPaths;
+    if (!spriteBytes.has_value()) {
+        AppendPath(missingPaths, spritePath);
+    }
+    if (!hitboxBytes.has_value()) {
+        AppendPath(missingPaths, hitboxPath);
+    }
+    if (!metadataBytes.has_value()) {
+        AppendPath(missingPaths, metadataPath);
+    }
+
+    const std::filesystem::path fallbackPath = assetRootDir / "sprites" / "ERROR.png";
+    spdlog::warn("Missing character sprite sheet asset(s): {}. Using fallback sprite: {}",
+                 missingPaths,
+                 fallbackPath.string());
+
+    std::vector<uint8_t> fallbackSpriteBytes = ReadBytes(fallbackPath);
+    std::vector<uint8_t> fallbackHitboxBytes = fallbackSpriteBytes;
+
+    return SpriteSheetBytes{
+        .Sprite = std::move(fallbackSpriteBytes),
+        .Hitbox = std::move(fallbackHitboxBytes),
+        .Metadata = MakeErrorSpriteSheetMetadata(),
+    };
 }
 
 [[nodiscard]] std::string_view ArenaBaseName(ArenaId arenaId) {
@@ -112,6 +209,9 @@ const SpriteSheet& AssetManager::loadSpriteSheet(CharacterId character,
             case CharacterId::Robot: {
                 return "robot";
             }
+            case CharacterId::Samurai: {
+                return "samurai";
+            }
             default: {
                 SOP_ASSERT(false, "Unhandled character id");
             }
@@ -123,12 +223,13 @@ const SpriteSheet& AssetManager::loadSpriteSheet(CharacterId character,
                                            CharacterDirName(character) /
                                            AnimationBaseName(animation);
 
-    const auto spriteBytes = ReadBytes(basePath.string() + ".png");
-    const auto hitboxBytes = ReadBytes(basePath.string() + "_boxes.png");
-    const auto metadataBytes = ReadBytes(basePath.string() + ".json");
+    const SpriteSheetBytes bytes = ReadCharacterSpriteSheetBytes(m_AssetRootDir,
+                                                                 basePath.string() + ".png",
+                                                                 basePath.string() + "_boxes.png",
+                                                                 basePath.string() + ".json");
 
     auto& animations = m_SpriteSheets[character];
-    SpriteSheet spriteSheet = SpriteSheet::parse(spriteBytes, hitboxBytes, metadataBytes);
+    SpriteSheet spriteSheet = SpriteSheet::parse(bytes.Sprite, bytes.Hitbox, bytes.Metadata);
     spriteSheet.createSpriteTexture(m_Renderer);
 
     auto [it, inserted] = animations.try_emplace(animation, std::move(spriteSheet));

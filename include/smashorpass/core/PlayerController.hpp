@@ -41,7 +41,7 @@ struct PlayerInputState {
 };
 
 struct PlayerCharacterState {
-    CharacterId Character = CharacterId::Robot;
+    CharacterId Character = kDefaultCharacterId;
     SpriteAnimationPlayer Animation{CharacterAnimation::Idle};
     SDL_FRect PlaceholderRect{kDefaultPlayerStartX,
                               kDefaultPlayerGroundY,
