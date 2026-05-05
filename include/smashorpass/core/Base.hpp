@@ -64,8 +64,15 @@ inline void report_sdl_assert(const char* expr, const char* message, const char*
 
 #else
 
-#define SOP_ASSERT(expr, message) ((void)0)
-#define SOP_SDL_ASSERT(expr, message) ((void)0)
+#define SOP_ASSERT(expr, message) \
+    do {                          \
+        (void)(expr);             \
+    } while (false)
+
+#define SOP_SDL_ASSERT(expr, message) \
+    do {                              \
+        (void)(expr);                 \
+    } while (false)
 
 #endif
 
