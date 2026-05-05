@@ -1,16 +1,41 @@
 #include "smashorpass/asset/AssetManager.hpp"
 
+#include <SDL3_image/SDL_image.h>
+
 #include <array>
 #include <cstdint>
 #include <fstream>
 #include <iterator>
 #include <span>
+#include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "smashorpass/core/Base.hpp"
 
 namespace sop {
+namespace {
+
+[[nodiscard]] std::vector<uint8_t> ReadBytes(const std::filesystem::path& path) {
+    std::ifstream file(path, std::ios::binary);
+    SOP_ASSERT(file.is_open(), "Failed to open asset file");
+
+    return std::vector<uint8_t>(std::istreambuf_iterator<char>(file),
+                                std::istreambuf_iterator<char>());
+}
+
+[[nodiscard]] std::string_view ArenaBaseName(ArenaId arenaId) {
+    switch (arenaId) {
+        case ArenaId::Chains:
+            return "chains";
+    }
+
+    SOP_ASSERT(false, "Unhandled arena id");
+    return "";
+}
+
+}  // namespace
 
 AssetManager::AssetManager(std::filesystem::path assetRootDir, SDL_Renderer* renderer)
     : m_AssetRootDir(std::move(assetRootDir)), m_Renderer(renderer) {
@@ -28,6 +53,14 @@ const SpriteSheet& AssetManager::getSpriteSheet(CharacterId character,
     }
 
     return loadSpriteSheet(character, animation);
+}
+
+SDL_Texture* AssetManager::getArenaTexture(ArenaId arena) {
+    return getArenaAsset(arena).Texture.get();
+}
+
+std::span<const SDL_FRect> AssetManager::getArenaCollisionBoxes(ArenaId arena) {
+    return getArenaAsset(arena).Metadata.getCollisionBoxes();
 }
 
 void AssetManager::preloadCharacterSpriteSheets(CharacterId character) {
@@ -70,14 +103,6 @@ const SpriteSheet& AssetManager::loadSpriteSheet(CharacterId character,
         return "";
     };
 
-    const auto ReadBytes = [](const std::filesystem::path& path) -> std::vector<uint8_t> {
-        std::ifstream file(path, std::ios::binary);
-        SOP_ASSERT(file.is_open(), "Failed to open asset file");
-
-        return std::vector<uint8_t>(std::istreambuf_iterator<char>(file),
-                                    std::istreambuf_iterator<char>());
-    };
-
     const auto CharacterDirName = [](CharacterId characterId) -> std::string_view {
         switch (characterId) {
             case CharacterId::Robot: {
@@ -105,6 +130,37 @@ const SpriteSheet& AssetManager::loadSpriteSheet(CharacterId character,
     auto [it, inserted] = animations.try_emplace(animation, std::move(spriteSheet));
 
     SOP_ASSERT(inserted, "Sprite sheet should only be loaded once");
+
+    return it->second;
+}
+
+AssetManager::ArenaAsset& AssetManager::getArenaAsset(ArenaId arena) {
+    auto it = m_Arenas.find(arena);
+    if (it != m_Arenas.end()) {
+        return it->second;
+    }
+
+    return loadArenaAsset(arena);
+}
+
+AssetManager::ArenaAsset& AssetManager::loadArenaAsset(ArenaId arena) {
+    const std::filesystem::path basePath =
+        m_AssetRootDir / "sprites" / "arenas" / std::string{ArenaBaseName(arena)};
+    const std::filesystem::path texturePath = basePath.string() + ".png";
+    const std::filesystem::path metadataPath = basePath.string() + ".json";
+    const std::string texturePathString = texturePath.string();
+    const auto metadataBytes = ReadBytes(metadataPath);
+
+    SDL_Texture* rawTexture = IMG_LoadTexture(m_Renderer, texturePathString.c_str());
+    SOP_SDL_ASSERT(rawTexture != nullptr, "Failed to load arena texture");
+
+    ArenaAsset arenaAsset{
+        .Texture = TexturePtr{rawTexture},
+        .Metadata = ArenaMetadata::parse(metadataBytes),
+    };
+
+    auto [it, inserted] = m_Arenas.try_emplace(arena, std::move(arenaAsset));
+    SOP_ASSERT(inserted, "Arena asset should only be loaded once");
 
     return it->second;
 }

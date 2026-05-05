@@ -24,7 +24,7 @@ void Game::SetDisplayMetrics(const DisplayMetrics& metrics) {
     UpdateArena(metrics.LogicalSize());
 }
 
-void Game::GameplayTick(ApplicationState state, double stepSeconds) {
+void Game::GameplayTick(ApplicationState state, double stepSeconds, AssetManager& assetManager) {
     switch (state) {
         case ApplicationState::MainMenu:
             // spdlog::info("In main menu");
@@ -36,7 +36,11 @@ void Game::GameplayTick(ApplicationState state, double stepSeconds) {
             break;
         case ApplicationState::Playing:
             // spdlog::info("Playing");
-            TickPlayer(m_Player, m_PlayerInput, stepSeconds, m_PlayerConfig);
+            TickPlayer(m_Player,
+                       m_PlayerInput,
+                       stepSeconds,
+                       m_PlayerConfig,
+                       assetManager.getArenaCollisionBoxes(m_Arena));
             break;
         case ApplicationState::Paused:
             // spdlog::info("Paused");
@@ -74,7 +78,7 @@ void Game::AdvancePlayerAnimation(PlayerCharacterState& player, AssetManager& as
 
 void Game::RenderWorld(Renderer& renderer, AssetManager& assetManager) {
     UpdateArena(renderer.GetLogicalOutputSize());
-    RenderStage(renderer);
+    RenderStage(renderer, assetManager);
     RenderPlayers(renderer, assetManager);
     RenderEffects(renderer);
 }
@@ -84,18 +88,14 @@ void Game::UpdateArena(SDL_FPoint logicalSize) {
     ApplyPlayerViewport(m_PlayerConfig, m_Player, m_ArenaRect);
 }
 
-void Game::RenderStage(Renderer& renderer) {
+void Game::RenderStage(Renderer& renderer, AssetManager& assetManager) {
     const SDL_FPoint size = renderer.GetLogicalOutputSize();
 
     renderer.FillRect(SDL_FRect{0.0f, 0.0f, size.x, size.y}, Color{18, 18, 24, 255});
 
-    renderer.FillRect(m_ArenaRect, Color{32, 36, 52, 255});
-    renderer.DrawRect(m_ArenaRect, Color{180, 180, 190, 255});
-
-    const float floorY = m_ArenaRect.y + (m_ArenaRect.h * kDefaultPlayerFloorLineRatio);
-
-    renderer.DrawLine(
-        m_ArenaRect.x, floorY, m_ArenaRect.x + m_ArenaRect.w, floorY, Color{180, 180, 190, 255});
+    const bool arenaDrawn =
+        renderer.DrawTexture(assetManager.getArenaTexture(m_Arena), m_ArenaRect);
+    SOP_VERIFY(arenaDrawn, "Failed to draw arena background");
 }
 
 void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
@@ -107,8 +107,7 @@ void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
         SOP_ASSERT(!frames.empty(), "Character sprite sheet has no frames");
 
         const SpriteSheetFrame& frame = frames[player.Animation.GetFrameIndex() % frames.size()];
-        const SDL_FRect placeholderRect =
-            MapDesignRectToArena(designPlaceholderRect, m_ArenaRect);
+        const SDL_FRect placeholderRect = MapDesignRectToArena(designPlaceholderRect, m_ArenaRect);
         const detail::PlayerSpritePlacement placement = detail::MakePlayerSpritePlacement(
             placeholderRect, frame, player.FacingRight, m_PlayerConfig.RenderReferenceSourceHeight);
 
@@ -121,7 +120,8 @@ void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
         return renderer.DrawTexture(spriteSheet.getSpriteTexture(), drawParams);
     };
 
-    SOP_ASSERT(DrawPlayer(m_Player, m_Player.PlaceholderRect), "Failed to draw player sprite");
+    const bool playerDrawn = DrawPlayer(m_Player, m_Player.PlaceholderRect);
+    SOP_VERIFY(playerDrawn, "Failed to draw player sprite");
 }
 
 void Game::RenderEffects(Renderer&) {

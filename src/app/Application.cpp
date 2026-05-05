@@ -12,7 +12,8 @@
 
 namespace sop {
 Application::Application()
-    : m_Window(WindowCreateInfo{.Width = 1280, .Height = 720, .Title = "Smash Or Pass - The Game"}),
+    : m_Window(
+          WindowCreateInfo{.Width = 1920, .Height = 1080, .Title = "Smash Or Pass - The Game"}),
       m_Renderer(m_Window) {
     RefreshDisplayMetrics();
     m_Context.Assets =
@@ -208,6 +209,7 @@ void Application::OnApplicationStageChangeEvent() {
 
 void Application::ChangeState(ApplicationState newState) {
     if (newState == ApplicationState::Playing && m_Context.Assets != nullptr) {
+        (void)m_Context.Assets->getArenaTexture(ArenaId::Chains);
         m_Context.Assets->preloadCharacterSpriteSheets(CharacterId::Robot);
     }
 

@@ -34,7 +34,7 @@ class Game final {
    public:
     void OnEvent(const Event& event);
     void SetDisplayMetrics(const DisplayMetrics& metrics);
-    void GameplayTick(ApplicationState state, double stepSeconds);
+    void GameplayTick(ApplicationState state, double stepSeconds, AssetManager& assetManager);
     void AnimationTick(ApplicationState state, AssetManager& assetManager);
     void Render(ApplicationState state, Renderer& renderer, AssetManager& assetManager);
 
@@ -42,13 +42,14 @@ class Game final {
     void UpdateArena(SDL_FPoint logicalSize);
     void AdvancePlayerAnimation(PlayerCharacterState& player, AssetManager& assetManager);
     void RenderWorld(Renderer& renderer, AssetManager& assetManager);
-    void RenderStage(Renderer& renderer);
+    void RenderStage(Renderer& renderer, AssetManager& assetManager);
     void RenderPlayers(Renderer& renderer, AssetManager& assetManager);
     void RenderEffects(Renderer& renderer);
 
     PlayerControlConfig m_PlayerConfig;
     PlayerInputState m_PlayerInput;
     PlayerCharacterState m_Player;
+    ArenaId m_Arena = ArenaId::Chains;
     SDL_FRect m_ArenaRect{0.0f, 0.0f, kDefaultPlayerScreenWidth, kDefaultPlayerScreenHeight};
 };
 }  // namespace sop

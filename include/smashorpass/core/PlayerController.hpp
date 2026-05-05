@@ -2,6 +2,8 @@
 
 #include <SDL3/SDL_rect.h>
 
+#include <span>
+
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/core/Arena.hpp"
 #include "smashorpass/core/Event.hpp"
@@ -13,8 +15,8 @@ inline constexpr float kDefaultPlayerScreenWidth = kDefaultArenaWidth;
 inline constexpr float kDefaultPlayerScreenHeight = kDefaultArenaHeight;
 inline constexpr float kDefaultPlayerPlaceholderWidth = 116.0f;
 inline constexpr float kDefaultPlayerPlaceholderHeight = 192.0f;
-inline constexpr float kDefaultPlayerStartX = 260.0f;
-inline constexpr float kDefaultPlayerGroundY = 420.0f;
+inline constexpr float kDefaultPlayerStartX = 450.0f;
+inline constexpr float kDefaultPlayerGroundY = 448.0f;
 inline constexpr float kDefaultPlayerFloorLineY =
     kDefaultPlayerGroundY + kDefaultPlayerPlaceholderHeight;
 inline constexpr float kDefaultPlayerFloorLineRatio =
@@ -60,6 +62,12 @@ void TickPlayer(PlayerCharacterState& player,
                 PlayerInputState& input,
                 double stepSeconds,
                 const PlayerControlConfig& config = PlayerControlConfig{});
+
+void TickPlayer(PlayerCharacterState& player,
+                PlayerInputState& input,
+                double stepSeconds,
+                const PlayerControlConfig& config,
+                std::span<const SDL_FRect> floorPlatforms);
 
 void ApplyPlayerViewport(PlayerControlConfig& config,
                          PlayerCharacterState& player,

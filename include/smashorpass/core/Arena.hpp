@@ -4,8 +4,8 @@
 
 namespace sop {
 
-inline constexpr float kDefaultArenaWidth = 1280.0f;
-inline constexpr float kDefaultArenaHeight = 720.0f;
+inline constexpr float kDefaultArenaWidth = 1920.0f;
+inline constexpr float kDefaultArenaHeight = 1080.0f;
 inline constexpr float kArenaAspectRatio = kDefaultArenaWidth / kDefaultArenaHeight;
 
 [[nodiscard]] inline SDL_FRect MakeContainedArenaRect(SDL_FPoint logicalSize,
