@@ -6,8 +6,35 @@
 #include <limits>
 #include <optional>
 
+#include "smashorpass/core/Base.hpp"
+
 namespace sop {
 namespace {
+
+[[nodiscard]] SDL_FPoint CollisionAnchorOffsetFor(const PlayerCharacterState& player) {
+    return player.FacingRight ? player.FlippedCollisionAnchorOffset : player.CollisionAnchorOffset;
+}
+
+void SyncCollisionRectToAnchor(PlayerCharacterState& player) {
+    const SDL_FPoint offset = CollisionAnchorOffsetFor(player);
+    player.CollisionRect.x = player.AnchorPosition.x - offset.x;
+    player.CollisionRect.y = player.AnchorPosition.y - offset.y;
+}
+
+void TranslatePlayer(PlayerCharacterState& player, float dx, float dy) {
+    player.AnchorPosition.x += dx;
+    player.AnchorPosition.y += dy;
+    player.CollisionRect.x += dx;
+    player.CollisionRect.y += dy;
+}
+
+void SetPlayerCollisionX(PlayerCharacterState& player, float x) {
+    TranslatePlayer(player, x - player.CollisionRect.x, 0.0f);
+}
+
+void SetPlayerCollisionY(PlayerCharacterState& player, float y) {
+    TranslatePlayer(player, 0.0f, y - player.CollisionRect.y);
+}
 
 [[nodiscard]] bool HorizontallyOverlaps(const SDL_FRect& a, const SDL_FRect& b) {
     return a.x < b.x + b.w && a.x + a.w > b.x;
@@ -68,6 +95,42 @@ namespace {
 
 }  // namespace
 
+void ApplyPlayerCollisionProfile(PlayerCharacterState& player,
+                                 const SpriteSheetFrame& frame,
+                                 const PlayerControlConfig& config) {
+    if (player.CollisionProfileInitialized) {
+        return;
+    }
+
+    SOP_ASSERT(config.RenderScale > 0.0f, "Player collision profile requires a positive scale");
+    SOP_ASSERT(frame.collision_box.w > 0.0f && frame.collision_box.h > 0.0f,
+               "Player collision profile requires a positive collision box");
+
+    const float previousBottom = player.CollisionRect.y + player.CollisionRect.h;
+    const float anchorX = static_cast<float>(frame.anchor_x);
+    const float anchorY = static_cast<float>(frame.anchor_y);
+    const SDL_FRect collisionBox = frame.collision_box;
+
+    player.CollisionRect.w = collisionBox.w * config.RenderScale;
+    player.CollisionRect.h = collisionBox.h * config.RenderScale;
+    player.CollisionRect.y = previousBottom - player.CollisionRect.h;
+    player.CollisionAnchorOffset = SDL_FPoint{
+        (anchorX - collisionBox.x) * config.RenderScale,
+        (anchorY - collisionBox.y) * config.RenderScale,
+    };
+    player.FlippedCollisionAnchorOffset = SDL_FPoint{
+        (collisionBox.x + collisionBox.w - anchorX) * config.RenderScale,
+        player.CollisionAnchorOffset.y,
+    };
+    player.CollisionProfileInitialized = true;
+
+    const SDL_FPoint offset = CollisionAnchorOffsetFor(player);
+    player.AnchorPosition = SDL_FPoint{
+        player.CollisionRect.x + offset.x,
+        player.CollisionRect.y + offset.y,
+    };
+}
+
 void ApplyPlayerKeyEvent(PlayerInputState& input,
                          PlayerCharacterState& player,
                          const KeyEvent& event,
@@ -117,10 +180,9 @@ void TickPlayer(PlayerCharacterState& player,
         player.FacingRight = horizontalDirection > 0.0f;
     }
 
-    player.PlaceholderRect.x =
-        std::clamp(player.PlaceholderRect.x + (horizontalDirection * config.MoveSpeed * dt),
-                   config.MinX,
-                   config.MaxX);
+    player.AnchorPosition.x += horizontalDirection * config.MoveSpeed * dt;
+    SyncCollisionRectToAnchor(player);
+    SetPlayerCollisionX(player, std::clamp(player.CollisionRect.x, config.MinX, config.MaxX));
 
     if (input.JumpRequested && player.Grounded) {
         player.VerticalVelocity = config.JumpVelocity;
@@ -131,22 +193,23 @@ void TickPlayer(PlayerCharacterState& player,
     if (floorPlatforms.empty()) {
         if (!player.Grounded) {
             player.VerticalVelocity += config.Gravity * dt;
-            player.PlaceholderRect.y += player.VerticalVelocity * dt;
+            player.AnchorPosition.y += player.VerticalVelocity * dt;
+            SyncCollisionRectToAnchor(player);
 
-            if (player.PlaceholderRect.y >= config.GroundY) {
-                player.PlaceholderRect.y = config.GroundY;
+            if (player.CollisionRect.y >= config.GroundY) {
+                SetPlayerCollisionY(player, config.GroundY);
                 player.VerticalVelocity = 0.0f;
                 player.Grounded = true;
             }
         } else {
-            player.PlaceholderRect.y = config.GroundY;
+            SetPlayerCollisionY(player, config.GroundY);
             player.VerticalVelocity = 0.0f;
         }
     } else if (player.Grounded) {
         const std::optional<float> supportedPlatformY =
-            FindSupportedPlatformY(player.PlaceholderRect, floorPlatforms);
+            FindSupportedPlatformY(player.CollisionRect, floorPlatforms);
         if (supportedPlatformY.has_value()) {
-            player.PlaceholderRect.y = *supportedPlatformY - player.PlaceholderRect.h;
+            SetPlayerCollisionY(player, *supportedPlatformY - player.CollisionRect.h);
             player.VerticalVelocity = 0.0f;
         } else {
             player.Grounded = false;
@@ -154,14 +217,15 @@ void TickPlayer(PlayerCharacterState& player,
     }
 
     if (!floorPlatforms.empty() && !player.Grounded) {
-        const float previousY = player.PlaceholderRect.y;
+        const float previousY = player.CollisionRect.y;
         player.VerticalVelocity += config.Gravity * dt;
-        player.PlaceholderRect.y += player.VerticalVelocity * dt;
+        player.AnchorPosition.y += player.VerticalVelocity * dt;
+        SyncCollisionRectToAnchor(player);
 
         const std::optional<float> landingPlatformY =
-            FindLandingPlatformY(player.PlaceholderRect, previousY, floorPlatforms);
+            FindLandingPlatformY(player.CollisionRect, previousY, floorPlatforms);
         if (landingPlatformY.has_value()) {
-            player.PlaceholderRect.y = *landingPlatformY - player.PlaceholderRect.h;
+            SetPlayerCollisionY(player, *landingPlatformY - player.CollisionRect.h);
             player.VerticalVelocity = 0.0f;
             player.Grounded = true;
         }
@@ -186,12 +250,13 @@ void ApplyPlayerViewport(PlayerControlConfig& config,
     (void)arenaRect;
 
     config.MinX = 0.0f;
-    config.MaxX = std::max(config.MinX, kDefaultArenaWidth - player.PlaceholderRect.w);
+    config.MaxX = std::max(config.MinX, kDefaultArenaWidth - player.CollisionRect.w);
     config.GroundY = std::max(0.0f,
-                              std::min(kDefaultArenaHeight - player.PlaceholderRect.h,
-                                       kDefaultPlayerFloorLineY - player.PlaceholderRect.h));
+                              std::min(kDefaultArenaHeight - player.CollisionRect.h,
+                                       kDefaultPlayerFloorLineY - player.CollisionRect.h));
 
-    player.PlaceholderRect.x = std::clamp(player.PlaceholderRect.x, config.MinX, config.MaxX);
+    SyncCollisionRectToAnchor(player);
+    SetPlayerCollisionX(player, std::clamp(player.CollisionRect.x, config.MinX, config.MaxX));
 }
 
 CharacterAnimation SelectPlayerAnimation(const PlayerCharacterState& player,

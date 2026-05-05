@@ -10,6 +10,28 @@
 #include "spdlog/spdlog.h"
 
 namespace sop {
+namespace {
+
+[[nodiscard]] SDL_FPoint MapDesignPointToArena(SDL_FPoint designPoint, const SDL_FRect& arenaRect) {
+    if (arenaRect.w <= 0.0f || arenaRect.h <= 0.0f) {
+        return SDL_FPoint{};
+    }
+
+    return SDL_FPoint{
+        arenaRect.x + (designPoint.x * (arenaRect.w / kDefaultArenaWidth)),
+        arenaRect.y + (designPoint.y * (arenaRect.h / kDefaultArenaHeight)),
+    };
+}
+
+[[nodiscard]] float MapDesignScaleToArena(const SDL_FRect& arenaRect) {
+    if (arenaRect.h <= 0.0f) {
+        return 0.0f;
+    }
+
+    return arenaRect.h / kDefaultArenaHeight;
+}
+
+}  // namespace
 
 void Game::OnEvent(const Event& event) {
     EventDispatcher::Dispatch<KeyEvent>(event, [this](const KeyEvent& keyEvent) {
@@ -36,6 +58,8 @@ void Game::GameplayTick(ApplicationState state, double stepSeconds, AssetManager
             break;
         case ApplicationState::Playing:
             // spdlog::info("Playing");
+            EnsurePlayerCollisionProfile(assetManager);
+            ApplyPlayerViewport(m_PlayerConfig, m_Player, m_ArenaRect);
             TickPlayer(m_Player,
                        m_PlayerInput,
                        stepSeconds,
@@ -70,6 +94,20 @@ void Game::Render(ApplicationState state,
     }
 }
 
+void Game::EnsurePlayerCollisionProfile(AssetManager& assetManager) {
+    if (m_Player.CollisionProfileInitialized) {
+        return;
+    }
+
+    const SpriteSheet& spriteSheet =
+        assetManager.getSpriteSheet(m_Player.Character, CharacterAnimation::Idle);
+    const std::span<const SpriteSheetFrame> frames = spriteSheet.getFrames();
+    SOP_ASSERT(!frames.empty(), "Character idle sprite sheet has no frames");
+
+    ApplyPlayerCollisionProfile(m_Player, frames.front(), m_PlayerConfig);
+    ApplyPlayerViewport(m_PlayerConfig, m_Player, m_ArenaRect);
+}
+
 void Game::AdvancePlayerAnimation(PlayerCharacterState& player, AssetManager& assetManager) {
     const SpriteSheet& spriteSheet =
         assetManager.getSpriteSheet(player.Character, player.Animation.GetAnimation());
@@ -79,16 +117,15 @@ void Game::AdvancePlayerAnimation(PlayerCharacterState& player, AssetManager& as
     player.Animation.Advance(frames.size());
 }
 
-void Game::RenderWorld(Renderer& renderer,
-                       AssetManager& assetManager,
-                       bool renderCollisionBoxes) {
+void Game::RenderWorld(Renderer& renderer, AssetManager& assetManager, bool renderCollisionBoxes) {
+    EnsurePlayerCollisionProfile(assetManager);
     UpdateArena(renderer.GetLogicalOutputSize());
     RenderStage(renderer, assetManager);
     RenderPlayers(renderer, assetManager);
     RenderEffects(renderer);
     RenderStageForeground(renderer, assetManager);
     if (renderCollisionBoxes) {
-        RenderArenaCollisionBoxes(renderer, assetManager);
+        RenderCollisionBoxes(renderer, assetManager);
     }
 }
 
@@ -114,17 +151,17 @@ void Game::RenderStageForeground(Renderer& renderer, AssetManager& assetManager)
 }
 
 void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
-    const auto DrawPlayer = [&](const PlayerCharacterState& player,
-                                const SDL_FRect& designPlaceholderRect) {
+    const auto DrawPlayer = [&](const PlayerCharacterState& player) {
         const SpriteSheet& spriteSheet =
             assetManager.getSpriteSheet(player.Character, player.Animation.GetAnimation());
         const std::span<const SpriteSheetFrame> frames = spriteSheet.getFrames();
         SOP_ASSERT(!frames.empty(), "Character sprite sheet has no frames");
 
         const SpriteSheetFrame& frame = frames[player.Animation.GetFrameIndex() % frames.size()];
-        const SDL_FRect placeholderRect = MapDesignRectToArena(designPlaceholderRect, m_ArenaRect);
-        const detail::PlayerSpritePlacement placement = detail::MakePlayerSpritePlacement(
-            placeholderRect, frame, player.FacingRight, m_PlayerConfig.RenderReferenceSourceHeight);
+        const SDL_FPoint anchorPosition = MapDesignPointToArena(player.AnchorPosition, m_ArenaRect);
+        const float scale = m_PlayerConfig.RenderScale * MapDesignScaleToArena(m_ArenaRect);
+        const detail::PlayerSpritePlacement placement =
+            detail::MakePlayerSpritePlacement(anchorPosition, frame, player.FacingRight, scale);
 
         TextureDrawParams drawParams{};
         drawParams.src = &placement.SourceRect;
@@ -135,18 +172,23 @@ void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
         return renderer.DrawTexture(spriteSheet.getSpriteTexture(), drawParams);
     };
 
-    const bool playerDrawn = DrawPlayer(m_Player, m_Player.PlaceholderRect);
+    const bool playerDrawn = DrawPlayer(m_Player);
     SOP_VERIFY(playerDrawn, "Failed to draw player sprite");
 }
 
-void Game::RenderArenaCollisionBoxes(Renderer& renderer, AssetManager& assetManager) {
-    constexpr Color kCollisionBoxColor{0, 255, 0, 255};
+void Game::RenderCollisionBoxes(Renderer& renderer, AssetManager& assetManager) {
+    constexpr Color kArenaCollisionBoxColor{0, 255, 0, 255};
+    constexpr Color kPlayerCollisionBoxColor{255, 230, 0, 255};
 
     for (const SDL_FRect& designRect : assetManager.getArenaCollisionBoxes(m_Arena)) {
         const SDL_FRect arenaRect = MapDesignRectToArena(designRect, m_ArenaRect);
-        const bool boxDrawn = renderer.DrawRect(arenaRect, kCollisionBoxColor);
+        const bool boxDrawn = renderer.DrawRect(arenaRect, kArenaCollisionBoxColor);
         SOP_VERIFY(boxDrawn, "Failed to draw arena collision box");
     }
+
+    const SDL_FRect playerRect = MapDesignRectToArena(m_Player.CollisionRect, m_ArenaRect);
+    const bool playerBoxDrawn = renderer.DrawRect(playerRect, kPlayerCollisionBoxColor);
+    SOP_VERIFY(playerBoxDrawn, "Failed to draw player collision box");
 }
 
 void Game::RenderEffects(Renderer&) {

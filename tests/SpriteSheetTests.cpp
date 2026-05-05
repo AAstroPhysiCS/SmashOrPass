@@ -33,10 +33,14 @@ namespace {
       "x_right": 482,
       "y_top": 0,
       "y_bottom": 482,
-      "source_w": 482,
-      "source_h": 482,
-      "center_x": 241,
-      "center_y": 241
+      "anchor_x": 241,
+      "anchor_y": 241,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 482,
+        "height": 482
+      }
     }
   ]
 })json";
@@ -50,20 +54,26 @@ namespace {
 }
 }  // namespace
 
-TEST_CASE("all robot sprite sheets can be parsed") {
+TEST_CASE("all checked-in character sprite sheets can be parsed") {
     const auto repoRoot = std::filesystem::path(__FILE__).parent_path().parent_path();
-    const auto robotDir = repoRoot / "assets" / "sprites" / "characters" / "robot";
+    const auto charactersDir = repoRoot / "assets" / "sprites" / "characters";
 
-    REQUIRE(std::filesystem::exists(robotDir));
+    REQUIRE(std::filesystem::exists(charactersDir));
 
     std::vector<std::filesystem::path> metadataFiles;
-    for (const auto& entry : std::filesystem::directory_iterator(robotDir)) {
-        if (!entry.is_regular_file()) {
+    for (const auto& characterEntry : std::filesystem::directory_iterator(charactersDir)) {
+        if (!characterEntry.is_directory()) {
             continue;
         }
 
-        if (entry.path().extension() == ".json") {
-            metadataFiles.push_back(entry.path());
+        for (const auto& entry : std::filesystem::directory_iterator(characterEntry.path())) {
+            if (!entry.is_regular_file()) {
+                continue;
+            }
+
+            if (entry.path().extension() == ".json") {
+                metadataFiles.push_back(entry.path());
+            }
         }
     }
 
@@ -75,8 +85,9 @@ TEST_CASE("all robot sprite sheets can be parsed") {
         const auto stem = metadataPath.stem().string();
         const auto spritePath = metadataPath.parent_path() / (stem + ".png");
         const auto hitboxPath = metadataPath.parent_path() / (stem + "_boxes.png");
+        const auto displayPath = std::filesystem::relative(metadataPath, repoRoot).string();
 
-        DYNAMIC_SECTION("parse " << stem) {
+        DYNAMIC_SECTION("parse " << displayPath) {
             INFO("metadata: " << metadataPath.string());
             INFO("sprite sheet: " << spritePath.string());
             INFO("hitbox sheet: " << hitboxPath.string());
@@ -91,24 +102,6 @@ TEST_CASE("all robot sprite sheets can be parsed") {
             REQUIRE_NOTHROW((void)sop::SpriteSheet::parse(spriteBytes, hitboxBytes, metadataBytes));
         }
     }
-}
-
-TEST_CASE("samurai idle sprite sheet can be parsed") {
-    const auto repoRoot = std::filesystem::path(__FILE__).parent_path().parent_path();
-    const auto samuraiDir = repoRoot / "assets" / "sprites" / "characters" / "samurai";
-    const auto metadataPath = samuraiDir / "Idle.json";
-    const auto spritePath = samuraiDir / "Idle.png";
-    const auto hitboxPath = samuraiDir / "Idle_boxes.png";
-
-    REQUIRE(std::filesystem::exists(metadataPath));
-    REQUIRE(std::filesystem::exists(spritePath));
-    REQUIRE(std::filesystem::exists(hitboxPath));
-
-    const auto spriteBytes = readBytes(spritePath);
-    const auto hitboxBytes = readBytes(hitboxPath);
-    const auto metadataBytes = readBytes(metadataPath);
-
-    REQUIRE_NOTHROW((void)sop::SpriteSheet::parse(spriteBytes, hitboxBytes, metadataBytes));
 }
 
 TEST_CASE("error sprite can be parsed as a one-frame fallback sprite sheet") {
@@ -129,8 +122,10 @@ TEST_CASE("error sprite can be parsed as a one-frame fallback sprite sheet") {
     CHECK(frames[0].x_right == 482);
     CHECK(frames[0].y_top == 0);
     CHECK(frames[0].y_bottom == 482);
-    CHECK(frames[0].source_w == 482);
-    CHECK(frames[0].source_h == 482);
-    CHECK(frames[0].center_x == 241);
-    CHECK(frames[0].center_y == 241);
+    CHECK(frames[0].anchor_x == 241);
+    CHECK(frames[0].anchor_y == 241);
+    CHECK(frames[0].collision_box.x == 0.0f);
+    CHECK(frames[0].collision_box.y == 0.0f);
+    CHECK(frames[0].collision_box.w == 482.0f);
+    CHECK(frames[0].collision_box.h == 482.0f);
 }

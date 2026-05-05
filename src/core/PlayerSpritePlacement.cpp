@@ -4,30 +4,22 @@
 
 namespace sop::detail {
 
-PlayerSpritePlacement MakePlayerSpritePlacement(const SDL_FRect& placeholderRect,
+PlayerSpritePlacement MakePlayerSpritePlacement(SDL_FPoint anchorPosition,
                                                 const SpriteSheetFrame& frame,
                                                 bool facingRight,
-                                                float referenceSourceHeight) {
+                                                float scale) {
     SOP_ASSERT(frame.x_right > frame.x_left, "Sprite frame must have positive width");
     SOP_ASSERT(frame.y_bottom > frame.y_top, "Sprite frame must have positive height");
-    SOP_ASSERT(frame.source_w > 0, "Sprite frame must have a positive source width");
-    SOP_ASSERT(frame.source_h > 0, "Sprite frame must have a positive source height");
-    SOP_ASSERT(referenceSourceHeight > 0.0f, "Sprite placement requires a reference source height");
-    SOP_ASSERT(frame.center_x >= frame.x_left && frame.center_x < frame.x_right,
-               "Sprite frame center_x must lie inside the frame bounds");
-    SOP_ASSERT(frame.center_y >= frame.y_top && frame.center_y < frame.y_bottom,
-               "Sprite frame center_y must lie inside the frame bounds");
+    SOP_ASSERT(scale >= 0.0f, "Sprite placement requires a non-negative scale");
 
     const float frameWidth = static_cast<float>(frame.x_right - frame.x_left);
     const float frameHeight = static_cast<float>(frame.y_bottom - frame.y_top);
-    const float scale = placeholderRect.h / referenceSourceHeight;
-    const float destinationWidth = static_cast<float>(frame.source_w) * scale;
-    const float destinationHeight = static_cast<float>(frame.source_h) * scale;
-    const float anchorX = placeholderRect.x + (placeholderRect.w * 0.5f);
-    const float anchorY = placeholderRect.y + (placeholderRect.h * 0.5f);
-    const float localCenterX = static_cast<float>(frame.center_x - frame.x_left);
-    const float localCenterY = static_cast<float>(frame.center_y - frame.y_top);
-    const SDL_FPoint origin{localCenterX * scale, localCenterY * scale};
+    const float destinationWidth = frameWidth * scale;
+    const float destinationHeight = frameHeight * scale;
+    const SDL_FPoint origin{static_cast<float>(frame.anchor_x) * scale,
+                            static_cast<float>(frame.anchor_y) * scale};
+    const float destinationX = facingRight ? anchorPosition.x - (destinationWidth - origin.x)
+                                           : anchorPosition.x - origin.x;
 
     return PlayerSpritePlacement{
         .SourceRect =
@@ -39,8 +31,8 @@ PlayerSpritePlacement MakePlayerSpritePlacement(const SDL_FRect& placeholderRect
             },
         .DestinationRect =
             SDL_FRect{
-                anchorX - origin.x,
-                anchorY - origin.y,
+                destinationX,
+                anchorPosition.y - origin.y,
                 destinationWidth,
                 destinationHeight,
             },

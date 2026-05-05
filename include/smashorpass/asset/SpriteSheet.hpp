@@ -1,5 +1,6 @@
 #pragma once
 
+#include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_surface.h>
 
@@ -10,19 +11,18 @@
 
 namespace sop {
 struct SpriteSheetFrame {
-    // Where the frame is in the spritesheet
+    // Where the frame is in the sprite sheet.
     uint32_t x_left;
     uint32_t x_right;
     uint32_t y_top;
     uint32_t y_bottom;
 
-    // Info about the original sprite rendered in blender
-    uint32_t source_w;
-    uint32_t source_h;
+    // Signed local offset from the frame's top-left corner to the animation anchor.
+    int32_t anchor_x;
+    int32_t anchor_y;
 
-    // Where the center of the original sprite is now in the spritesheet
-    uint32_t center_x;
-    uint32_t center_y;
+    // Local collision box in frame coordinates.
+    SDL_FRect collision_box;
 };
 
 class SpriteSheet {

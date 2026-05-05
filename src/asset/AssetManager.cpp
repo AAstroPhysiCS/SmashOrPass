@@ -63,10 +63,14 @@ void AppendPath(std::string& paths, const std::filesystem::path& path) {
       "x_right": 482,
       "y_top": 0,
       "y_bottom": 482,
-      "source_w": 482,
-      "source_h": 482,
-      "center_x": 241,
-      "center_y": 241
+      "anchor_x": 241,
+      "anchor_y": 241,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 482,
+        "height": 482
+      }
     }
   ]
 })json";
@@ -206,16 +210,12 @@ const SpriteSheet& AssetManager::loadSpriteSheet(CharacterId character,
 
     const auto CharacterDirName = [](CharacterId characterId) -> std::string_view {
         switch (characterId) {
-            case CharacterId::Robot: {
-                return "robot";
-            }
             case CharacterId::Samurai: {
                 return "samurai";
             }
-            default: {
-                SOP_ASSERT(false, "Unhandled character id");
-            }
         }
+
+        SOP_ASSERT(false, "Unhandled character id");
         return "";
     };
 

@@ -13,7 +13,6 @@
 namespace sop {
 
 enum class CharacterId {
-    Robot,
     Samurai,
 };
 

@@ -25,6 +25,12 @@ SpriteSheet SpriteSheet::parse(std::span<const uint8_t> spriteSheet,
     const auto getU32 = [](const nlohmann::json& j, const char* key) {
         return j.at(key).get<uint32_t>();
     };
+    const auto getI32 = [](const nlohmann::json& j, const char* key) {
+        return j.at(key).get<int32_t>();
+    };
+    const auto getFloat = [](const nlohmann::json& j, const char* key) {
+        return j.at(key).get<float>();
+    };
 
     SpriteSheet result;
 
@@ -37,15 +43,24 @@ SpriteSheet SpriteSheet::parse(std::span<const uint8_t> spriteSheet,
     result.m_Frames.reserve(framesJson.size());
 
     for (const auto& frameJson : framesJson) {
+        const auto& collisionBoxJson = frameJson.at("collision_box");
+        const SDL_FRect collisionBox{
+            .x = getFloat(collisionBoxJson, "x"),
+            .y = getFloat(collisionBoxJson, "y"),
+            .w = getFloat(collisionBoxJson, "width"),
+            .h = getFloat(collisionBoxJson, "height"),
+        };
+        SOP_ASSERT(collisionBox.w >= 0.0f && collisionBox.h >= 0.0f,
+                   "Sprite collision box cannot be negative");
+
         result.m_Frames.push_back(SpriteSheetFrame{
             .x_left = getU32(frameJson, "x_left"),
             .x_right = getU32(frameJson, "x_right"),
             .y_top = getU32(frameJson, "y_top"),
             .y_bottom = getU32(frameJson, "y_bottom"),
-            .source_w = getU32(frameJson, "source_w"),
-            .source_h = getU32(frameJson, "source_h"),
-            .center_x = getU32(frameJson, "center_x"),
-            .center_y = getU32(frameJson, "center_y"),
+            .anchor_x = getI32(frameJson, "anchor_x"),
+            .anchor_y = getI32(frameJson, "anchor_y"),
+            .collision_box = collisionBox,
         });
     }
 

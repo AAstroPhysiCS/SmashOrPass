@@ -13,9 +13,9 @@ struct PlayerSpritePlacement {
     SDL_FlipMode Flip{SDL_FLIP_NONE};
 };
 
-[[nodiscard]] PlayerSpritePlacement MakePlayerSpritePlacement(const SDL_FRect& placeholderRect,
+[[nodiscard]] PlayerSpritePlacement MakePlayerSpritePlacement(SDL_FPoint anchorPosition,
                                                               const SpriteSheetFrame& frame,
                                                               bool facingRight,
-                                                              float referenceSourceHeight);
+                                                              float scale);
 
 }  // namespace sop::detail
