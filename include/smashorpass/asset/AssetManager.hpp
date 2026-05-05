@@ -47,7 +47,8 @@ class AssetManager {
 
     [[nodiscard]] const SpriteSheet& getSpriteSheet(CharacterId character,
                                                     CharacterAnimation animation);
-    [[nodiscard]] SDL_Texture* getArenaTexture(ArenaId arena);
+    [[nodiscard]] SDL_Texture* getArenaBackgroundTexture(ArenaId arena);
+    [[nodiscard]] SDL_Texture* getArenaForegroundTexture(ArenaId arena);
     [[nodiscard]] std::span<const SDL_FRect> getArenaCollisionBoxes(ArenaId arena);
     void preloadCharacterSpriteSheets(CharacterId character);
 
@@ -63,7 +64,8 @@ class AssetManager {
     using TexturePtr = std::unique_ptr<SDL_Texture, SdlTextureDeleter>;
 
     struct ArenaAsset {
-        TexturePtr Texture;
+        TexturePtr BackgroundTexture;
+        TexturePtr ForegroundTexture;
         ArenaMetadata Metadata;
     };
 

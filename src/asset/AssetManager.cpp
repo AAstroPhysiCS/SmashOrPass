@@ -55,8 +55,12 @@ const SpriteSheet& AssetManager::getSpriteSheet(CharacterId character,
     return loadSpriteSheet(character, animation);
 }
 
-SDL_Texture* AssetManager::getArenaTexture(ArenaId arena) {
-    return getArenaAsset(arena).Texture.get();
+SDL_Texture* AssetManager::getArenaBackgroundTexture(ArenaId arena) {
+    return getArenaAsset(arena).BackgroundTexture.get();
+}
+
+SDL_Texture* AssetManager::getArenaForegroundTexture(ArenaId arena) {
+    return getArenaAsset(arena).ForegroundTexture.get();
 }
 
 std::span<const SDL_FRect> AssetManager::getArenaCollisionBoxes(ArenaId arena) {
@@ -146,16 +150,24 @@ AssetManager::ArenaAsset& AssetManager::getArenaAsset(ArenaId arena) {
 AssetManager::ArenaAsset& AssetManager::loadArenaAsset(ArenaId arena) {
     const std::filesystem::path basePath =
         m_AssetRootDir / "sprites" / "arenas" / std::string{ArenaBaseName(arena)};
-    const std::filesystem::path texturePath = basePath.string() + ".png";
+    const std::filesystem::path backgroundTexturePath = basePath.string() + "_background.png";
+    const std::filesystem::path foregroundTexturePath = basePath.string() + "_foreground.png";
     const std::filesystem::path metadataPath = basePath.string() + ".json";
-    const std::string texturePathString = texturePath.string();
+    const std::string backgroundTexturePathString = backgroundTexturePath.string();
+    const std::string foregroundTexturePathString = foregroundTexturePath.string();
     const auto metadataBytes = ReadBytes(metadataPath);
 
-    SDL_Texture* rawTexture = IMG_LoadTexture(m_Renderer, texturePathString.c_str());
-    SOP_SDL_ASSERT(rawTexture != nullptr, "Failed to load arena texture");
+    SDL_Texture* rawBackgroundTexture =
+        IMG_LoadTexture(m_Renderer, backgroundTexturePathString.c_str());
+    SOP_SDL_ASSERT(rawBackgroundTexture != nullptr, "Failed to load arena background texture");
+
+    SDL_Texture* rawForegroundTexture =
+        IMG_LoadTexture(m_Renderer, foregroundTexturePathString.c_str());
+    SOP_SDL_ASSERT(rawForegroundTexture != nullptr, "Failed to load arena foreground texture");
 
     ArenaAsset arenaAsset{
-        .Texture = TexturePtr{rawTexture},
+        .BackgroundTexture = TexturePtr{rawBackgroundTexture},
+        .ForegroundTexture = TexturePtr{rawForegroundTexture},
         .Metadata = ArenaMetadata::parse(metadataBytes),
     };
 

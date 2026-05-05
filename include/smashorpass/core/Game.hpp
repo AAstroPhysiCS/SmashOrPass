@@ -46,6 +46,7 @@ class Game final {
     void AdvancePlayerAnimation(PlayerCharacterState& player, AssetManager& assetManager);
     void RenderWorld(Renderer& renderer, AssetManager& assetManager, bool renderCollisionBoxes);
     void RenderStage(Renderer& renderer, AssetManager& assetManager);
+    void RenderStageForeground(Renderer& renderer, AssetManager& assetManager);
     void RenderPlayers(Renderer& renderer, AssetManager& assetManager);
     void RenderArenaCollisionBoxes(Renderer& renderer, AssetManager& assetManager);
     void RenderEffects(Renderer& renderer);

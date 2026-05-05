@@ -85,10 +85,11 @@ void Game::RenderWorld(Renderer& renderer,
     UpdateArena(renderer.GetLogicalOutputSize());
     RenderStage(renderer, assetManager);
     RenderPlayers(renderer, assetManager);
+    RenderEffects(renderer);
+    RenderStageForeground(renderer, assetManager);
     if (renderCollisionBoxes) {
         RenderArenaCollisionBoxes(renderer, assetManager);
     }
-    RenderEffects(renderer);
 }
 
 void Game::UpdateArena(SDL_FPoint logicalSize) {
@@ -102,8 +103,14 @@ void Game::RenderStage(Renderer& renderer, AssetManager& assetManager) {
     renderer.FillRect(SDL_FRect{0.0f, 0.0f, size.x, size.y}, Color{18, 18, 24, 255});
 
     const bool arenaDrawn =
-        renderer.DrawTexture(assetManager.getArenaTexture(m_Arena), m_ArenaRect);
+        renderer.DrawTexture(assetManager.getArenaBackgroundTexture(m_Arena), m_ArenaRect);
     SOP_VERIFY(arenaDrawn, "Failed to draw arena background");
+}
+
+void Game::RenderStageForeground(Renderer& renderer, AssetManager& assetManager) {
+    const bool arenaDrawn =
+        renderer.DrawTexture(assetManager.getArenaForegroundTexture(m_Arena), m_ArenaRect);
+    SOP_VERIFY(arenaDrawn, "Failed to draw arena foreground");
 }
 
 void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
