@@ -30,7 +30,7 @@ struct PlayerControlConfig {
     float GroundY = kDefaultPlayerGroundY;
     float MinX = 0.0f;
     float MaxX = kDefaultPlayerScreenWidth - kDefaultPlayerCollisionWidth;
-    float MoveSpeed = 360.0f;
+    float MoveSpeed = 500.0f;
     float JumpVelocity = -900.0f;
     float Gravity = 2400.0f;
     double AttackSeconds = 0.25;

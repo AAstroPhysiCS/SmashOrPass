@@ -28,7 +28,6 @@ enum class CharacterAnimation {
     Dash,
     Falling,
     Idle,
-    Jump,
     Walk,
 };
 

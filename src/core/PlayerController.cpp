@@ -173,9 +173,10 @@ void TickPlayer(PlayerCharacterState& player,
                 std::span<const SDL_FRect> floorPlatforms) {
     const double elapsedSeconds = std::max(stepSeconds, 0.0);
     const float dt = static_cast<float>(elapsedSeconds);
+    const bool attackActive = player.AttackSecondsRemaining > 0.0;
     float horizontalDirection = 0.0f;
 
-    if (input.MoveLeft != input.MoveRight) {
+    if (!attackActive && input.MoveLeft != input.MoveRight) {
         horizontalDirection = input.MoveLeft ? -1.0f : 1.0f;
         player.FacingRight = horizontalDirection > 0.0f;
     }

@@ -1,0 +1,23 @@
+{
+  "character": "samurai",
+  "animation": "Ascending",
+  "sheet_width": 256,
+  "sheet_height": 512,
+  "frames": [
+    {
+      "source": "0001.png",
+      "x_left": 2,
+      "x_right": 166,
+      "y_top": 2,
+      "y_bottom": 336,
+      "anchor_x": 54,
+      "anchor_y": -52,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 134,
+        "height": 304
+      }
+    }
+  ]
+}

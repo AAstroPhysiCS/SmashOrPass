@@ -1,0 +1,248 @@
+{
+  "character": "samurai",
+  "animation": "Attacks",
+  "sheet_width": 2048,
+  "sheet_height": 1024,
+  "frames": [
+    {
+      "source": "0001.png",
+      "x_left": 2,
+      "x_right": 294,
+      "y_top": 697,
+      "y_bottom": 1012,
+      "anchor_x": 93,
+      "anchor_y": -77,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 262,
+        "height": 285
+      }
+    },
+    {
+      "source": "0002.png",
+      "x_left": 1187,
+      "x_right": 1471,
+      "y_top": 2,
+      "y_bottom": 315,
+      "anchor_x": 92,
+      "anchor_y": -77,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 254,
+        "height": 283
+      }
+    },
+    {
+      "source": "0003.png",
+      "x_left": 1773,
+      "x_right": 2026,
+      "y_top": 2,
+      "y_bottom": 309,
+      "anchor_x": 95,
+      "anchor_y": -77,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 223,
+        "height": 277
+      }
+    },
+    {
+      "source": "0004.png",
+      "x_left": 1238,
+      "x_right": 1446,
+      "y_top": 321,
+      "y_bottom": 619,
+      "anchor_x": 98,
+      "anchor_y": -78,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 178,
+        "height": 268
+      }
+    },
+    {
+      "source": "0005.png",
+      "x_left": 1477,
+      "x_right": 1693,
+      "y_top": 298,
+      "y_bottom": 587,
+      "anchor_x": 111,
+      "anchor_y": -79,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 186,
+        "height": 259
+      }
+    },
+    {
+      "source": "0006.png",
+      "x_left": 1477,
+      "x_right": 1767,
+      "y_top": 2,
+      "y_bottom": 292,
+      "anchor_x": 192,
+      "anchor_y": -79,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 260,
+        "height": 260
+      }
+    },
+    {
+      "source": "0007.png",
+      "x_left": 2,
+      "x_right": 331,
+      "y_top": 399,
+      "y_bottom": 691,
+      "anchor_x": 240,
+      "anchor_y": -79,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 299,
+        "height": 262
+      }
+    },
+    {
+      "source": "0008.png",
+      "x_left": 300,
+      "x_right": 602,
+      "y_top": 697,
+      "y_bottom": 996,
+      "anchor_x": 222,
+      "anchor_y": -78,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 272,
+        "height": 269
+      }
+    },
+    {
+      "source": "0009.png",
+      "x_left": 2,
+      "x_right": 249,
+      "y_top": 2,
+      "y_bottom": 393,
+      "anchor_x": 175,
+      "anchor_y": 7,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 217,
+        "height": 361
+      }
+    },
+    {
+      "source": "0010.png",
+      "x_left": 337,
+      "x_right": 551,
+      "y_top": 2,
+      "y_bottom": 435,
+      "anchor_x": 142,
+      "anchor_y": 46,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 184,
+        "height": 403
+      }
+    },
+    {
+      "source": "0011.png",
+      "x_left": 557,
+      "x_right": 761,
+      "y_top": 2,
+      "y_bottom": 443,
+      "anchor_x": 133,
+      "anchor_y": 53,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 174,
+        "height": 411
+      }
+    },
+    {
+      "source": "0012.png",
+      "x_left": 608,
+      "x_right": 812,
+      "y_top": 449,
+      "y_bottom": 890,
+      "anchor_x": 133,
+      "anchor_y": 53,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 174,
+        "height": 411
+      }
+    },
+    {
+      "source": "0013.png",
+      "x_left": 767,
+      "x_right": 971,
+      "y_top": 2,
+      "y_bottom": 443,
+      "anchor_x": 133,
+      "anchor_y": 53,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 174,
+        "height": 411
+      }
+    },
+    {
+      "source": "0014.png",
+      "x_left": 818,
+      "x_right": 1022,
+      "y_top": 449,
+      "y_bottom": 890,
+      "anchor_x": 133,
+      "anchor_y": 53,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 174,
+        "height": 411
+      }
+    },
+    {
+      "source": "0015.png",
+      "x_left": 977,
+      "x_right": 1181,
+      "y_top": 2,
+      "y_bottom": 443,
+      "anchor_x": 133,
+      "anchor_y": 53,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 174,
+        "height": 411
+      }
+    },
+    {
+      "source": "0016.png",
+      "x_left": 1028,
+      "x_right": 1232,
+      "y_top": 449,
+      "y_bottom": 890,
+      "anchor_x": 133,
+      "anchor_y": 53,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 174,
+        "height": 411
+      }
+    }
+  ]
+}

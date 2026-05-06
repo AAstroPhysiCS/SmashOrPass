@@ -175,7 +175,6 @@ void AssetManager::preloadCharacterSpriteSheets(CharacterId character) {
         CharacterAnimation::Dash,
         CharacterAnimation::Falling,
         CharacterAnimation::Idle,
-        CharacterAnimation::Jump,
         CharacterAnimation::Walk,
     };
 
@@ -198,8 +197,6 @@ const SpriteSheet& AssetManager::loadSpriteSheet(CharacterId character,
                 return "Falling";
             case CharacterAnimation::Idle:
                 return "Idle";
-            case CharacterAnimation::Jump:
-                return "Jump";
             case CharacterAnimation::Walk:
                 return "Walk";
         }
