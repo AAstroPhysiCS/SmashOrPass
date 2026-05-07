@@ -34,6 +34,9 @@ struct PlayerControlConfig {
     float JumpVelocity = -900.0f;
     float Gravity = 2400.0f;
     double AttackSeconds = 0.25;
+    float DashSpeed = 1400.0f;
+    double DashSeconds = 0.16;
+    double DashCooldownSeconds = 0.45;
     float RenderScale = kDefaultPlayerRenderScale;
 };
 
@@ -41,6 +44,7 @@ struct PlayerInputState {
     bool MoveLeft = false;
     bool MoveRight = false;
     bool JumpRequested = false;
+    bool DashRequested = false;
     bool AttackHeld = false;
 };
 
@@ -59,9 +63,14 @@ struct PlayerCharacterState {
                                             kDefaultPlayerCollisionHeight * 0.5f};
     float VerticalVelocity = 0.0f;
     bool Grounded = true;
+    bool AirDashAvailable = true;
+    bool AirJumpAvailable = false;
     bool FacingRight = true;
     bool CollisionProfileInitialized = false;
     double AttackSecondsRemaining = 0.0;
+    double DashSecondsRemaining = 0.0;
+    double DashCooldownSecondsRemaining = 0.0;
+    float DashDirection = 1.0f;
 };
 
 void ApplyPlayerCollisionProfile(PlayerCharacterState& player,

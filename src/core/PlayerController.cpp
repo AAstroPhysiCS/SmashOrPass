@@ -36,6 +36,35 @@ void SetPlayerCollisionY(PlayerCharacterState& player, float y) {
     TranslatePlayer(player, 0.0f, y - player.CollisionRect.y);
 }
 
+void TickTimer(double& secondsRemaining, double elapsedSeconds) {
+    secondsRemaining = std::max(0.0, secondsRemaining - elapsedSeconds);
+}
+
+void ResetAirActions(PlayerCharacterState& player) {
+    player.AirDashAvailable = true;
+    player.AirJumpAvailable = false;
+}
+
+void LandPlayer(PlayerCharacterState& player, float y) {
+    SetPlayerCollisionY(player, y);
+    player.VerticalVelocity = 0.0f;
+    player.Grounded = true;
+    ResetAirActions(player);
+}
+
+[[nodiscard]] bool IsDashActive(const PlayerCharacterState& player) {
+    return player.DashSecondsRemaining > 0.0;
+}
+
+[[nodiscard]] float SelectDashDirection(const PlayerCharacterState& player,
+                                        const PlayerInputState& input) {
+    if (input.MoveLeft != input.MoveRight) {
+        return input.MoveLeft ? -1.0f : 1.0f;
+    }
+
+    return player.FacingRight ? 1.0f : -1.0f;
+}
+
 [[nodiscard]] bool HorizontallyOverlaps(const SDL_FRect& a, const SDL_FRect& b) {
     return a.x < b.x + b.w && a.x + a.w > b.x;
 }
@@ -152,6 +181,12 @@ void ApplyPlayerKeyEvent(PlayerInputState& input,
         case SDLK_SPACE:
             input.AttackHeld = event.Down;
             break;
+        case SDLK_LSHIFT:
+        case SDLK_RSHIFT:
+            if (event.Down && !event.Repeat) {
+                input.DashRequested = true;
+            }
+            break;
         default:
             break;
     }
@@ -177,48 +212,75 @@ void TickPlayer(PlayerCharacterState& player,
     const bool attackActive = input.AttackHeld;
     float horizontalDirection = 0.0f;
 
-    if (!attackActive && input.MoveLeft != input.MoveRight) {
+    TickTimer(player.DashSecondsRemaining, elapsedSeconds);
+    TickTimer(player.DashCooldownSecondsRemaining, elapsedSeconds);
+
+    const bool canDash = player.Grounded || player.AirDashAvailable;
+    if (input.DashRequested && !attackActive && !IsDashActive(player) &&
+        player.DashCooldownSecondsRemaining <= 0.0 && canDash) {
+        const bool airDash = !player.Grounded;
+        player.DashDirection = SelectDashDirection(player, input);
+        player.FacingRight = player.DashDirection > 0.0f;
+        player.DashSecondsRemaining = std::max(config.DashSeconds, 0.0);
+        player.DashCooldownSecondsRemaining = std::max(config.DashCooldownSeconds, 0.0);
+        player.VerticalVelocity = 0.0f;
+
+        if (airDash) {
+            player.AirDashAvailable = false;
+            player.AirJumpAvailable = true;
+        }
+    }
+    input.DashRequested = false;
+
+    if (IsDashActive(player)) {
+        horizontalDirection = player.DashDirection;
+    } else if (!attackActive && input.MoveLeft != input.MoveRight) {
         horizontalDirection = input.MoveLeft ? -1.0f : 1.0f;
         player.FacingRight = horizontalDirection > 0.0f;
     }
 
-    player.AnchorPosition.x += horizontalDirection * config.MoveSpeed * dt;
+    const float horizontalSpeed = IsDashActive(player) ? config.DashSpeed : config.MoveSpeed;
+    player.AnchorPosition.x += horizontalDirection * horizontalSpeed * dt;
     SyncCollisionRectToAnchor(player);
     SetPlayerCollisionX(player, std::clamp(player.CollisionRect.x, config.MinX, config.MaxX));
 
-    if (input.JumpRequested && player.Grounded) {
-        player.VerticalVelocity = config.JumpVelocity;
-        player.Grounded = false;
+    if (input.JumpRequested && !IsDashActive(player)) {
+        if (player.Grounded) {
+            player.VerticalVelocity = config.JumpVelocity;
+            player.Grounded = false;
+            player.AirJumpAvailable = false;
+        } else if (player.AirJumpAvailable) {
+            player.VerticalVelocity = config.JumpVelocity;
+            player.AirJumpAvailable = false;
+        }
     }
     input.JumpRequested = false;
 
-    if (floorPlatforms.empty()) {
+    if (IsDashActive(player)) {
+        player.VerticalVelocity = 0.0f;
+    } else if (floorPlatforms.empty()) {
         if (!player.Grounded) {
             player.VerticalVelocity += config.Gravity * dt;
             player.AnchorPosition.y += player.VerticalVelocity * dt;
             SyncCollisionRectToAnchor(player);
 
             if (player.CollisionRect.y >= config.GroundY) {
-                SetPlayerCollisionY(player, config.GroundY);
-                player.VerticalVelocity = 0.0f;
-                player.Grounded = true;
+                LandPlayer(player, config.GroundY);
             }
         } else {
-            SetPlayerCollisionY(player, config.GroundY);
-            player.VerticalVelocity = 0.0f;
+            LandPlayer(player, config.GroundY);
         }
     } else if (player.Grounded) {
         const std::optional<float> supportedPlatformY =
             FindSupportedPlatformY(player.CollisionRect, floorPlatforms);
         if (supportedPlatformY.has_value()) {
-            SetPlayerCollisionY(player, *supportedPlatformY - player.CollisionRect.h);
-            player.VerticalVelocity = 0.0f;
+            LandPlayer(player, *supportedPlatformY - player.CollisionRect.h);
         } else {
             player.Grounded = false;
         }
     }
 
-    if (!floorPlatforms.empty() && !player.Grounded) {
+    if (!floorPlatforms.empty() && !player.Grounded && !IsDashActive(player)) {
         const float previousY = player.CollisionRect.y;
         player.VerticalVelocity += config.Gravity * dt;
         player.AnchorPosition.y += player.VerticalVelocity * dt;
@@ -227,9 +289,7 @@ void TickPlayer(PlayerCharacterState& player,
         const std::optional<float> landingPlatformY =
             FindLandingPlatformY(player.CollisionRect, previousY, floorPlatforms);
         if (landingPlatformY.has_value()) {
-            SetPlayerCollisionY(player, *landingPlatformY - player.CollisionRect.h);
-            player.VerticalVelocity = 0.0f;
-            player.Grounded = true;
+            LandPlayer(player, *landingPlatformY - player.CollisionRect.h);
         }
     }
 
@@ -262,6 +322,10 @@ void ApplyPlayerViewport(PlayerControlConfig& config,
 
 CharacterAnimation SelectPlayerAnimation(const PlayerCharacterState& player,
                                          const PlayerInputState& input) {
+    if (IsDashActive(player)) {
+        return CharacterAnimation::Dash;
+    }
+
     if (input.AttackHeld) {
         return CharacterAnimation::Attacks;
     }
