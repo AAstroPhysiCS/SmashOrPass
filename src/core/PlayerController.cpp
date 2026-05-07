@@ -7,6 +7,7 @@
 #include <optional>
 
 #include "smashorpass/core/Base.hpp"
+#include "smashorpass/core/InputBindings.hpp"
 #include "smashorpass/rendering/ParticleSystem.hpp"
 
 namespace sop {
@@ -161,39 +162,40 @@ void ApplyPlayerCollisionProfile(PlayerCharacterState& player,
     };
 }
 
-void ApplyPlayerKeyEvent(PlayerInputState& input,
-                         PlayerCharacterState& player,
-                         const KeyEvent& event,
-                         const PlayerControlConfig& config) {
-    switch (event.Key) {
-        case SDLK_A:
-            input.MoveLeft = event.Down;
-            break;
-        case SDLK_D:
-            input.MoveRight = event.Down;
-            break;
-        case SDLK_W:
-            if (event.Down && !event.Repeat) {
-                input.JumpRequested = true;
-            }
-            break;
-        case SDLK_S:
-            break;
-        case SDLK_SPACE:
-            input.AttackHeld = event.Down;
-            break;
-        case SDLK_LSHIFT:
-        case SDLK_RSHIFT:
-            if (event.Down && !event.Repeat) {
-                input.DashRequested = true;
-            }
-            break;
-        default:
-            break;
+void ApplyBindings(PlayerInputState& input, const KeyEvent& event, const PlayerBindings& bindings) {
+    if (event.Key == bindings.MoveLeft) {
+        input.MoveLeft = event.Down;
+    } else if (event.Key == bindings.MoveRight) {
+        input.MoveRight = event.Down;
+    } else if (event.Key == bindings.Jump) {
+        if (event.Down && !event.Repeat) {
+            input.JumpRequested = event.Down;
+        }
+    } else if (event.Key == bindings.Dash) {
+        if (event.Down && !event.Repeat) {
+            input.DashRequested = event.Down;
+        }
+    } else if (event.Key == bindings.Attack) {
+        input.AttackHeld = event.Down;
     }
+}
 
-    (void)player;
-    (void)config;
+void SetPlayerSpawn(PlayerCharacterState& player, float posX, float posY, bool facingRight) {
+    // init all values that may be useful on spawn / respawn
+    player.FacingRight = facingRight;
+    player.VerticalVelocity = 0.0f;
+    player.Grounded = true;
+    player.AirDashAvailable = true;
+    player.AirJumpAvailable = false;
+    player.DashSecondsRemaining = 0.0;
+    player.DashCooldownSecondsRemaining = 0.0;
+    player.DashDirection = facingRight ? 1.0f : -1.0f;
+
+    player.CollisionRect.x = posX;
+    player.CollisionRect.y = posY;
+    const SDL_FPoint offset = CollisionAnchorOffsetFor(player);
+    player.AnchorPosition =
+        SDL_FPoint{player.CollisionRect.x + offset.x, player.CollisionRect.y + offset.y};
 }
 
 void TickPlayer(PlayerCharacterState& player,
@@ -204,8 +206,7 @@ void TickPlayer(PlayerCharacterState& player,
     TickPlayer(player, input, stepSeconds, config, {}, particleSystem);
 }
 
-void TickPlayer(
-                PlayerCharacterState& player,
+void TickPlayer(PlayerCharacterState& player,
                 PlayerInputState& input,
                 double stepSeconds,
                 const PlayerControlConfig& config,

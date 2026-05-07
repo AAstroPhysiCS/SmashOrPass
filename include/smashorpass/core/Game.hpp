@@ -7,6 +7,7 @@
 #include "Event.hpp"
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/core/Arena.hpp"
+#include "smashorpass/core/InputBindings.hpp"
 #include "smashorpass/core/PlayerController.hpp"
 #include "smashorpass/core/SpriteAnimationPlayer.hpp"
 #include "smashorpass/rendering/ParticleSystem.hpp"
@@ -25,6 +26,14 @@ struct PlayerMatchState {
     int Stocks = 3;
     int RoundsWon = 0;
     bool FacingRight = true;
+};
+
+struct PlayerState {
+    PlayerInputState Input;
+    PlayerCharacterState Character;
+    PlayerMatchState Match;
+    PlayerControlConfig Control;
+    PlayerBindings Bindings;
 };
 
 inline static GameConfig loadDefault() {
@@ -56,9 +65,17 @@ class Game final {
     void RenderCollisionBoxes(Renderer& renderer, AssetManager& assetManager);
     void RenderEffects(Renderer& renderer);
 
-    PlayerControlConfig m_PlayerConfig;
-    PlayerInputState m_PlayerInput;
-    PlayerCharacterState m_Player;
+    PlayerState m_Player1{.Bindings{.MoveLeft = SDLK_A,
+                                    .MoveRight = SDLK_D,
+                                    .Jump = SDLK_W,
+                                    .Dash = SDLK_LSHIFT,
+                                    .Attack = SDLK_SPACE}};
+    PlayerState m_Player2{.Bindings{.MoveLeft = SDLK_J,
+                                    .MoveRight = SDLK_L,
+                                    .Jump = SDLK_I,
+                                    .Dash = SDLK_RSHIFT,
+                                    .Attack = SDLK_M}};
+
     ArenaId m_Arena = ArenaId::Chains;
     SDL_FRect m_ArenaRect{0.0f, 0.0f, kDefaultPlayerScreenWidth, kDefaultPlayerScreenHeight};
 };
