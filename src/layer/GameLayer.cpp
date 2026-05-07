@@ -1,19 +1,67 @@
 #include "smashorpass/layer/GameLayer.hpp"
 
+#include "smashorpass/core/Base.hpp"
+#include "smashorpass/ui/GameScreen.hpp"
+#include "smashorpass/ui/UIBuilder.hpp"
+
 namespace sop {
 
-	void GameLayer::OnEvent(const Event& event) 
-	{
-		m_Game.OnEvent(event);
-	}
+GameLayer::GameLayer(Renderer& renderer, const Window& window, EventDispatcher& eventDispatcher)
+    : Layer(renderer, window, eventDispatcher) {
+    m_Screens.emplace_back(std::make_unique<GameScreen>(eventDispatcher));
 
-	void GameLayer::OnUpdate() 
-	{
-        m_Game.Update();
-	}
+    for (const auto& screen : m_Screens) {
+        UIBuilder builder(*screen);
+        screen->Build(builder);
+    }
+}
 
-	void GameLayer::OnRender() 
-	{
+void GameLayer::OnEvent(const Event& event, ApplicationContext& ctx) {
+    for (const auto& component : m_Screens) {
+        if (component->GetApplicationState() == ctx.CurrentState)
+            component->OnEvent(event);
+    }
+    m_Game.OnEvent(event);
+}
 
-	}
+void GameLayer::OnGameplayTick(ApplicationContext& ctx) {
+    if (ctx.CurrentState != ApplicationState::Playing)
+        return;
+
+    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+    m_Game.SetDisplayMetrics(ctx.Display);
+    m_Game.GameplayTick(ctx.CurrentState, ctx.GameplayStepSeconds, *ctx.Assets, ctx.ParticleSystem);
+}
+
+void GameLayer::OnAnimationTick(ApplicationContext& ctx) {
+    if (ctx.CurrentState != ApplicationState::Playing)
+        return;
+
+    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+    m_Game.AnimationTick(ctx.CurrentState, *ctx.Assets);
+}
+
+void GameLayer::OnUpdate(ApplicationContext& ctx) {
+    if (ctx.CurrentState != ApplicationState::Playing)
+        return;
+
+    for (const auto& component : m_Screens)
+        if (component->GetApplicationState() == ctx.CurrentState)
+            component->OnUpdate();
+}
+
+void GameLayer::OnRender(ApplicationContext& ctx) {
+    if (ctx.CurrentState != ApplicationState::Playing)
+        return;
+
+    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+
+    auto& renderer = GetRenderer();
+    m_Game.SetDisplayMetrics(ctx.Display);
+    m_Game.Render(ctx.CurrentState, renderer, *ctx.Assets, ctx.RenderCollisionBoxes);
+
+    for (const auto& component : m_Screens)
+        if (component->GetApplicationState() == ctx.CurrentState)
+            component->OnRender(renderer);
+}
 }  // namespace sop

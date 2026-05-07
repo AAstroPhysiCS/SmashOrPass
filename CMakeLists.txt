@@ -7,7 +7,7 @@ project(
     LANGUAGES CXX
 )
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -36,6 +36,7 @@ endif()
 
 find_package(SDL3 CONFIG REQUIRED)
 find_package(SDL3_image CONFIG REQUIRED)
+find_package(SDL3_ttf CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
@@ -148,6 +149,7 @@ target_link_libraries(smashorpass_core
         spdlog::spdlog
         glm::glm
         nlohmann_json::nlohmann_json
+        SDL3_ttf::SDL3_ttf
         sop_project_options
         sop_project_warnings
     PRIVATE
@@ -156,6 +158,7 @@ target_link_libraries(smashorpass_core
 
 target_compile_definitions(smashorpass_core
     PUBLIC
+        SOP_ASSET_ROOT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/assets\"
         $<$<BOOL:${SOP_ENABLE_IMGUI_DEMO}>:SOP_ENABLE_IMGUI_DEMO>
 )
 

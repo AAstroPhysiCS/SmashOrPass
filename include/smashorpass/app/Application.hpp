@@ -1,35 +1,59 @@
 #pragma once
 
-#include <vector>
+#include <chrono>
 #include <memory>
+#include <utility>
+#include <vector>
 
+#include "smashorpass/core/ApplicationContext.hpp"
+#include "smashorpass/core/FixedStepScheduler.hpp"
 #include "smashorpass/layer/Layer.hpp"
-
 #include "smashorpass/platform/Window.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
+#include "smashorpass/rendering/ParticleSystem.hpp"
 
 namespace sop {
 
-    class Application {
-    public:
-        Application();
-        ~Application();
+class Application {
+   public:
+    Application();
+    ~Application();
 
-        template <IsLayer TLayer, typename... TArgs>
-        inline void PushLayer(TArgs&&... args) {
-            m_Layers.push_back(std::make_unique<TLayer>(std::forward<TArgs>(args)...));
-        }
+    template <typename TOverlay, typename... TArgs>
+    inline void PushOverlay(TArgs&&... args) {
+        m_Overlays.push_back(std::make_unique<TOverlay>(
+            m_Renderer, m_Window, m_EventDispatcher, std::forward<TArgs>(args)...));
+    }
 
-        int Run();
-    private:
-        void ProcessEvents(bool& running);
-        void Update();
-        void Render();
+    int Run();
 
-        /* The order is important! */
-        Window m_Window;
-        Renderer m_Renderer;
+   private:
+    void ProcessEvents(bool& running);
+    void TickGameplay(FixedStepScheduler::Duration elapsed);
+    void TickAnimation(FixedStepScheduler::Duration elapsed);
+    void Update();
+    void Render();
 
-        std::vector<std::unique_ptr<Layer>> m_Layers;
-    };
-}
+    void DispatchEvent(const Event& event);
+    void RefreshDisplayMetrics();
+    void OnEvent(const Event& event);
+    void OnApplicationStageChangeEvent();
+    void ChangeState(ApplicationState newState);
+    void ToggleDebugOverlay();
+
+    /* The order is important! */
+    Window m_Window;
+    Renderer m_Renderer;
+    EventDispatcher m_EventDispatcher;
+
+    ParticleSystem m_ParticleSystem{1024};
+    ApplicationContext m_Context{ .ParticleSystem = m_ParticleSystem };
+    FixedStepScheduler m_GameplayScheduler{120};
+    FixedStepScheduler m_AnimationScheduler{60};
+
+    std::vector<std::unique_ptr<Layer>> m_Overlays;
+    std::unique_ptr<Layer> m_CurrentLayer;
+    bool m_DebugOverlayVisible = false;
+    bool m_Running = true;
+};
+}  // namespace sop

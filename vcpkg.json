@@ -3,7 +3,13 @@
   "version-string": "0.1.0",
   "dependencies": [
     "sdl3",
-    "sdl3-image",
+    "sdl3-ttf",
+    {
+      "name": "sdl3-image",
+      "features": [
+        "png"
+      ]
+    },
     {
       "name": "imgui",
       "features": [
