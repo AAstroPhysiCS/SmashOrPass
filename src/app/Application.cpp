@@ -15,6 +15,8 @@ Application::Application()
     : m_Window(
           WindowCreateInfo{.Width = 1920, .Height = 1080, .Title = "Smash Or Pass - The Game"}),
       m_Renderer(m_Window) {
+    SOP_VERIFY(m_Renderer.SetVSync(true), "SDL_SetRenderVSync");
+
     RefreshDisplayMetrics();
     m_Context.Assets =
         std::make_unique<AssetManager>(SOP_ASSET_ROOT_DIR, m_Renderer.NativeHandle());
