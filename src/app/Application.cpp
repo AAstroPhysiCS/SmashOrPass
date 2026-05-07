@@ -11,6 +11,7 @@
 #include "smashorpass/layer/UILayer.hpp"
 
 namespace sop {
+
 Application::Application()
     : m_Window(
           WindowCreateInfo{.Width = 1920, .Height = 1080, .Title = "Smash Or Pass - The Game"}),
@@ -32,12 +33,11 @@ Application::~Application() {
 int Application::Run() {
     using Clock = std::chrono::steady_clock;
 
-    bool running = true;
     Clock::time_point previousFrameTime = Clock::now();
     spdlog::info("Starting the game");
 
-    while (running) {
-        ProcessEvents(running);
+    while (m_Running) {
+        ProcessEvents(m_Running);
         const Clock::time_point currentFrameTime = Clock::now();
         const auto elapsed = std::chrono::duration_cast<FixedStepScheduler::Duration>(
             currentFrameTime - previousFrameTime);
@@ -96,6 +96,7 @@ void Application::TickGameplay(FixedStepScheduler::Duration elapsed) {
     for (uint32_t tickIndex = 0; tickIndex < ticksDue; ++tickIndex) {
         m_Context.GameplayTickCount = tickBase + static_cast<uint64_t>(tickIndex) + 1ULL;
         m_CurrentLayer->OnGameplayTick(m_Context);
+        m_ParticleSystem.Update(m_Context.GameplayTickCount);
     }
 }
 
@@ -127,6 +128,8 @@ void Application::Render() {
         }
     }
 
+    m_ParticleSystem.Render(m_Renderer);
+
     m_Renderer.EndFrame();
 }
 
@@ -134,12 +137,12 @@ void Application::DispatchEvent(const Event& event) {
     OnEvent(event);
 
     if (m_CurrentLayer != nullptr) {
-        m_CurrentLayer->OnEvent(event);
+        m_CurrentLayer->OnEvent(event, m_Context);
     }
 
     if (m_DebugOverlayVisible) {
         for (const auto& overlay : m_Overlays) {
-            overlay->OnEvent(event);
+            overlay->OnEvent(event, m_Context);
         }
     }
 }
@@ -154,6 +157,11 @@ void Application::RefreshDisplayMetrics() {
 }
 
 void Application::OnEvent(const Event& event) {
+    EventDispatcher::Dispatch<ApplicationQuitEvent>(
+        event, [&](const ApplicationQuitEvent& stateEvent) { 
+        m_Running = false;
+    });
+
     EventDispatcher::Dispatch<ApplicationStateChangeEvent>(
         event, [&](const ApplicationStateChangeEvent& stateEvent) mutable {
             ChangeState(stateEvent.NextState);

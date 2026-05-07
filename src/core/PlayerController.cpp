@@ -7,6 +7,7 @@
 #include <optional>
 
 #include "smashorpass/core/Base.hpp"
+#include "smashorpass/rendering/ParticleSystem.hpp"
 
 namespace sop {
 namespace {
@@ -198,15 +199,18 @@ void ApplyPlayerKeyEvent(PlayerInputState& input,
 void TickPlayer(PlayerCharacterState& player,
                 PlayerInputState& input,
                 double stepSeconds,
+                ParticleSystem& particleSystem,
                 const PlayerControlConfig& config) {
-    TickPlayer(player, input, stepSeconds, config, {});
+    TickPlayer(player, input, stepSeconds, config, {}, particleSystem);
 }
 
-void TickPlayer(PlayerCharacterState& player,
+void TickPlayer(
+                PlayerCharacterState& player,
                 PlayerInputState& input,
                 double stepSeconds,
                 const PlayerControlConfig& config,
-                std::span<const SDL_FRect> floorPlatforms) {
+                std::span<const SDL_FRect> floorPlatforms,
+                ParticleSystem& particleSystem) {
     const double elapsedSeconds = std::max(stepSeconds, 0.0);
     const float dt = static_cast<float>(elapsedSeconds);
     const bool attackActive = input.AttackHeld;
@@ -243,6 +247,21 @@ void TickPlayer(PlayerCharacterState& player,
     player.AnchorPosition.x += horizontalDirection * horizontalSpeed * dt;
     SyncCollisionRectToAnchor(player);
     SetPlayerCollisionX(player, std::clamp(player.CollisionRect.x, config.MinX, config.MaxX));
+
+    ParticleBurstDesc hitEffect;
+    hitEffect.Position = Vec2{player.AnchorPosition.x, player.AnchorPosition.y};
+    hitEffect.Count = 24;
+    hitEffect.MinSpeed = 120.0f;
+    hitEffect.MaxSpeed = 320.0f;
+    hitEffect.MinLifetime = 0.15f;
+    hitEffect.MaxLifetime = 0.45f;
+    hitEffect.MinSize = 4.0f;
+    hitEffect.MaxSize = 10.0f;
+    hitEffect.StartColor = Color{255, 220, 80, 255};
+    hitEffect.EndColor = Color{255, 60, 40, 0};
+    hitEffect.Acceleration = Vec2{0.0f, 500.0f};
+
+    particleSystem.EmitBurst(hitEffect);
 
     if (input.JumpRequested && !IsDashActive(player)) {
         if (player.Grounded) {

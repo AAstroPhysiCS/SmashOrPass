@@ -14,6 +14,9 @@ namespace sop {
 
 enum class CharacterId {
     Samurai,
+    Brawler,
+    Tank,
+    Mage
 };
 
 inline constexpr CharacterId kDefaultCharacterId = CharacterId::Samurai;

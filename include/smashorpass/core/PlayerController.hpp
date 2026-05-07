@@ -9,6 +9,8 @@
 #include "smashorpass/core/Event.hpp"
 #include "smashorpass/core/SpriteAnimationPlayer.hpp"
 
+#include "smashorpass/rendering/ParticleSystem.hpp"
+
 namespace sop {
 
 inline constexpr float kDefaultPlayerScreenWidth = kDefaultArenaWidth;
@@ -85,13 +87,15 @@ void ApplyPlayerKeyEvent(PlayerInputState& input,
 void TickPlayer(PlayerCharacterState& player,
                 PlayerInputState& input,
                 double stepSeconds,
+                ParticleSystem& particleSystem,
                 const PlayerControlConfig& config = PlayerControlConfig{});
 
 void TickPlayer(PlayerCharacterState& player,
                 PlayerInputState& input,
                 double stepSeconds,
                 const PlayerControlConfig& config,
-                std::span<const SDL_FRect> floorPlatforms);
+                std::span<const SDL_FRect> floorPlatforms,
+                ParticleSystem& particleSystem);
 
 void ApplyPlayerViewport(PlayerControlConfig& config,
                          PlayerCharacterState& player,

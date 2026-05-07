@@ -21,6 +21,11 @@ class Window {
     Window(const WindowCreateInfo& createInfo);
     ~Window();
 
+    Window(const Window&) = delete;
+    Window& operator=(const Window&) = delete;
+    Window(Window&&) = delete;
+    Window& operator=(Window&&) = delete;
+
     [[nodiscard]] SDL_Point GetSize() const;
     [[nodiscard]] SDL_Point GetPixelSize() const;
     [[nodiscard]] float GetDisplayScale() const;

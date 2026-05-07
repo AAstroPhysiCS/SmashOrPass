@@ -8,33 +8,27 @@
 
 namespace sop {
 
-GameScreen::GameScreen(EventDispatcher& dispatcher) : UIScreen(dispatcher) {}
+GameScreen::GameScreen(EventDispatcher& dispatcher) : UIScreen(ApplicationState::Playing, dispatcher) {}
 
 void GameScreen::Build(UIBuilder& builder) {
-    auto p1Label = builder.Label("P1").Font(FontId::Title);
+    auto p1Label = builder.Label("P1").Font(FontId::Small).TextColor(Color{ 255, 0, 0, 255 });
     m_P1Label = p1Label.GetId();
 
-    auto centerLabel = builder.Label("Match").Font(FontId::Title);
+    auto centerLabel = builder.Label("Match").Font(FontId::Small);
     m_CenterLabel = centerLabel.GetId();
 
-    auto animationsWipLabel = builder.Label("ANIMATIONS WIP DONT JUDGE XD");
+    auto animationsWipLabel = builder.Label("ANIMATIONS WIP DONT JUDGE XD").Font(FontId::Small);
 
-    auto p2Label = builder.Label("P2").Font(FontId::Title);
+    auto p2Label = builder.Label("P2").Font(FontId::Small).TextColor(Color{ 0, 80, 255, 255 });
     m_P2Label = p2Label.GetId();
 
-    auto hintLabel = builder.Label("ESC = Pause   F1 = Debug");
+    auto hintLabel = builder.Label("ESC = Pause   F1 = Debug").Font(FontId::Small);
     m_BottomHintLabel = hintLabel.GetId();
-
-    /*auto root = builder.Stack().Add(
-        builder.Align(Alignment::TopLeft, builder.Column().Spacing(16.0f).Add(p1Label)),
-        builder.Align(Alignment::TopCenter, builder.Column().Spacing(16.0f).Add(centerLabel)),
-        builder.Align(Alignment::TopRight, builder.Column().Spacing(32.0f).Add(p2Label)),
-        builder.Align(Alignment::BottomCenter, builder.Column().Spacing(48.0f).Add(hintLabel)));*/
 
     auto root = builder.Stack().Add(
         builder.Align(Alignment::TopLeft, p1Label),
         builder.Align(Alignment::TopCenter,
-                      builder.Column().Spacing(4.0f).Add(centerLabel, animationsWipLabel)),
+                      builder.Column().Add(centerLabel, animationsWipLabel)),
         builder.Align(Alignment::TopRight, p2Label),
         builder.Align(Alignment::BottomCenter, hintLabel));
 

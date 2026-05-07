@@ -1,6 +1,7 @@
 #include "smashorpass/platform/Window.hpp"
 
 #include <SDL3/SDL.h>
+#include "SDL3_ttf/SDL_ttf.h"
 
 #include <stdexcept>
 
@@ -11,9 +12,7 @@ namespace sop {
 Window::Window(const WindowCreateInfo& createInfo) : m_CreateInfo(createInfo) {
     const bool initialized = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD);
     SOP_SDL_ASSERT(initialized, SDL_GetError());
-    if (!initialized) {
-        throw std::runtime_error(std::string("SDL_Init failed: ") + SDL_GetError());
-    }
+    SOP_SDL_ASSERT(TTF_Init(), std::format("TTF_Init failed: %s", SDL_GetError()).c_str());
 
     m_NativeHandle = SDL_CreateWindow(m_CreateInfo.Title.c_str(),
                                       m_CreateInfo.Width,

@@ -46,7 +46,7 @@ void Game::SetDisplayMetrics(const DisplayMetrics& metrics) {
     UpdateArena(metrics.LogicalSize());
 }
 
-void Game::GameplayTick(ApplicationState state, double stepSeconds, AssetManager& assetManager) {
+void Game::GameplayTick(ApplicationState state, double stepSeconds, AssetManager& assetManager, ParticleSystem& particleSystem) {
     switch (state) {
         case ApplicationState::MainMenu:
             // spdlog::info("In main menu");
@@ -64,7 +64,8 @@ void Game::GameplayTick(ApplicationState state, double stepSeconds, AssetManager
                        m_PlayerInput,
                        stepSeconds,
                        m_PlayerConfig,
-                       assetManager.getArenaCollisionBoxes(m_Arena));
+                       assetManager.getArenaCollisionBoxes(m_Arena),
+                       particleSystem);
             break;
         case ApplicationState::Paused:
             // spdlog::info("Paused");

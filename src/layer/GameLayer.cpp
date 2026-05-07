@@ -16,9 +16,11 @@ GameLayer::GameLayer(Renderer& renderer, const Window& window, EventDispatcher& 
     }
 }
 
-void GameLayer::OnEvent(const Event& event) {
-    for (const auto& component : m_Screens)
-        component->OnEvent(event);
+void GameLayer::OnEvent(const Event& event, ApplicationContext& ctx) {
+    for (const auto& component : m_Screens) {
+        if (component->GetApplicationState() == ctx.CurrentState)
+            component->OnEvent(event);
+    }
     m_Game.OnEvent(event);
 }
 
@@ -28,7 +30,7 @@ void GameLayer::OnGameplayTick(ApplicationContext& ctx) {
 
     SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
     m_Game.SetDisplayMetrics(ctx.Display);
-    m_Game.GameplayTick(ctx.CurrentState, ctx.GameplayStepSeconds, *ctx.Assets);
+    m_Game.GameplayTick(ctx.CurrentState, ctx.GameplayStepSeconds, *ctx.Assets, ctx.ParticleSystem);
 }
 
 void GameLayer::OnAnimationTick(ApplicationContext& ctx) {
@@ -44,7 +46,8 @@ void GameLayer::OnUpdate(ApplicationContext& ctx) {
         return;
 
     for (const auto& component : m_Screens)
-        component->OnUpdate();
+        if (component->GetApplicationState() == ctx.CurrentState)
+            component->OnUpdate();
 }
 
 void GameLayer::OnRender(ApplicationContext& ctx) {
@@ -58,6 +61,7 @@ void GameLayer::OnRender(ApplicationContext& ctx) {
     m_Game.Render(ctx.CurrentState, renderer, *ctx.Assets, ctx.RenderCollisionBoxes);
 
     for (const auto& component : m_Screens)
-        component->OnRender(renderer);
+        if (component->GetApplicationState() == ctx.CurrentState)
+            component->OnRender(renderer);
 }
 }  // namespace sop

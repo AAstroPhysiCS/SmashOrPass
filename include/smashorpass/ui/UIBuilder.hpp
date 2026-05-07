@@ -85,10 +85,34 @@ struct LabelNode : public NodeBase {
         data.Font = fontId;
         return *this;
     }
+
+    LabelNode& TextColor(Color color) {
+        auto& data = std::get<LabelData>(this->GetScreen().GetWidgetById(this->GetId()).Data);
+        data.TextColor = color;
+        return *this;
+    }
 };
 
 struct ButtonNode : public NodeBase {
     using NodeBase::NodeBase;
+
+    ButtonNode& TextColor(Color color) {
+        auto& data = std::get<ButtonData>(this->GetScreen().GetWidgetById(this->GetId()).Data);
+        data.TextColor = color;
+        return *this;
+    }
+    
+    ButtonNode& BackgroundColor(Color color) {
+        auto& data = std::get<ButtonData>(this->GetScreen().GetWidgetById(this->GetId()).Data);
+        data.BackgroundColor = color;
+        return *this;
+    }
+    
+    ButtonNode& BorderColor(Color color) {
+        auto& data = std::get<ButtonData>(this->GetScreen().GetWidgetById(this->GetId()).Data);
+        data.BorderColor = color;
+        return *this;
+    }
 
     template <typename TFn>
     ButtonNode& OnClick(TFn&& callback) {

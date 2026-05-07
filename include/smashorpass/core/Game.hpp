@@ -9,6 +9,7 @@
 #include "smashorpass/core/Arena.hpp"
 #include "smashorpass/core/PlayerController.hpp"
 #include "smashorpass/core/SpriteAnimationPlayer.hpp"
+#include "smashorpass/rendering/ParticleSystem.hpp"
 
 namespace sop {
 
@@ -34,7 +35,10 @@ class Game final {
    public:
     void OnEvent(const Event& event);
     void SetDisplayMetrics(const DisplayMetrics& metrics);
-    void GameplayTick(ApplicationState state, double stepSeconds, AssetManager& assetManager);
+    void GameplayTick(ApplicationState state,
+                      double stepSeconds,
+                      AssetManager& assetManager,
+                      ParticleSystem& particleSystem);
     void AnimationTick(ApplicationState state, AssetManager& assetManager);
     void Render(ApplicationState state,
                 Renderer& renderer,

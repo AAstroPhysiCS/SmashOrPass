@@ -36,6 +36,7 @@ endif()
 
 find_package(SDL3 CONFIG REQUIRED)
 find_package(SDL3_image CONFIG REQUIRED)
+find_package(SDL3_ttf CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
@@ -148,6 +149,7 @@ target_link_libraries(smashorpass_core
         spdlog::spdlog
         glm::glm
         nlohmann_json::nlohmann_json
+        SDL3_ttf::SDL3_ttf
         sop_project_options
         sop_project_warnings
     PRIVATE

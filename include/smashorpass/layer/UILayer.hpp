@@ -13,7 +13,7 @@ class UILayer : public Layer {
     UILayer(Renderer& renderer, const Window& window, EventDispatcher& eventDispatcher);
     virtual ~UILayer() = default;
 
-    void OnEvent(const Event& event) final override;
+    void OnEvent(const Event& event, ApplicationContext& ctx) final override;
     void OnUpdate(ApplicationContext& ctx) final override;
     void OnRender(ApplicationContext& ctx) final override;
 

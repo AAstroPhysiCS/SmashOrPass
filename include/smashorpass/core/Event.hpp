@@ -49,6 +49,8 @@ struct ApplicationStateChangeEvent {
     ApplicationState NextState = ApplicationState::MainMenu;
 };
 
+struct ApplicationQuitEvent {};
+
 struct NullEvent {};
 
 using EventPayload = std::variant<KeyEvent,
@@ -58,6 +60,7 @@ using EventPayload = std::variant<KeyEvent,
                                   WindowMetricsChangedEvent,
                                   ControllerButtonEvent,
                                   ApplicationStateChangeEvent,
+                                  ApplicationQuitEvent,
                                   NullEvent>;
 
 struct Event {

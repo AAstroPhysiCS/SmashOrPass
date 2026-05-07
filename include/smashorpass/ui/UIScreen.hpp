@@ -12,7 +12,7 @@ class UIBuilder;
 
 class UIScreen {
    public:
-    UIScreen(EventDispatcher& dispatcher);
+    UIScreen(ApplicationState stateToRepresent, EventDispatcher& dispatcher);
     virtual ~UIScreen() = default;
 
     inline UIWidget& GetWidgetById(UIWidgetId id) {
@@ -35,13 +35,19 @@ class UIScreen {
     virtual void OnUpdate();
     virtual void OnRender(Renderer& renderer);
 
+    void RebuildUI();
+
+    inline ApplicationState GetApplicationState() const {
+        return m_ApplicationStateToRepresent;
+    }
+
    protected:
     inline EventDispatcher& GetEventDispatcher() {
         return m_EventDispatcher;
     }
 
    private:
-    Vec2 MeasureWidget(UIWidgetId id);
+    Vec2 MeasureWidget(UIWidgetId id, Renderer& renderer);
     void LayoutWidget(UIWidgetId id, SDL_FRect rect);
 
     void RenderWidget(Renderer& renderer, const UIWidget& widget);
@@ -70,9 +76,13 @@ class UIScreen {
         return id;
     }
 
+    bool m_RebuildRequested = false;
+
     EventDispatcher& m_EventDispatcher;
     std::vector<UIWidget> m_Widgets;
     UIWidgetId m_Root = g_InvalidWidgetId;
+
+    ApplicationState m_ApplicationStateToRepresent;
 
     friend class UIBuilder;
 

@@ -1,5 +1,8 @@
 #include "smashorpass/rendering/Renderer.hpp"
 
+#include "smashorpass/ui/UIWidget.hpp"
+#include "spdlog/spdlog.h"
+
 #include <algorithm>
 #include <cstring>
 
@@ -36,13 +39,18 @@ Renderer::Renderer(Window& window, const char* driverName) : m_Window(window) {
     // driverName if provided.
     driverName = driverName ? driverName : SDL_GetRenderDriver(0);
     m_NativeHandle = SDL_CreateRenderer(window.NativeHandle(), driverName);
-    if (!m_NativeHandle) {
-        throw std::runtime_error(std::string("SDL_CreateRenderer failed: ") + SDL_GetError());
-    }
+    SOP_ASSERT(m_NativeHandle, std::format("SDL_CreateRenderer failed: {0}", SDL_GetError()).c_str());
 
     // Apparently good default for most UI/game rendering.
     SOP_ASSERT(SDL_SetRenderDrawBlendMode(m_NativeHandle, SDL_BLENDMODE_BLEND),
                "SDL_SetRenderDrawBlendMode");
+
+    m_TitleFont = TTF_OpenFont((std::string(SOP_ASSET_ROOT_DIR) + "/fonts/Oxanium/static/Oxanium-ExtraBold.ttf").c_str(), 64.0f);
+    m_BigFont = TTF_OpenFont((std::string(SOP_ASSET_ROOT_DIR) + "/fonts/Oxanium/static/Oxanium-SemiBold.ttf").c_str(), 32.0f);
+    m_MediumFont = TTF_OpenFont((std::string(SOP_ASSET_ROOT_DIR) + "/fonts/Oxanium/static/Oxanium-Bold.ttf").c_str(), 32.0f);
+    m_SmallFont = TTF_OpenFont((std::string(SOP_ASSET_ROOT_DIR) + "/fonts/Oxanium/static/Oxanium-Regular.ttf").c_str(), 24.0f);
+
+    SOP_ASSERT(m_TitleFont, std::format("TTF_OpenFont failed: {0}", SDL_GetError()).c_str());
 }
 
 Renderer::~Renderer() {
@@ -50,6 +58,8 @@ Renderer::~Renderer() {
         SDL_DestroyRenderer(m_NativeHandle);
         m_NativeHandle = nullptr;
     }
+    TTF_CloseFont(m_TitleFont);
+    TTF_Quit();
 }
 
 void Renderer::BeginFrame(Color clear) {
@@ -345,12 +355,22 @@ bool Renderer::DrawGeometry(SDL_Texture* texture,
                               static_cast<int>(indices.size()));
 }
 
-bool Renderer::DebugText(float x, float y, std::string_view text, Color color) {
-    if (!SetDrawColor(color))
-        return false;
-
+bool Renderer::DrawText(FontId id, float x, float y, std::string_view text, Color color) {
+    
     std::string owned(text);
-    return SDL_RenderDebugText(m_NativeHandle, x, y, owned.c_str());
+
+    SDL_Surface* surface = TTF_RenderText_Blended(GetFontById(id), text.data(), 0, color);
+    SOP_ASSERT(surface, std::format("TTF_RenderText_Blended failed: %s", SDL_GetError()).c_str());
+
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(m_NativeHandle, surface);
+
+    SDL_FRect dst{x, y, static_cast<float>(surface->w), static_cast<float>(surface->h)};
+    bool ok = SDL_RenderTexture(m_NativeHandle, texture, nullptr, &dst);
+
+    SDL_DestroyTexture(texture);
+    SDL_DestroySurface(surface);
+
+    return ok;
 }
 
 SDL_Surface* Renderer::ReadPixels(const SDL_Rect* rect) const {
@@ -406,4 +426,33 @@ void Renderer::ApplyTextureState(SDL_Texture* texture, Color tint, SDL_BlendMode
     SOP_ASSERT(SDL_SetTextureBlendMode(texture, blendMode), "SDL_SetTextureBlendMode");
 }
 
+Vec2 Renderer::MeasureText(FontId id, std::string_view text) {
+    TTF_Font* font = GetFontById(id);
+
+    if (!font || text.empty())
+        return Vec2{0.0f, 0.0f};
+
+    int32_t w = 0;
+    int32_t h = 0;
+
+    if (!TTF_GetStringSize(font, text.data(), text.size(), &w, &h)) {
+        spdlog::warn("TTF_GetStringSize failed: {}", SDL_GetError());
+        return Vec2{0.0f, 0.0f};
+    }
+
+    return Vec2{static_cast<float>(w), static_cast<float>(h)};
+}
+
+TTF_Font* Renderer::GetFontById(FontId id) {
+    switch (id) {
+        case FontId::Title:
+            return m_TitleFont;
+        case FontId::Body:
+            return m_BigFont;
+        case FontId::Medium:
+            return m_MediumFont;
+        case FontId::Small:
+            return m_SmallFont;
+    }
+};
 }  // namespace sop

@@ -2,17 +2,14 @@
 
 #include "smashorpass/core/Base.hpp"
 
+#include "smashorpass/rendering/Renderer.hpp"
+
 namespace sop {
 
 using UIWidgetId = uint64_t;
 inline constexpr UIWidgetId g_InvalidWidgetId = std::numeric_limits<UIWidgetId>::max();
 
 class EventDispatcher;
-
-// maybe change the function signature to pass the widget id or reference to the widget itself,
-// so that the callback can modify it if needed (e.g. for toggle buttons)
-using OnClickFunc = std::function<void(EventDispatcher&)>;
-using OnHoverFunc = std::function<void(EventDispatcher&)>;
 
 enum class Alignment : uint8_t {
     TopLeft,
@@ -68,7 +65,7 @@ inline static constexpr VerticalAlign GetVerticalAlign(Alignment a) {
     return VerticalAlign::Top;
 }
 
-enum class FontId : uint8_t { Body, Title, Header, Big };
+enum class FontId : uint8_t { Body, Title, Medium, Small };
 
 enum class WidgetKind : uint8_t {
     Stack,
@@ -100,12 +97,23 @@ struct ImageData {
 
 struct LabelData {
     std::string Text;
-    FontId Font = FontId::Body;
+    FontId Font = FontId::Medium;
+    Color TextColor = Theme::BUTTON_TEXT_COLOR;
 };
+
+struct ButtonData;
+
+using OnClickFunc = std::function<void(EventDispatcher&, ButtonData&)>;
+using OnHoverFunc = std::function<void(EventDispatcher&, ButtonData&)>;
 
 struct ButtonData {
     std::string Text;
-    FontId Font = FontId::Body;
+    FontId Font = FontId::Medium;
+    
+    Color BackgroundColor = Theme::BUTTON_BACKGROUND_COLOR;
+    Color BorderColor = Theme::BUTTON_BORDER_COLOR;
+    Color TextColor = Theme::BUTTON_TEXT_COLOR;
+
     OnClickFunc OnClick;
     OnHoverFunc OnHover;
 };

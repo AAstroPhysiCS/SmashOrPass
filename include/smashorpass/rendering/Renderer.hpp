@@ -4,29 +4,16 @@
 #include "smashorpass/core/DisplayMetrics.hpp"
 #include "smashorpass/platform/Window.hpp"
 
+#include "SDL3_ttf/SDL_ttf.h"
+
 namespace sop {
+
+enum class FontId : uint8_t;
 
 // TODO: use glm, delete THIS only temporary
 struct Vec2 {
     float x;
     float y;
-};
-
-struct Color {
-    Uint8 r{255};
-    Uint8 g{255};
-    Uint8 b{255};
-    Uint8 a{255};
-
-    static constexpr Color White() {
-        return {255, 255, 255, 255};
-    }
-    static constexpr Color Black() {
-        return {0, 0, 0, 255};
-    }
-    static constexpr Color Transparent() {
-        return {0, 0, 0, 0};
-    }
 };
 
 struct TextureDrawParams {
@@ -154,7 +141,7 @@ class Renderer final {
                       std::span<const SDL_Vertex> vertices,
                       std::span<const int> indices = {});
 
-    bool DebugText(float x, float y, std::string_view text, Color color = Color::White());
+    bool DrawText(FontId id, float x, float y, std::string_view text, Color color = Color::White());
 
     [[nodiscard]] SDL_Surface* ReadPixels(const SDL_Rect* rect = nullptr) const;
 
@@ -181,9 +168,18 @@ class Renderer final {
     void RestoreTextureState(SDL_Texture* texture, const TextureStateBackup& backup) const;
     void ApplyTextureState(SDL_Texture* texture, Color tint, SDL_BlendMode blendMode) const;
 
+    Vec2 MeasureText(FontId id, std::string_view text);
+    TTF_Font* GetFontById(FontId id);
    private:
     Window& m_Window;
     SDL_Renderer* m_NativeHandle{nullptr};
     std::vector<std::optional<SDL_Rect>> m_ClipStack;
+
+    TTF_Font* m_TitleFont = nullptr;
+    TTF_Font* m_BigFont = nullptr;
+    TTF_Font* m_MediumFont = nullptr;
+    TTF_Font* m_SmallFont = nullptr;
+
+    friend class UIScreen; //for MeasureText
 };
 }  // namespace sop

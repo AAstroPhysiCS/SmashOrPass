@@ -10,6 +10,7 @@
 #include "smashorpass/layer/Layer.hpp"
 #include "smashorpass/platform/Window.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
+#include "smashorpass/rendering/ParticleSystem.hpp"
 
 namespace sop {
 
@@ -45,12 +46,14 @@ class Application {
     Renderer m_Renderer;
     EventDispatcher m_EventDispatcher;
 
-    ApplicationContext m_Context{};
+    ParticleSystem m_ParticleSystem{1024};
+    ApplicationContext m_Context{ .ParticleSystem = m_ParticleSystem };
     FixedStepScheduler m_GameplayScheduler{120};
     FixedStepScheduler m_AnimationScheduler{60};
 
     std::vector<std::unique_ptr<Layer>> m_Overlays;
     std::unique_ptr<Layer> m_CurrentLayer;
     bool m_DebugOverlayVisible = false;
+    bool m_Running = true;
 };
 }  // namespace sop

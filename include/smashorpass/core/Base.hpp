@@ -2,6 +2,8 @@
 
 #include <SDL3/SDL.h>
 
+#include "smashorpass/ui/Theme.hpp"
+
 #include <algorithm>
 #include <cstdint>
 #include <functional>

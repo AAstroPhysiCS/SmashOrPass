@@ -100,7 +100,7 @@ void DebugLayer::EndFrame() {
     ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer.NativeHandle());
 }
 
-void DebugLayer::OnEvent(const Event& event) {
+void DebugLayer::OnEvent(const Event& event, ApplicationContext& ctx) {
     if (event.RawEvent == nullptr)
         return;
     ImGui_ImplSDL3_ProcessEvent(event.RawEvent);

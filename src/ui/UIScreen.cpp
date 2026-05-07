@@ -4,9 +4,12 @@
 #include "smashorpass/rendering/Renderer.hpp"
 #include "spdlog/spdlog.h"
 
+#include "smashorpass/ui/UIBuilder.hpp"
+
 namespace sop {
 
-UIScreen::UIScreen(EventDispatcher& dispatcher) : m_EventDispatcher(dispatcher) {}
+UIScreen::UIScreen(ApplicationState stateToRepresent, EventDispatcher& dispatcher)
+    : m_ApplicationStateToRepresent(stateToRepresent), m_EventDispatcher(dispatcher) {}
 
 void UIScreen::OnEvent(const Event& event) {
     EventDispatcher::Dispatch<MouseButtonEvent>(event, [this](const MouseButtonEvent& e) {
@@ -14,30 +17,30 @@ void UIScreen::OnEvent(const Event& event) {
             return;
         Vec2 mousePos{e.X, e.Y};
 
-        for (const UIWidget& w : m_Widgets) {
+        for (UIWidget& w : m_Widgets) {
             if (w.Kind != WidgetKind::Button)
                 continue;
 
             if (!PointInRect(mousePos, w.LayoutRect))
                 continue;
 
-            const auto& d = std::get<ButtonData>(w.Data);
+            auto& d = std::get<ButtonData>(w.Data);
             if (d.OnClick)
-                d.OnClick(m_EventDispatcher);
+                d.OnClick(m_EventDispatcher, d);
         }
     });
 
     EventDispatcher::Dispatch<MouseMovedEvent>(event, [this](const MouseMovedEvent& e) {
         Vec2 mousePos{e.X, e.Y};
 
-        for (const UIWidget& w : m_Widgets) {
+        for (UIWidget& w : m_Widgets) {
             if (w.Kind != WidgetKind::Button)
                 continue;
 
             const bool hover = PointInRect(mousePos, w.LayoutRect);
-            const auto& d = std::get<ButtonData>(w.Data);
+            auto& d = std::get<ButtonData>(w.Data);
             if (hover && d.OnHover)
-                d.OnHover(m_EventDispatcher);
+                d.OnHover(m_EventDispatcher, d);
         }
     });
 }
@@ -45,16 +48,30 @@ void UIScreen::OnEvent(const Event& event) {
 void UIScreen::OnUpdate() {}
 
 void UIScreen::OnRender(Renderer& renderer) {
+    if (m_RebuildRequested) {
+        m_Widgets.clear();
+        m_Root = g_InvalidWidgetId;
+
+        UIBuilder builder(*this);
+        Build(builder);
+
+        m_RebuildRequested = false;
+    }
+
     if (m_Root == g_InvalidWidgetId)
         return;
 
     const SDL_FPoint outputSize = renderer.GetLogicalOutputSize();
 
-    MeasureWidget(m_Root);
+    MeasureWidget(m_Root, renderer);
     LayoutWidget(m_Root, SDL_FRect{0.0f, 0.0f, outputSize.x, outputSize.y});
 
     for (const UIWidget& w : m_Widgets)
         RenderWidget(renderer, w);
+}
+
+void UIScreen::RebuildUI() {
+    m_RebuildRequested = true;
 }
 
 void UIScreen::RenderWidget(Renderer& renderer, const UIWidget& widget) {
@@ -67,52 +84,50 @@ void UIScreen::RenderWidget(Renderer& renderer, const UIWidget& widget) {
             break;
         case WidgetKind::Label: {
             const auto& d = std::get<LabelData>(widget.Data);
-            renderer.DebugText(
-                widget.LayoutRect.x, widget.LayoutRect.y, d.Text, Color{235, 235, 235, 255});
+            renderer.DrawText(d.Font, 
+                widget.LayoutRect.x, widget.LayoutRect.y, d.Text, d.TextColor);
             break;
         }
         case WidgetKind::Button: {
             const auto& d = std::get<ButtonData>(widget.Data);
             const SDL_FRect buttonRect = widget.LayoutRect;
 
-            renderer.FillRect(buttonRect, Color{52, 58, 64, 255});
-            renderer.DrawRect(buttonRect, Color{90, 100, 110, 255});
+            renderer.FillRect(buttonRect, d.BackgroundColor);
+            renderer.DrawRect(buttonRect, d.BorderColor);
 
-            constexpr float padX = 14.0f;
-            constexpr float padY = 10.0f;
+            Vec2 textSize = renderer.MeasureText(d.Font, d.Text);
 
-            renderer.DebugText(
-                buttonRect.x + padX, buttonRect.y + padY, d.Text, Color{255, 255, 255, 255});
+            const float textX = buttonRect.x + (buttonRect.w - textSize.x) * 0.5f;
+            const float textY = buttonRect.y + (buttonRect.h - textSize.y) * 0.5f;
+
+            renderer.DrawText(d.Font, textX, textY, d.Text, d.TextColor);
 
             break;
         }
     }
 }
 
-Vec2 UIScreen::MeasureWidget(UIWidgetId id) {
-    const auto MeasureText = [](FontId fontId, const std::string& text) -> Vec2 {
-        const float charW = (fontId == FontId::Title) ? 12.0f : 8.0f;
-        const float lineH = (fontId == FontId::Title) ? 28.0f : 18.0f;
-        return Vec2{charW * static_cast<float>(text.size()), lineH};
-    };
-
+Vec2 UIScreen::MeasureWidget(UIWidgetId id, Renderer& renderer) {
+    
     UIWidget& w = GetWidgetById(id);
 
     switch (w.Kind) {
         case WidgetKind::Label: {
             auto& d = std::get<LabelData>(w.Data);
-            Vec2 s = MeasureText(d.Font, d.Text);
+            Vec2 s = renderer.MeasureText(d.Font, d.Text);
             w.Measured = SDL_FRect{0, 0, s.x, s.y};
             return s;
         }
         case WidgetKind::Button: {
-            constexpr float padX = 14.0f;
-            constexpr float padY = 10.0f;
-
             auto& d = std::get<ButtonData>(w.Data);
-            Vec2 text = MeasureText(d.Font, d.Text);
 
-            w.Measured = SDL_FRect{0, 0, text.x + padX * 2.0f, text.y + padY * 2.0f};
+            Vec2 textSize = renderer.MeasureText(d.Font, d.Text);
+
+            w.Measured = SDL_FRect{0.0f,
+                                   0.0f,
+                                   textSize.x + Theme::BUTTON_PADDING_X * 2.0f,
+                                   textSize.y + Theme::BUTTON_PADDING_Y * 2.0f};
+
             return Vec2{w.Measured.w, w.Measured.h};
         }
         case WidgetKind::Column: {
@@ -123,7 +138,7 @@ Vec2 UIScreen::MeasureWidget(UIWidgetId id) {
 
             for (UIWidgetId c = w.FirstChild; c != g_InvalidWidgetId;
                  c = GetWidgetById(c).NextSibling) {
-                Vec2 cs = MeasureWidget(c);
+                Vec2 cs = MeasureWidget(c, renderer);
                 maxW = std::max(maxW, cs.x);
                 totalH += cs.y;
                 ++count;
@@ -143,7 +158,7 @@ Vec2 UIScreen::MeasureWidget(UIWidgetId id) {
 
             for (UIWidgetId c = w.FirstChild; c != g_InvalidWidgetId;
                  c = GetWidgetById(c).NextSibling) {
-                Vec2 cs = MeasureWidget(c);
+                Vec2 cs = MeasureWidget(c, renderer);
                 totalW += cs.x;
                 maxH = std::max(maxH, cs.y);
                 ++count;
@@ -161,7 +176,7 @@ Vec2 UIScreen::MeasureWidget(UIWidgetId id) {
 
             for (UIWidgetId c = w.FirstChild; c != g_InvalidWidgetId;
                  c = GetWidgetById(c).NextSibling) {
-                Vec2 cs = MeasureWidget(c);
+                Vec2 cs = MeasureWidget(c, renderer);
                 maxW = std::max(maxW, cs.x);
                 maxH = std::max(maxH, cs.y);
             }
@@ -175,7 +190,7 @@ Vec2 UIScreen::MeasureWidget(UIWidgetId id) {
                 return Vec2{};
             }
 
-            Vec2 childSize = MeasureWidget(w.FirstChild);
+            Vec2 childSize = MeasureWidget(w.FirstChild, renderer);
             w.Measured = SDL_FRect{0, 0, childSize.x, childSize.y};
             return childSize;
         }
@@ -307,41 +322,6 @@ bool UIScreen::PointInRect(const Vec2& point, const SDL_FRect& rect) const {
     return point.x >= rect.x && point.x <= rect.x + rect.w && point.y >= rect.y &&
            point.y <= rect.y + rect.h;
 }
-
-inline float Lerp(float a, float b, float t) {
-    return a + (b - a) * t;
-}
-
-inline Color Lerp(Color a, Color b, float t) {
-    t = std::clamp(t, 0.0f, 1.0f);
-    return Color{
-        static_cast<uint8_t>(Lerp(static_cast<float>(a.r), static_cast<float>(b.r), t)),
-        static_cast<uint8_t>(Lerp(static_cast<float>(a.g), static_cast<float>(b.g), t)),
-        static_cast<uint8_t>(Lerp(static_cast<float>(a.b), static_cast<float>(b.b), t)),
-        static_cast<uint8_t>(Lerp(static_cast<float>(a.a), static_cast<float>(b.a), t)),
-    };
-}
-
-/*    void UpdateAnimations(UIScreen& screen, const InputState& input, float dt) {
-        for (UIWidget& w : screen.GetWidgets()) {
-            if (!w.visual.initialized) {
-                w.visual.initialized = true;
-                w.visual.rect = w.LayoutRect;
-                w.visual.opacity = 1.0f;
-            }
-
-            // Layout transition: smooth movement/resize.
-            w.visual.rect = SmoothTowards(w.visual.rect, w.LayoutRect, 0.08f, dt);
-
-            if (w.Kind == WidgetKind::Button) {
-                const bool hovered = PointInRect(input.mousePos, w.visual.rect);
-                const bool pressed = hovered && input.mouseDown;
-
-                w.visual.hoverT = SmoothBool(w.visual.hoverT, hovered, 0.05f, dt);
-                w.visual.pressT = SmoothBool(w.visual.pressT, pressed, 0.03f, dt);
-            }
-        }
-    }*/
 
 void UIScreen::AddChild(UIWidgetId parent, UIWidgetId child) {
     SOP_ASSERT(parent < m_Widgets.size(), "Invalid parent widget ID");
