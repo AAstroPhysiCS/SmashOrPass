@@ -150,13 +150,14 @@ void ApplyPlayerKeyEvent(PlayerInputState& input,
         case SDLK_S:
             break;
         case SDLK_SPACE:
-            if (event.Down && !event.Repeat) {
-                player.AttackSecondsRemaining = config.AttackSeconds;
-            }
+            input.AttackHeld = event.Down;
             break;
         default:
             break;
     }
+
+    (void)player;
+    (void)config;
 }
 
 void TickPlayer(PlayerCharacterState& player,
@@ -173,7 +174,7 @@ void TickPlayer(PlayerCharacterState& player,
                 std::span<const SDL_FRect> floorPlatforms) {
     const double elapsedSeconds = std::max(stepSeconds, 0.0);
     const float dt = static_cast<float>(elapsedSeconds);
-    const bool attackActive = player.AttackSecondsRemaining > 0.0;
+    const bool attackActive = input.AttackHeld;
     float horizontalDirection = 0.0f;
 
     if (!attackActive && input.MoveLeft != input.MoveRight) {
@@ -232,7 +233,6 @@ void TickPlayer(PlayerCharacterState& player,
         }
     }
 
-    player.AttackSecondsRemaining = std::max(player.AttackSecondsRemaining - elapsedSeconds, 0.0);
     player.Animation.SetAnimation(SelectPlayerAnimation(player, input));
 }
 
@@ -262,7 +262,7 @@ void ApplyPlayerViewport(PlayerControlConfig& config,
 
 CharacterAnimation SelectPlayerAnimation(const PlayerCharacterState& player,
                                          const PlayerInputState& input) {
-    if (player.AttackSecondsRemaining > 0.0) {
+    if (input.AttackHeld) {
         return CharacterAnimation::Attacks;
     }
 

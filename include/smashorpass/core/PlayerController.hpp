@@ -41,6 +41,7 @@ struct PlayerInputState {
     bool MoveLeft = false;
     bool MoveRight = false;
     bool JumpRequested = false;
+    bool AttackHeld = false;
 };
 
 struct PlayerCharacterState {
