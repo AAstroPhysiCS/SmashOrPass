@@ -7,8 +7,8 @@
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/core/Arena.hpp"
 #include "smashorpass/core/Event.hpp"
+#include "smashorpass/core/InputBindings.hpp"
 #include "smashorpass/core/SpriteAnimationPlayer.hpp"
-
 #include "smashorpass/rendering/ParticleSystem.hpp"
 
 namespace sop {
@@ -79,10 +79,9 @@ void ApplyPlayerCollisionProfile(PlayerCharacterState& player,
                                  const SpriteSheetFrame& frame,
                                  const PlayerControlConfig& config = PlayerControlConfig{});
 
-void ApplyPlayerKeyEvent(PlayerInputState& input,
-                         PlayerCharacterState& player,
-                         const KeyEvent& event,
-                         const PlayerControlConfig& config = PlayerControlConfig{});
+void ApplyBindings(PlayerInputState& input, const KeyEvent& event, const PlayerBindings& bindings);
+
+void SetPlayerSpawn(PlayerCharacterState& player, float X, float Y, bool facingRight);
 
 void TickPlayer(PlayerCharacterState& player,
                 PlayerInputState& input,

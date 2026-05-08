@@ -2,6 +2,8 @@
 
 #include <SDL3/SDL_keycode.h>
 
+#include <span>
+
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/core/Event.hpp"
 #include "smashorpass/core/PlayerController.hpp"
@@ -35,7 +37,8 @@ namespace {
 
 void Game::OnEvent(const Event& event) {
     EventDispatcher::Dispatch<KeyEvent>(event, [this](const KeyEvent& keyEvent) {
-        ApplyPlayerKeyEvent(m_PlayerInput, m_Player, keyEvent, m_PlayerConfig);
+        ApplyBindings(m_Player1.Input, keyEvent, m_Player1.Bindings);
+        ApplyBindings(m_Player2.Input, keyEvent, m_Player2.Bindings);
     });
 
     EventDispatcher::Dispatch<WindowMetricsChangedEvent>(
@@ -46,7 +49,10 @@ void Game::SetDisplayMetrics(const DisplayMetrics& metrics) {
     UpdateArena(metrics.LogicalSize());
 }
 
-void Game::GameplayTick(ApplicationState state, double stepSeconds, AssetManager& assetManager, ParticleSystem& particleSystem) {
+void Game::GameplayTick(ApplicationState state,
+                        double stepSeconds,
+                        AssetManager& assetManager,
+                        ParticleSystem& particleSystem) {
     switch (state) {
         case ApplicationState::MainMenu:
             // spdlog::info("In main menu");
@@ -56,17 +62,27 @@ void Game::GameplayTick(ApplicationState state, double stepSeconds, AssetManager
             // spdlog::info("In character select");
             //  TODO: character select, handle character select input, etc.
             break;
-        case ApplicationState::Playing:
+        case ApplicationState::Playing: {
             // spdlog::info("Playing");
             EnsurePlayerCollisionProfile(assetManager);
-            ApplyPlayerViewport(m_PlayerConfig, m_Player, m_ArenaRect);
-            TickPlayer(m_Player,
-                       m_PlayerInput,
+            ApplyPlayerViewport(m_Player1.Control, m_Player1.Character, m_ArenaRect);
+            ApplyPlayerViewport(m_Player2.Control, m_Player2.Character, m_ArenaRect);
+            std::span<const SDL_FRect> arenaCollisions =
+                assetManager.getArenaCollisionBoxes(m_Arena);
+            TickPlayer(m_Player1.Character,
+                       m_Player1.Input,
                        stepSeconds,
-                       m_PlayerConfig,
-                       assetManager.getArenaCollisionBoxes(m_Arena),
+                       m_Player1.Control,
+                       arenaCollisions,
+                       particleSystem);
+            TickPlayer(m_Player2.Character,
+                       m_Player2.Input,
+                       stepSeconds,
+                       m_Player2.Control,
+                       arenaCollisions,
                        particleSystem);
             break;
+        }
         case ApplicationState::Paused:
             // spdlog::info("Paused");
             //  TODO: pause menu, handle pause menu input, etc.
@@ -83,7 +99,8 @@ void Game::AnimationTick(ApplicationState state, AssetManager& assetManager) {
         return;
     }
 
-    AdvancePlayerAnimation(m_Player, assetManager);
+    AdvancePlayerAnimation(m_Player1.Character, assetManager);
+    AdvancePlayerAnimation(m_Player2.Character, assetManager);
 }
 
 void Game::Render(ApplicationState state,
@@ -96,17 +113,27 @@ void Game::Render(ApplicationState state,
 }
 
 void Game::EnsurePlayerCollisionProfile(AssetManager& assetManager) {
-    if (m_Player.CollisionProfileInitialized) {
+    if (m_Player1.Character.CollisionProfileInitialized &&
+        m_Player2.Character.CollisionProfileInitialized) {
         return;
     }
 
-    const SpriteSheet& spriteSheet =
-        assetManager.getSpriteSheet(m_Player.Character, CharacterAnimation::Idle);
-    const std::span<const SpriteSheetFrame> frames = spriteSheet.getFrames();
-    SOP_ASSERT(!frames.empty(), "Character idle sprite sheet has no frames");
+    const SpriteSheet& spriteSheet1 =
+        assetManager.getSpriteSheet(m_Player1.Character.Character, CharacterAnimation::Idle);
+    const std::span<const SpriteSheetFrame> frames1 = spriteSheet1.getFrames();
+    SOP_ASSERT(!frames1.empty(), "Character idle sprite sheet has no frames");
 
-    ApplyPlayerCollisionProfile(m_Player, frames.front(), m_PlayerConfig);
-    ApplyPlayerViewport(m_PlayerConfig, m_Player, m_ArenaRect);
+    const SpriteSheet& spriteSheet2 =
+        assetManager.getSpriteSheet(m_Player2.Character.Character, CharacterAnimation::Idle);
+    const std::span<const SpriteSheetFrame> frames2 = spriteSheet2.getFrames();
+    SOP_ASSERT(!frames2.empty(), "Character idle sprite sheet has no frames");
+
+    ApplyPlayerCollisionProfile(m_Player1.Character, frames1.front(), m_Player1.Control);
+    ApplyPlayerCollisionProfile(m_Player2.Character, frames2.front(), m_Player2.Control);
+    SetPlayerSpawn(m_Player1.Character, 450.0f, 448.0f, true);
+    SetPlayerSpawn(m_Player2.Character, 1354.0f, 448.0f, false);
+    ApplyPlayerViewport(m_Player1.Control, m_Player1.Character, m_ArenaRect);
+    ApplyPlayerViewport(m_Player2.Control, m_Player2.Character, m_ArenaRect);
 }
 
 void Game::AdvancePlayerAnimation(PlayerCharacterState& player, AssetManager& assetManager) {
@@ -132,7 +159,8 @@ void Game::RenderWorld(Renderer& renderer, AssetManager& assetManager, bool rend
 
 void Game::UpdateArena(SDL_FPoint logicalSize) {
     m_ArenaRect = MakeContainedArenaRect(logicalSize);
-    ApplyPlayerViewport(m_PlayerConfig, m_Player, m_ArenaRect);
+    ApplyPlayerViewport(m_Player1.Control, m_Player1.Character, m_ArenaRect);
+    ApplyPlayerViewport(m_Player2.Control, m_Player2.Character, m_ArenaRect);
 }
 
 void Game::RenderStage(Renderer& renderer, AssetManager& assetManager) {
@@ -152,7 +180,8 @@ void Game::RenderStageForeground(Renderer& renderer, AssetManager& assetManager)
 }
 
 void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
-    const auto DrawPlayer = [&](const PlayerCharacterState& player) {
+    const auto DrawPlayer = [&](const PlayerCharacterState& player,
+                                const PlayerControlConfig& control) {
         const SpriteSheet& spriteSheet =
             assetManager.getSpriteSheet(player.Character, player.Animation.GetAnimation());
         const std::span<const SpriteSheetFrame> frames = spriteSheet.getFrames();
@@ -160,7 +189,7 @@ void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
 
         const SpriteSheetFrame& frame = frames[player.Animation.GetFrameIndex() % frames.size()];
         const SDL_FPoint anchorPosition = MapDesignPointToArena(player.AnchorPosition, m_ArenaRect);
-        const float scale = m_PlayerConfig.RenderScale * MapDesignScaleToArena(m_ArenaRect);
+        const float scale = control.RenderScale * MapDesignScaleToArena(m_ArenaRect);
         const detail::PlayerSpritePlacement placement =
             detail::MakePlayerSpritePlacement(anchorPosition, frame, player.FacingRight, scale);
 
@@ -173,8 +202,10 @@ void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
         return renderer.DrawTexture(spriteSheet.getSpriteTexture(), drawParams);
     };
 
-    const bool playerDrawn = DrawPlayer(m_Player);
-    SOP_VERIFY(playerDrawn, "Failed to draw player sprite");
+    const bool playerDrawn1 = DrawPlayer(m_Player1.Character, m_Player1.Control);
+    SOP_VERIFY(playerDrawn1, "Failed to draw player 1 sprite");
+    const bool playerDrawn2 = DrawPlayer(m_Player2.Character, m_Player2.Control);
+    SOP_VERIFY(playerDrawn2, "Failed to draw player 2 sprite");
 }
 
 void Game::RenderCollisionBoxes(Renderer& renderer, AssetManager& assetManager) {
@@ -187,9 +218,14 @@ void Game::RenderCollisionBoxes(Renderer& renderer, AssetManager& assetManager) 
         SOP_VERIFY(boxDrawn, "Failed to draw arena collision box");
     }
 
-    const SDL_FRect playerRect = MapDesignRectToArena(m_Player.CollisionRect, m_ArenaRect);
-    const bool playerBoxDrawn = renderer.DrawRect(playerRect, kPlayerCollisionBoxColor);
-    SOP_VERIFY(playerBoxDrawn, "Failed to draw player collision box");
+    const SDL_FRect playerRect1 =
+        MapDesignRectToArena(m_Player1.Character.CollisionRect, m_ArenaRect);
+    const SDL_FRect playerRect2 =
+        MapDesignRectToArena(m_Player2.Character.CollisionRect, m_ArenaRect);
+    const bool playerBoxDrawn1 = renderer.DrawRect(playerRect1, kPlayerCollisionBoxColor);
+    SOP_VERIFY(playerBoxDrawn1, "Failed to draw player 1 collision box");
+    const bool playerBoxDrawn2 = renderer.DrawRect(playerRect2, kPlayerCollisionBoxColor);
+    SOP_VERIFY(playerBoxDrawn2, "Failed to draw player 2 collision box");
 }
 
 void Game::RenderEffects(Renderer&) {
