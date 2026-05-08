@@ -30,7 +30,7 @@ void GameLayer::OnGameplayTick(ApplicationContext& ctx) {
 
     SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
     m_Game.SetDisplayMetrics(ctx.Display);
-    m_Game.GameplayTick(ctx.CurrentState, ctx.GameplayStepSeconds, *ctx.Assets, ctx.ParticleSystem);
+    m_Game.GameplayTick(ctx.CurrentState, ctx.GameplayStepSeconds, *ctx.Assets, ctx.Particles);
 }
 
 void GameLayer::OnAnimationTick(ApplicationContext& ctx) {

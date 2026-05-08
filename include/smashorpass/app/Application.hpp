@@ -47,7 +47,7 @@ class Application {
     EventDispatcher m_EventDispatcher;
 
     ParticleSystem m_ParticleSystem{1024};
-    ApplicationContext m_Context{ .ParticleSystem = m_ParticleSystem };
+    ApplicationContext m_Context{ .Particles = m_ParticleSystem };
     FixedStepScheduler m_GameplayScheduler{120};
     FixedStepScheduler m_AnimationScheduler{60};
 
