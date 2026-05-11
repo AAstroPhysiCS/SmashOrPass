@@ -46,6 +46,9 @@ int Application::Run() {
         if (m_Context.CurrentState == ApplicationState::Playing) {
             TickGameplay(elapsed);
             TickAnimation(elapsed);
+
+            float dt = std::chrono::duration<float>(elapsed).count();
+            m_ParticleSystem.Update(dt);
         }
 
         Update();
@@ -96,7 +99,6 @@ void Application::TickGameplay(FixedStepScheduler::Duration elapsed) {
     for (uint32_t tickIndex = 0; tickIndex < ticksDue; ++tickIndex) {
         m_Context.GameplayTickCount = tickBase + static_cast<uint64_t>(tickIndex) + 1ULL;
         m_CurrentLayer->OnGameplayTick(m_Context);
-        m_ParticleSystem.Update(m_Context.GameplayTickCount);
     }
 }
 

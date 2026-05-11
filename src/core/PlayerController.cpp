@@ -190,7 +190,7 @@ void SetPlayerSpawn(PlayerCharacterState& player, float posX, float posY, bool f
     player.DashSecondsRemaining = 0.0;
     player.DashCooldownSecondsRemaining = 0.0;
     player.DashDirection = facingRight ? 1.0f : -1.0f;
-
+    player.AirParticleCooldownSecondsRemaining = 0.0;
     player.CollisionRect.x = posX;
     player.CollisionRect.y = posY;
     const SDL_FPoint offset = CollisionAnchorOffsetFor(player);
@@ -219,6 +219,7 @@ void TickPlayer(PlayerCharacterState& player,
 
     TickTimer(player.DashSecondsRemaining, elapsedSeconds);
     TickTimer(player.DashCooldownSecondsRemaining, elapsedSeconds);
+    TickTimer(player.AirParticleCooldownSecondsRemaining, elapsedSeconds);
 
     const bool canDash = player.Grounded || player.AirDashAvailable;
     if (input.DashRequested && !attackActive && !IsDashActive(player) &&
@@ -249,30 +250,25 @@ void TickPlayer(PlayerCharacterState& player,
     SyncCollisionRectToAnchor(player);
     SetPlayerCollisionX(player, std::clamp(player.CollisionRect.x, config.MinX, config.MaxX));
 
-    ParticleBurstDesc hitEffect;
-    hitEffect.Position = Vec2{player.AnchorPosition.x, player.AnchorPosition.y};
-    hitEffect.Count = 24;
-    hitEffect.MinSpeed = 120.0f;
-    hitEffect.MaxSpeed = 320.0f;
-    hitEffect.MinLifetime = 0.15f;
-    hitEffect.MaxLifetime = 0.45f;
-    hitEffect.MinSize = 4.0f;
-    hitEffect.MaxSize = 10.0f;
-    hitEffect.StartColor = Color{255, 220, 80, 255};
-    hitEffect.EndColor = Color{255, 60, 40, 0};
-    hitEffect.Acceleration = Vec2{0.0f, 500.0f};
-
-    particleSystem.EmitBurst(hitEffect);
-
     if (input.JumpRequested && !IsDashActive(player)) {
+        bool jumpedThisTick = false;
+
         if (player.Grounded) {
             player.VerticalVelocity = config.JumpVelocity;
             player.Grounded = false;
             player.AirJumpAvailable = false;
+            jumpedThisTick = true;
+
         } else if (player.AirJumpAvailable) {
             player.VerticalVelocity = config.JumpVelocity;
             player.AirJumpAvailable = false;
+            jumpedThisTick = true;
         }
+
+        //if jumping should emit additional jump particles
+        //if (jumpedThisTick) {
+            //EmitJumpParticles(player, particleSystem);
+        //}
     }
     input.JumpRequested = false;
 
@@ -310,9 +306,14 @@ void TickPlayer(PlayerCharacterState& player,
             FindLandingPlatformY(player.CollisionRect, previousY, floorPlatforms);
         if (landingPlatformY.has_value()) {
             LandPlayer(player, *landingPlatformY - player.CollisionRect.h);
+            EmitJumpParticles(player, particleSystem);
         }
     }
 
+    //if the player should emit air particles aka trails when in the air
+    //if (!player.Grounded && !IsDashActive(player)) {
+        //EmitAirTrailParticles(player, particleSystem);
+    //}
     player.Animation.SetAnimation(SelectPlayerAnimation(player, input));
 }
 
@@ -323,6 +324,58 @@ void ApplyPlayerViewport(PlayerControlConfig& config,
 
     ApplyPlayerViewport(
         config, player, SDL_FRect{0.0f, 0.0f, kDefaultArenaWidth, kDefaultArenaHeight});
+}
+
+[[nodiscard]] Vec2 GetPlayerFeetPosition(const PlayerCharacterState& player) {
+    return Vec2{
+        player.Position.x,
+        player.Position.y + 100.0f,
+    };
+}
+
+void EmitJumpParticles(const PlayerCharacterState& player, ParticleSystem& particleSystem) {
+    ParticleBurstDesc desc{};
+    desc.Position = GetPlayerFeetPosition(player);
+    desc.Count = 18;
+    desc.MinSpeed = 120.0f;
+    desc.MaxSpeed = 220.0f;
+    desc.MinLifetime = 0.12f;
+    desc.MaxLifetime = 0.55f;
+    desc.MinSize = 15.0f;
+    desc.MaxSize = 30.0f;
+    desc.StartColor = Color{255, 220, 80, 220};
+    desc.EndColor = Color{255, 80, 40, 0};
+    desc.Acceleration = Vec2{250.0f, 500.0f};
+
+    particleSystem.EmitBurst(desc);
+}
+
+void EmitAirTrailParticles(PlayerCharacterState& player, ParticleSystem& particleSystem) {
+    constexpr double kAirParticleIntervalSeconds = 0.01;
+
+    if (player.AirParticleCooldownSecondsRemaining > 0.0) {
+        return;
+    }
+
+    player.AirParticleCooldownSecondsRemaining = kAirParticleIntervalSeconds;
+
+    Vec2 position = GetPlayerFeetPosition(player);
+
+    ParticleBurstDesc desc{};
+    desc.Position = position;
+    desc.Count = 8;
+    desc.MinSpeed = 20.0f;
+    desc.MaxSpeed = 90.0f;
+    desc.MinLifetime = 0.25f;
+    desc.MaxLifetime = 0.45f;
+    desc.MinSize = 12.0f;
+    desc.MaxSize = 25.0f;
+    desc.StartColor = Color{180, 220, 255, 90};
+    desc.EndColor = Color{180, 220, 255, 0};
+    desc.Acceleration = Vec2{0.0f, 120.0f};
+
+    //dont like how it looks...
+    //particleSystem.EmitBurst(desc);
 }
 
 void ApplyPlayerViewport(PlayerControlConfig& config,

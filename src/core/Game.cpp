@@ -180,7 +180,7 @@ void Game::RenderStageForeground(Renderer& renderer, AssetManager& assetManager)
 }
 
 void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
-    const auto DrawPlayer = [&](const PlayerCharacterState& player,
+    const auto DrawPlayer = [&](PlayerCharacterState& player,
                                 const PlayerControlConfig& control) {
         const SpriteSheet& spriteSheet =
             assetManager.getSpriteSheet(player.Character, player.Animation.GetAnimation());
@@ -192,6 +192,8 @@ void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
         const float scale = control.RenderScale * MapDesignScaleToArena(m_ArenaRect);
         const detail::PlayerSpritePlacement placement =
             detail::MakePlayerSpritePlacement(anchorPosition, frame, player.FacingRight, scale);
+
+        player.Position = Vec2{anchorPosition.x, anchorPosition.y};
 
         TextureDrawParams drawParams{};
         drawParams.src = &placement.SourceRect;
