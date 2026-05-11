@@ -14,6 +14,16 @@
 #include <variant>
 #include <vector>
 
+// TODO: use glm, delete THIS only temporary
+struct Vec2 {
+    float x;
+    float y;
+
+    inline Vec2 operator+(const Vec2& other) const {
+        return Vec2{x + other.x, y + other.y};
+    }
+};
+
 #if defined(_MSC_VER)
 #define SOP_DEBUG_BREAK() __debugbreak()
 #elif defined(__GNUC__) || defined(__clang__)

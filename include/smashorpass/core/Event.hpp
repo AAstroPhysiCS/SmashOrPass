@@ -51,6 +51,19 @@ struct ApplicationStateChangeEvent {
 
 struct ApplicationQuitEvent {};
 
+enum class PlayerParticleEffectType {
+    SwordFire,
+    DashBlue,
+};
+
+struct PlayerParticleEffectEvent {
+    PlayerParticleEffectType Type = PlayerParticleEffectType::SwordFire;
+    Vec2 Position{};
+    Vec2 Velocity{};
+    bool FacingRight = false;
+    float Strength = 1.0f;
+};
+
 struct NullEvent {};
 
 using EventPayload = std::variant<KeyEvent,
@@ -61,6 +74,7 @@ using EventPayload = std::variant<KeyEvent,
                                   ControllerButtonEvent,
                                   ApplicationStateChangeEvent,
                                   ApplicationQuitEvent,
+                                  PlayerParticleEffectEvent,
                                   NullEvent>;
 
 struct Event {

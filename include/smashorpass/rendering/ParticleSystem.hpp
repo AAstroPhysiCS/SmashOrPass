@@ -3,7 +3,6 @@
 #include <random>
 #include <vector>
 
-#include "smashorpass/core/Base.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
 
 namespace sop {
@@ -27,6 +26,7 @@ struct Particle {
 
 struct ParticleBurstDesc {
     Vec2 Position{};
+    Vec2 InitialVelocity{};
 
     uint32_t Count = 16;
 

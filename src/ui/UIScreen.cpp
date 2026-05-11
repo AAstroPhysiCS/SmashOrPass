@@ -1,6 +1,5 @@
 #include "smashorpass/ui/UIScreen.hpp"
 
-#include "smashorpass/core/Base.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
 #include "spdlog/spdlog.h"
 

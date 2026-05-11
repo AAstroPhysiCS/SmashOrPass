@@ -76,6 +76,13 @@ struct PlayerCharacterState {
 
     Vec2 Position{};
     double AirParticleCooldownSecondsRemaining = 0.0;
+
+    [[nodiscard]] Vec2 GetPlayerFeetPosition() const {
+        return Vec2{
+            Position.x,
+            Position.y + 100.0f,
+        };
+    }
 };
 
 void ApplyPlayerCollisionProfile(PlayerCharacterState& player,

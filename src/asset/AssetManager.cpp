@@ -1,6 +1,7 @@
 #include "smashorpass/asset/AssetManager.hpp"
 
 #include <SDL3_image/SDL_image.h>
+#include "SDL3/SDL.h"
 
 #include <array>
 #include <cstdint>
@@ -183,42 +184,30 @@ void AssetManager::preloadCharacterSpriteSheets(CharacterId character) {
     }
 }
 
+std::span<const FrameEffectMask> AssetManager::GetCharacterAnimationEffectMasks(
+    CharacterId character, CharacterAnimation animation, EffectMaskKind kind) {
+    const CharacterAnimationEffectMaskKey key{
+        .Character = character,
+        .Animation = animation,
+        .Kind = kind,
+    };
+
+    const auto it = m_CharacterAnimationEffectMasks.find(key);
+    if (it != m_CharacterAnimationEffectMasks.end()) {
+        return std::span<const FrameEffectMask>{it->second.data(), it->second.size()};
+    }
+
+    const std::vector<FrameEffectMask>& masks = LoadCharacterAnimationEffectMasks(character, animation, kind);
+
+    return std::span<const FrameEffectMask>{masks.data(), masks.size()};
+}
+
 const SpriteSheet& AssetManager::loadSpriteSheet(CharacterId character,
                                                  CharacterAnimation animation) {
-    const auto AnimationBaseName = [](CharacterAnimation animationId) -> std::string_view {
-        switch (animationId) {
-            case CharacterAnimation::Ascending:
-                return "Ascending";
-            case CharacterAnimation::Attacks:
-                return "Attacks";
-            case CharacterAnimation::Dash:
-                return "Dash";
-            case CharacterAnimation::Falling:
-                return "Falling";
-            case CharacterAnimation::Idle:
-                return "Idle";
-            case CharacterAnimation::Walk:
-                return "Walk";
-        }
-
-        SOP_ASSERT(false, "Unhandled character animation");
-        return "";
-    };
-
-    const auto CharacterDirName = [](CharacterId characterId) -> std::string_view {
-        switch (characterId) {
-            case CharacterId::Samurai: {
-                return "samurai";
-            }
-        }
-
-        SOP_ASSERT(false, "Unhandled character id");
-        return "";
-    };
-
+    
     const std::filesystem::path basePath = m_AssetRootDir / "sprites" / "characters" /
-                                           CharacterDirName(character) /
-                                           AnimationBaseName(animation);
+                                           GetCharacterDirName(character) /
+                                           GetAnimationBaseName(animation);
 
     const SpriteSheetBytes bytes = ReadCharacterSpriteSheetBytes(m_AssetRootDir,
                                                                  basePath.string() + ".png",
@@ -274,4 +263,173 @@ AssetManager::ArenaAsset& AssetManager::loadArenaAsset(ArenaId arena) {
 
     return it->second;
 }
+
+const char* AssetManager::GetCharacterDirName(CharacterId character) const {
+    switch (character) {
+        case CharacterId::Samurai:
+            return "samurai";
+        case CharacterId::Brawler:
+            return "brawler";
+        case CharacterId::Tank:
+            return "tank";
+        case CharacterId::Mage:
+            return "mage";
+    }
+    return "Unk";
+}
+
+const char* AssetManager::GetAnimationBaseName(CharacterAnimation animation) const {
+    switch (animation) {
+        case CharacterAnimation::Ascending:
+            return "Ascending";
+        case CharacterAnimation::Attacks:
+            return "Attacks";
+        case CharacterAnimation::Dash:
+            return "Dash";
+        case CharacterAnimation::Falling:
+            return "Falling";
+        case CharacterAnimation::Idle:
+            return "Idle";
+        case CharacterAnimation::Walk:
+            return "Walk";
+    }
+
+    SOP_ASSERT(false, "Unhandled character animation");
+    return "";
+}
+
+const std::vector<FrameEffectMask>& AssetManager::LoadCharacterAnimationEffectMasks(
+    CharacterId character, CharacterAnimation animation, EffectMaskKind kind) {
+
+    const auto CharacterAnimationBasePath = [&](const std::filesystem::path& assetRootDir,
+        CharacterId character,
+        CharacterAnimation animation) -> std::filesystem::path {
+        return assetRootDir / "sprites" / "characters" / GetCharacterDirName(character) /
+               GetAnimationBaseName(animation);
+    };
+
+    const auto LoadSurfaceFromBytes = [](std::span<const uint8_t> bytes, const char* name) -> SDL_Surface* {
+        SDL_IOStream* io = SDL_IOFromConstMem(bytes.data(), bytes.size());
+        SOP_ASSERT(io != nullptr, "Failed to create IO stream");
+
+        SDL_Surface* surface = IMG_LoadPNG_IO(io);
+        SOP_SDL_ASSERT(SDL_CloseIO(io), "SDL_CloseIO");
+        SOP_SDL_ASSERT(surface != nullptr, name);
+
+        return surface;
+    };
+
+    const auto CreateEffectMaskDefinition = [](EffectMaskKind kind) -> EffectMaskDefinition {
+        switch (kind) {
+            case EffectMaskKind::SwordGreen:
+                return EffectMaskDefinition{
+                    .SampleStep = 4,
+                    .PixelPredicate = [](const EffectMaskPixel& pixel) {
+                            const float r = static_cast<float>(pixel.R);
+                            const float g = static_cast<float>(pixel.G);
+                            const float b = static_cast<float>(pixel.B);
+
+                            return pixel.A > 64 && g > 110.0f && g > r * 1.25f && g > b * 1.25f;
+                    },
+                };
+        }
+        SOP_ASSERT(false, "Unhandled effect mask kind");
+        return {};
+    };
+
+    const SpriteSheet& spriteSheet = getSpriteSheet(character, animation);
+    const std::span<const SpriteSheetFrame> frames = spriteSheet.getFrames();
+
+    const std::filesystem::path basePath =
+        CharacterAnimationBasePath(m_AssetRootDir, character, animation);
+
+    const SpriteSheetBytes bytes =
+        ReadCharacterSpriteSheetBytes(m_AssetRootDir,
+                                                    basePath.string() + ".png",
+                                                    basePath.string() + "_boxes.png",
+                                                    basePath.string() + ".json");
+
+    auto spriteSurface = LoadSurfaceFromBytes(bytes.Sprite, "Failed to load sprite surface");
+
+    const EffectMaskDefinition definition = CreateEffectMaskDefinition(kind);
+
+    std::vector<FrameEffectMask> masks = BuildEffectMasks(spriteSurface, frames, definition);
+
+    const CharacterAnimationEffectMaskKey key{
+        .Character = character,
+        .Animation = animation,
+        .Kind = kind,
+    };
+
+    auto [it, inserted] = m_CharacterAnimationEffectMasks.try_emplace(key, std::move(masks));
+
+    SOP_ASSERT(inserted, "Effect mask should only be loaded once");
+
+    return it->second;
+}
+
+std::vector<FrameEffectMask> AssetManager::BuildEffectMasks(
+    SDL_Surface* surface,
+    std::span<const SpriteSheetFrame> frames,
+    const EffectMaskDefinition& definition) {
+    SOP_ASSERT(surface != nullptr, "Effect mask generation requires a valid surface");
+    SOP_ASSERT(definition.SampleStep > 0, "Effect mask sample step must be positive");
+    SOP_ASSERT(definition.PixelPredicate != nullptr, "Effect mask requires a pixel predicate");
+
+    std::vector<FrameEffectMask> masks;
+    masks.resize(frames.size());
+
+    std::unique_ptr<SDL_Surface, SdlSurfaceDeleter> rgbaSurface{
+        SDL_ConvertSurface(surface, SDL_PIXELFORMAT_RGBA32)};
+    SOP_SDL_ASSERT(rgbaSurface != nullptr, "SDL_ConvertSurface failed");
+
+    const bool mustLock = SDL_MUSTLOCK(rgbaSurface.get());
+    if (mustLock) {
+        SOP_SDL_ASSERT(SDL_LockSurface(rgbaSurface.get()), "SDL_LockSurface failed");
+    }
+
+    const auto* pixels = static_cast<const Uint8*>(rgbaSurface->pixels);
+
+    for (size_t frameIndex = 0; frameIndex < frames.size(); ++frameIndex) {
+        const SpriteSheetFrame& frame = frames[frameIndex];
+        FrameEffectMask& mask = masks[frameIndex];
+
+        for (uint32_t y = frame.y_top; y < frame.y_bottom; y += definition.SampleStep) {
+            for (uint32_t x = frame.x_left; x < frame.x_right; x += definition.SampleStep) {
+                const Uint8* p = pixels + y * rgbaSurface->pitch + x * 4;
+
+                const EffectMaskPixel pixel{
+                    .R = p[0],
+                    .G = p[1],
+                    .B = p[2],
+                    .A = p[3],
+
+                    .SheetX = x,
+                    .SheetY = y,
+
+                    .LocalX = x - frame.x_left,
+                    .LocalY = y - frame.y_top,
+
+                    .FrameIndex = frameIndex,
+                };
+
+                if (!definition.PixelPredicate(pixel)) {
+                    continue;
+                }
+
+                mask.Points.push_back(Vec2{
+                    static_cast<float>(pixel.LocalX),
+                    static_cast<float>(pixel.LocalY),
+                });
+            }
+        }
+    }
+
+    if (mustLock) {
+        SDL_UnlockSurface(rgbaSurface.get());
+    }
+
+    return masks;
+}
+
 }  // namespace sop

@@ -326,16 +326,9 @@ void ApplyPlayerViewport(PlayerControlConfig& config,
         config, player, SDL_FRect{0.0f, 0.0f, kDefaultArenaWidth, kDefaultArenaHeight});
 }
 
-[[nodiscard]] Vec2 GetPlayerFeetPosition(const PlayerCharacterState& player) {
-    return Vec2{
-        player.Position.x,
-        player.Position.y + 100.0f,
-    };
-}
-
 void EmitJumpParticles(const PlayerCharacterState& player, ParticleSystem& particleSystem) {
     ParticleBurstDesc desc{};
-    desc.Position = GetPlayerFeetPosition(player);
+    desc.Position = player.GetPlayerFeetPosition();
     desc.Count = 18;
     desc.MinSpeed = 120.0f;
     desc.MaxSpeed = 220.0f;
@@ -359,10 +352,8 @@ void EmitAirTrailParticles(PlayerCharacterState& player, ParticleSystem& particl
 
     player.AirParticleCooldownSecondsRemaining = kAirParticleIntervalSeconds;
 
-    Vec2 position = GetPlayerFeetPosition(player);
-
     ParticleBurstDesc desc{};
-    desc.Position = position;
+    desc.Position = player.GetPlayerFeetPosition();
     desc.Count = 8;
     desc.MinSpeed = 20.0f;
     desc.MaxSpeed = 90.0f;

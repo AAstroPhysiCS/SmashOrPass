@@ -10,12 +10,6 @@ namespace sop {
 
 enum class FontId : uint8_t;
 
-// TODO: use glm, delete THIS only temporary
-struct Vec2 {
-    float x;
-    float y;
-};
-
 struct TextureDrawParams {
     const SDL_FRect* src{nullptr};
     SDL_FRect dst{};

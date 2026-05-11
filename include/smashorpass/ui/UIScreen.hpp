@@ -1,12 +1,11 @@
 #pragma once
 
+#include "smashorpass/core/Base.hpp"
 #include "smashorpass/core/Event.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
 #include "smashorpass/ui/UIWidget.hpp"
 
 namespace sop {
-
-struct Vec2;
 
 class UIBuilder;
 

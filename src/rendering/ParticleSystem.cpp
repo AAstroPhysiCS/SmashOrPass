@@ -43,6 +43,7 @@ void ParticleSystem::EmitBurst(const ParticleBurstDesc& desc) {
 
         p.Position = desc.Position;
         p.Velocity = Vec2{dir.x * speed, dir.y * speed};
+        p.Velocity = desc.InitialVelocity + p.Velocity;
         p.Acceleration = desc.Acceleration;
 
         p.StartColor = desc.StartColor;

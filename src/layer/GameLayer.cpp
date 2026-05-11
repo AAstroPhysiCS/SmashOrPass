@@ -21,7 +21,7 @@ void GameLayer::OnEvent(const Event& event, ApplicationContext& ctx) {
         if (component->GetApplicationState() == ctx.CurrentState)
             component->OnEvent(event);
     }
-    m_Game.OnEvent(event);
+    m_Game.OnEvent(event, ctx);
 }
 
 void GameLayer::OnGameplayTick(ApplicationContext& ctx) {
@@ -58,7 +58,8 @@ void GameLayer::OnRender(ApplicationContext& ctx) {
 
     auto& renderer = GetRenderer();
     m_Game.SetDisplayMetrics(ctx.Display);
-    m_Game.Render(ctx.CurrentState, renderer, *ctx.Assets, ctx.RenderCollisionBoxes);
+    m_Game.Render(
+        ctx.CurrentState, renderer, GetEventDispatcher(), *ctx.Assets, ctx.RenderCollisionBoxes);
 
     for (const auto& component : m_Screens)
         if (component->GetApplicationState() == ctx.CurrentState)
