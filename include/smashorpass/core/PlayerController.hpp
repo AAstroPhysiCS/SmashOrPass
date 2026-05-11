@@ -73,6 +73,16 @@ struct PlayerCharacterState {
     double DashSecondsRemaining = 0.0;
     double DashCooldownSecondsRemaining = 0.0;
     float DashDirection = 1.0f;
+
+    Vec2 Position{};
+    double AirParticleCooldownSecondsRemaining = 0.0;
+
+    [[nodiscard]] Vec2 GetPlayerFeetPosition() const {
+        return Vec2{
+            Position.x,
+            Position.y + 100.0f,
+        };
+    }
 };
 
 void ApplyPlayerCollisionProfile(PlayerCharacterState& player,
@@ -82,6 +92,10 @@ void ApplyPlayerCollisionProfile(PlayerCharacterState& player,
 void ApplyBindings(PlayerInputState& input, const KeyEvent& event, const PlayerBindings& bindings);
 
 void SetPlayerSpawn(PlayerCharacterState& player, float X, float Y, bool facingRight);
+
+void EmitJumpParticles(const PlayerCharacterState& player, ParticleSystem& particleSystem);
+
+void EmitAirTrailParticles(PlayerCharacterState& player, ParticleSystem& particleSystem);
 
 void TickPlayer(PlayerCharacterState& player,
                 PlayerInputState& input,

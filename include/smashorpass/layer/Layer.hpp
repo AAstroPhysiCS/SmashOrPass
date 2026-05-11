@@ -25,6 +25,10 @@ struct Layer {
         return m_Window;
     }
 
+    [[nodiscard]] inline EventDispatcher& GetEventDispatcher() {
+        return m_EventDispatcher;
+    }
+
    private:
     Renderer& m_Renderer;
     const Window& m_Window;

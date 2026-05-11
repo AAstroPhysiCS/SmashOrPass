@@ -1,12 +1,31 @@
 #include "smashorpass/rendering/ParticleSystem.hpp"
 
+#include "SDL3_image/SDL_image.h"
+#include "SDL3/SDL_error.h"
+
 #include <algorithm>
 #include <cmath>
+#include <format>
+#include <filesystem>
 
 namespace sop {
 
-ParticleSystem::ParticleSystem(size_t maxParticles)
-    : m_Particles(maxParticles), m_Random(std::random_device{}()) {}
+ParticleSystem::ParticleSystem(const Renderer& renderer, size_t maxParticles)
+    : m_Particles(maxParticles), m_Random(std::random_device{}()) {
+
+    auto path = std::filesystem::path(SOP_ASSET_ROOT_DIR) / "particles/soft_circle_particle_textures/soft_circle_particle_128.png";
+    auto pathString = path.string();
+    m_ParticleTexture = IMG_LoadTexture(renderer.NativeHandle(), pathString.c_str());
+    SOP_ASSERT(m_ParticleTexture, std::format("Failed to load particle texture '{0}'", pathString).c_str());
+
+    SDL_SetTextureBlendMode(m_ParticleTexture, SDL_BLENDMODE_BLEND);
+    SDL_SetTextureScaleMode(m_ParticleTexture, SDL_SCALEMODE_LINEAR);
+}
+
+ParticleSystem::~ParticleSystem() {
+    SDL_DestroyTexture(m_ParticleTexture);
+    m_ParticleTexture = nullptr;
+}
 
 void ParticleSystem::EmitBurst(const ParticleBurstDesc& desc) {
     constexpr float twoPi = 6.28318530718f;
@@ -24,6 +43,7 @@ void ParticleSystem::EmitBurst(const ParticleBurstDesc& desc) {
 
         p.Position = desc.Position;
         p.Velocity = Vec2{dir.x * speed, dir.y * speed};
+        p.Velocity = desc.InitialVelocity + p.Velocity;
         p.Acceleration = desc.Acceleration;
 
         p.StartColor = desc.StartColor;
@@ -72,7 +92,14 @@ void ParticleSystem::Render(Renderer& renderer) {
 
         const SDL_FRect rect{p.Position.x - size * 0.5f, p.Position.y - size * 0.5f, size, size};
 
-        renderer.FillRect(rect, color);
+        //renderer.FillRect(rect, color);
+
+        renderer.DrawTexture(m_ParticleTexture,
+                             TextureDrawParams{
+                                 .dst = rect,
+                                 .tint = color,
+                                 .blendMode = SDL_BLENDMODE_BLEND,
+                             });
     }
 }
 

@@ -10,11 +10,15 @@
 #include "smashorpass/core/InputBindings.hpp"
 #include "smashorpass/core/PlayerController.hpp"
 #include "smashorpass/core/SpriteAnimationPlayer.hpp"
+#include "smashorpass/core/PlayerEffectEmitter.hpp"
+
 #include "smashorpass/rendering/ParticleSystem.hpp"
 
 namespace sop {
 
 class Renderer;
+
+struct ApplicationContext;
 
 struct GameConfig {};
 
@@ -42,7 +46,7 @@ inline static GameConfig loadDefault() {
 
 class Game final {
    public:
-    void OnEvent(const Event& event);
+    void OnEvent(const Event& event, ApplicationContext& ctx);
     void SetDisplayMetrics(const DisplayMetrics& metrics);
     void GameplayTick(ApplicationState state,
                       double stepSeconds,
@@ -51,6 +55,7 @@ class Game final {
     void AnimationTick(ApplicationState state, AssetManager& assetManager);
     void Render(ApplicationState state,
                 Renderer& renderer,
+                EventDispatcher& dispatcher,
                 AssetManager& assetManager,
                 bool renderCollisionBoxes);
 
@@ -58,12 +63,22 @@ class Game final {
     void EnsurePlayerCollisionProfile(AssetManager& assetManager);
     void UpdateArena(SDL_FPoint logicalSize);
     void AdvancePlayerAnimation(PlayerCharacterState& player, AssetManager& assetManager);
-    void RenderWorld(Renderer& renderer, AssetManager& assetManager, bool renderCollisionBoxes);
+    void RenderWorld(Renderer& renderer,
+                     EventDispatcher& dispatcher,
+                     AssetManager& assetManager,
+                     bool renderCollisionBoxes);
     void RenderStage(Renderer& renderer, AssetManager& assetManager);
     void RenderStageForeground(Renderer& renderer, AssetManager& assetManager);
-    void RenderPlayers(Renderer& renderer, AssetManager& assetManager);
+    void RenderPlayers(Renderer& renderer, AssetManager& assetManager, EventDispatcher& dispatcher);
     void RenderCollisionBoxes(Renderer& renderer, AssetManager& assetManager);
     void RenderEffects(Renderer& renderer);
+
+    void EmitPlayerParticleEffect(ParticleSystem& particleSystem,
+                                  const PlayerParticleEffectEvent& event);
+    void EmitSwordFireParticleEffect(ParticleSystem& particleSystem,
+                                     const PlayerParticleEffectEvent& event);
+    void EmitDashParticleEffect(ParticleSystem& particleSystem,
+                                const PlayerParticleEffectEvent& event);
 
     PlayerState m_Player1{.Bindings{.MoveLeft = SDLK_A,
                                     .MoveRight = SDLK_D,
@@ -75,6 +90,8 @@ class Game final {
                                     .Jump = SDLK_I,
                                     .Dash = SDLK_RSHIFT,
                                     .Attack = SDLK_M}};
+
+    PlayerEffectEmitter m_PlayerEffectEmitter;
 
     ArenaId m_Arena = ArenaId::Chains;
     SDL_FRect m_ArenaRect{0.0f, 0.0f, kDefaultPlayerScreenWidth, kDefaultPlayerScreenHeight};

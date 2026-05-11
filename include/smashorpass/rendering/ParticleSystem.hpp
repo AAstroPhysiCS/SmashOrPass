@@ -3,7 +3,6 @@
 #include <random>
 #include <vector>
 
-#include "smashorpass/core/Base.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
 
 namespace sop {
@@ -27,6 +26,7 @@ struct Particle {
 
 struct ParticleBurstDesc {
     Vec2 Position{};
+    Vec2 InitialVelocity{};
 
     uint32_t Count = 16;
 
@@ -47,8 +47,13 @@ struct ParticleBurstDesc {
 
 class ParticleSystem {
    public:
-    explicit ParticleSystem(size_t maxParticles = 512);
-    ~ParticleSystem() = default;
+    ParticleSystem(const Renderer& renderer, size_t maxParticles = std::pow(2, 12));
+    ~ParticleSystem();
+
+    ParticleSystem(const ParticleSystem&) = delete;
+    ParticleSystem& operator=(const ParticleSystem&) = delete;
+    ParticleSystem(ParticleSystem&&) = delete;
+    ParticleSystem& operator=(ParticleSystem&&) = delete;
 
     void EmitBurst(const ParticleBurstDesc& desc);
 
@@ -61,6 +66,7 @@ class ParticleSystem {
    private:
     std::vector<Particle> m_Particles;
     size_t m_NextParticle = 0;
+    SDL_Texture* m_ParticleTexture = nullptr;
 
     std::mt19937 m_Random;
 };

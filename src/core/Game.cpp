@@ -1,4 +1,5 @@
 #include "smashorpass/core/Game.hpp"
+#include "smashorpass/core/Base.hpp"
 
 #include <SDL3/SDL_keycode.h>
 
@@ -8,7 +9,7 @@
 #include "smashorpass/core/Event.hpp"
 #include "smashorpass/core/PlayerController.hpp"
 #include "smashorpass/core/PlayerSpritePlacement.hpp"
-#include "smashorpass/rendering/Renderer.hpp"
+#include "smashorpass/core/ApplicationContext.hpp"
 #include "spdlog/spdlog.h"
 
 namespace sop {
@@ -35,7 +36,7 @@ namespace {
 
 }  // namespace
 
-void Game::OnEvent(const Event& event) {
+void Game::OnEvent(const Event& event, ApplicationContext& ctx) {
     EventDispatcher::Dispatch<KeyEvent>(event, [this](const KeyEvent& keyEvent) {
         ApplyBindings(m_Player1.Input, keyEvent, m_Player1.Bindings);
         ApplyBindings(m_Player2.Input, keyEvent, m_Player2.Bindings);
@@ -43,6 +44,11 @@ void Game::OnEvent(const Event& event) {
 
     EventDispatcher::Dispatch<WindowMetricsChangedEvent>(
         event, [this](const WindowMetricsChangedEvent& e) { SetDisplayMetrics(e.Metrics); });
+
+    EventDispatcher::Dispatch<PlayerParticleEffectEvent>(
+        event, [&](const PlayerParticleEffectEvent& particleEvent) {
+            EmitPlayerParticleEffect(ctx.Particles, particleEvent);
+        });
 }
 
 void Game::SetDisplayMetrics(const DisplayMetrics& metrics) {
@@ -92,6 +98,7 @@ void Game::GameplayTick(ApplicationState state,
             //  TODO: game over screen, handle game over screen input, etc.
             break;
     }
+    
 }
 
 void Game::AnimationTick(ApplicationState state, AssetManager& assetManager) {
@@ -105,10 +112,11 @@ void Game::AnimationTick(ApplicationState state, AssetManager& assetManager) {
 
 void Game::Render(ApplicationState state,
                   Renderer& renderer,
+                  EventDispatcher& dispatcher,
                   AssetManager& assetManager,
                   bool renderCollisionBoxes) {
     if (state == ApplicationState::Playing) {
-        RenderWorld(renderer, assetManager, renderCollisionBoxes);
+        RenderWorld(renderer, dispatcher, assetManager, renderCollisionBoxes);
     }
 }
 
@@ -145,11 +153,11 @@ void Game::AdvancePlayerAnimation(PlayerCharacterState& player, AssetManager& as
     player.Animation.Advance(frames.size());
 }
 
-void Game::RenderWorld(Renderer& renderer, AssetManager& assetManager, bool renderCollisionBoxes) {
+void Game::RenderWorld(Renderer& renderer, EventDispatcher& dispatcher, AssetManager& assetManager, bool renderCollisionBoxes) {
     EnsurePlayerCollisionProfile(assetManager);
     UpdateArena(renderer.GetLogicalOutputSize());
     RenderStage(renderer, assetManager);
-    RenderPlayers(renderer, assetManager);
+    RenderPlayers(renderer, assetManager, dispatcher);
     RenderEffects(renderer);
     RenderStageForeground(renderer, assetManager);
     if (renderCollisionBoxes) {
@@ -179,8 +187,8 @@ void Game::RenderStageForeground(Renderer& renderer, AssetManager& assetManager)
     SOP_VERIFY(arenaDrawn, "Failed to draw arena foreground");
 }
 
-void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
-    const auto DrawPlayer = [&](const PlayerCharacterState& player,
+void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager, EventDispatcher& dispatcher) {
+    const auto DrawPlayer = [&](PlayerCharacterState& player,
                                 const PlayerControlConfig& control) {
         const SpriteSheet& spriteSheet =
             assetManager.getSpriteSheet(player.Character, player.Animation.GetAnimation());
@@ -193,11 +201,17 @@ void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager) {
         const detail::PlayerSpritePlacement placement =
             detail::MakePlayerSpritePlacement(anchorPosition, frame, player.FacingRight, scale);
 
+        player.Position = Vec2{anchorPosition.x, anchorPosition.y};
+
         TextureDrawParams drawParams{};
         drawParams.src = &placement.SourceRect;
         drawParams.dst = placement.DestinationRect;
         drawParams.origin = placement.Origin;
         drawParams.flip = placement.Flip;
+
+        m_PlayerEffectEmitter
+            .Update(player, player.Animation.GetAnimation(), player.Animation.GetFrameIndex(), frame,
+                    assetManager.GetCharacterAnimationEffectMasks(player.Character, player.Animation.GetAnimation(), EffectMaskKind::SwordGreen), scale, 0.0, dispatcher);
 
         return renderer.DrawTexture(spriteSheet.getSpriteTexture(), drawParams);
     };
@@ -234,5 +248,69 @@ void Game::RenderEffects(Renderer&) {
     // hit sparks
     // dust
     // particles
+}
+void Game::EmitPlayerParticleEffect(ParticleSystem& particleSystem,
+                                    const PlayerParticleEffectEvent& event) {
+    switch (event.Type) {
+        case PlayerParticleEffectType::SwordFire:
+            EmitSwordFireParticleEffect(particleSystem, event);
+            break;
+        
+        case PlayerParticleEffectType::DashBlue:
+            EmitDashParticleEffect(particleSystem, event);
+            break;
+    }
+}
+void Game::EmitSwordFireParticleEffect(ParticleSystem& particleSystem,
+                                       const PlayerParticleEffectEvent& event) {
+    ParticleBurstDesc desc{};
+    desc.Position = Vec2{event.Position.x, event.Position.y};
+    desc.InitialVelocity = Vec2{
+        event.FacingRight ? -20.0f : 20.0f,
+        -40.0f,
+    };
+
+    desc.Count = 3;
+    desc.MinSpeed = 20.0f;
+    desc.MaxSpeed = 110.0f;
+    desc.MinLifetime = 0.12f;
+    desc.MaxLifetime = 0.28f;
+    desc.MinSize = 8.0f;
+    desc.MaxSize = 18.0f;
+
+    desc.StartColor = Color{255, 150, 40, 180};
+    desc.EndColor = Color{255, 25, 0, 0};
+
+    desc.Acceleration = Vec2{
+        event.FacingRight ? -40.0f : 40.0f,
+        -220.0f,
+    };
+
+    particleSystem.EmitBurst(desc);
+}
+void Game::EmitDashParticleEffect(ParticleSystem& particleSystem,
+                                  const PlayerParticleEffectEvent& event) {
+    ParticleBurstDesc desc{};
+    desc.Position = Vec2{event.Position.x, event.Position.y};
+
+    desc.InitialVelocity = Vec2{
+        event.Velocity.x,
+        event.Velocity.y,
+    };
+
+    desc.Count = 6;
+    desc.MinSpeed = 40.0f;
+    desc.MaxSpeed = 180.0f;
+    desc.MinLifetime = 0.16f;
+    desc.MaxLifetime = 0.34f;
+    desc.MinSize = 10.0f;
+    desc.MaxSize = 24.0f;
+
+    desc.StartColor = Color{80, 180, 255, 150};
+    desc.EndColor = Color{40, 80, 255, 0};
+
+    desc.Acceleration = Vec2{0.0f, 0.0f};
+
+    particleSystem.EmitBurst(desc);
 }
 }  // namespace sop
