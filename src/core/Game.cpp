@@ -55,6 +55,89 @@ void Game::SetDisplayMetrics(const DisplayMetrics& metrics) {
     UpdateArena(metrics.LogicalSize());
 }
 
+Vec2 getOverlap(SDL_FRect rect1, SDL_FRect rect2) {
+    const float center1X = rect1.x + rect1.w * 0.5f;
+    const float center1Y = rect1.y + rect1.h * 0.5f;
+    const float center2X = rect2.x + rect2.w * 0.5f;
+    const float center2Y = rect2.y + rect2.h * 0.5f;
+
+    const float deltaX = center2X - center1X;
+    const float deltaY = center2Y - center1Y;
+
+    const float overlapX = (rect1.w + rect2.w) * 0.5f - std::abs(deltaX);
+    const float overlapY = (rect1.h + rect2.h) * 0.5f - std::abs(deltaY);
+
+    if (overlapX <= 0.0f || overlapY <= 0.0f) {
+        return Vec2{0.0f, 0.0f};
+    }
+
+    return Vec2{
+        deltaX >= 0.0f ? overlapX : -overlapX,
+        deltaY >= 0.0f ? overlapY : -overlapY,
+    };
+}
+
+void pushPlayer(PlayerCharacterState& player, Vec2 distance, float factor, bool pushY) {
+    const float dx = distance.x * factor;
+    const float dy = distance.y * factor;
+    if (pushY) {
+        player.AnchorPosition.y += dy;
+        player.CollisionRect.y += dy;
+        if (dy < -0.0001f) {
+            // prevents a "lag" during fall, when this player stands on top of a jumping player
+            player.Grounded = true;
+            player.VerticalVelocity = 0.0f;
+        }
+    } else {
+        player.AnchorPosition.x += dx;
+        player.CollisionRect.x += dx;
+    }
+}
+
+void pushBoxes(PlayerCharacterState& player1, PlayerCharacterState& player2) {
+    Vec2 overlap = getOverlap(player1.CollisionRect, player2.CollisionRect);
+    if (overlap.x == 0.0f && overlap.y == 0.0f) {
+        return;
+    }
+    /*
+        If there is a slight height overlap (10% of collision box) and the player 
+        comes from above, then he is simply moved onto the other player.
+        Otherwise move the players on the x-axis.
+    */ 
+    if (overlap.y > 0.00001f && player1.Push.canPushUp
+        && overlap.y < (player1.CollisionRect.h * 0.1f) && player1.VerticalVelocity >= 0.0f) {
+        // p1 is above -> move p1 up
+        pushPlayer(player1, overlap, -1.0f, true);
+    } else if (overlap.y < -0.00001f && player2.Push.canPushUp
+        && overlap.y > (player2.CollisionRect.h * -0.1f) && player2.VerticalVelocity >= 0.0f) {
+        // p2 is above -> move p2 up
+        pushPlayer(player2, overlap, 1.0f, true);
+    } else {
+        // try to move on x
+        const bool player1NeedsToMoveLeft = overlap.x > 0.0f;
+        const bool player1CanMoveX = player1NeedsToMoveLeft ? player1.Push.canPushLeft : player1.Push.canPushRight;
+        const bool player2CanMoveX = player1NeedsToMoveLeft ? player2.Push.canPushRight : player2.Push.canPushLeft;
+        if (!player1CanMoveX && !player2CanMoveX) {
+            return;
+        }
+
+        if (player1CanMoveX && player2CanMoveX) {
+            pushPlayer(player1, overlap, -0.5f, false);
+            pushPlayer(player2, overlap, 0.5f, false);
+        } else if (player1CanMoveX) {
+            pushPlayer(player1, overlap, -1.0f, false);
+        } else {
+            pushPlayer(player2, overlap, 1.0f, false);
+        }
+    }
+}
+
+void SolveCollisions(PlayerState& player1, PlayerState& player2) {
+    // TODO: platform collisions
+    pushBoxes(player1.Character, player2.Character);
+
+}
+
 void Game::GameplayTick(ApplicationState state,
                         double stepSeconds,
                         AssetManager& assetManager,
@@ -87,6 +170,7 @@ void Game::GameplayTick(ApplicationState state,
                        m_Player2.Control,
                        arenaCollisions,
                        particleSystem);
+            SolveCollisions(m_Player1, m_Player2);
             break;
         }
         case ApplicationState::Paused:

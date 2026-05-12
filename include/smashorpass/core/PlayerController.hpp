@@ -28,6 +28,13 @@ inline constexpr float kDefaultPlayerReferenceSourceHeight = 482.0f;
 inline constexpr float kDefaultPlayerRenderScale =
     kDefaultPlayerRenderHeight / kDefaultPlayerReferenceSourceHeight;
 
+struct PushState {
+    bool canPushLeft = true;
+    bool canPushRight = true;
+    bool canPushUp = true;
+    bool canPushDown = false;
+};
+
 struct PlayerControlConfig {
     float GroundY = kDefaultPlayerGroundY;
     float MinX = 0.0f;
@@ -73,7 +80,8 @@ struct PlayerCharacterState {
     double DashSecondsRemaining = 0.0;
     double DashCooldownSecondsRemaining = 0.0;
     float DashDirection = 1.0f;
-
+    
+    PushState Push{true, true, true, false};
     Vec2 Position{};
     double AirParticleCooldownSecondsRemaining = 0.0;
 
