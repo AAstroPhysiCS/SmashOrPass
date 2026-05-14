@@ -49,8 +49,8 @@ void PlayerEffectEmitter::Update(const PlayerCharacterState& player,
         const bool dashingRight = player.DashDirection > 0.0f;
 
         const Vec2 dashTrailPosition{
-            dashingRight ? player.CollisionRect.x : player.CollisionRect.x + player.CollisionRect.w,
-            player.CollisionRect.y + player.CollisionRect.h * 0.5f,
+            dashingRight ? player.CollisionBox.Rect.x : player.CollisionBox.Rect.x + player.CollisionBox.Rect.w,
+            player.CollisionBox.Rect.y + player.CollisionBox.Rect.h * 0.5f,
         };
 
         events.Enqueue(PlayerParticleEffectEvent{

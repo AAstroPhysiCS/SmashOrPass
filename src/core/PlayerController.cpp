@@ -19,23 +19,23 @@ namespace {
 
 void SyncCollisionRectToAnchor(PlayerCharacterState& player) {
     const SDL_FPoint offset = CollisionAnchorOffsetFor(player);
-    player.CollisionRect.x = player.AnchorPosition.x - offset.x;
-    player.CollisionRect.y = player.AnchorPosition.y - offset.y;
+    player.CollisionBox.Rect.x = player.AnchorPosition.x - offset.x;
+    player.CollisionBox.Rect.y = player.AnchorPosition.y - offset.y;
 }
 
 void TranslatePlayer(PlayerCharacterState& player, float dx, float dy) {
     player.AnchorPosition.x += dx;
     player.AnchorPosition.y += dy;
-    player.CollisionRect.x += dx;
-    player.CollisionRect.y += dy;
+    player.CollisionBox.Rect.x += dx;
+    player.CollisionBox.Rect.y += dy;
 }
 
 void SetPlayerCollisionX(PlayerCharacterState& player, float x) {
-    TranslatePlayer(player, x - player.CollisionRect.x, 0.0f);
+    TranslatePlayer(player, x - player.CollisionBox.Rect.x, 0.0f);
 }
 
 void SetPlayerCollisionY(PlayerCharacterState& player, float y) {
-    TranslatePlayer(player, 0.0f, y - player.CollisionRect.y);
+    TranslatePlayer(player, 0.0f, y - player.CollisionBox.Rect.y);
 }
 
 void TickTimer(double& secondsRemaining, double elapsedSeconds) {
@@ -137,14 +137,14 @@ void ApplyPlayerCollisionProfile(PlayerCharacterState& player,
     SOP_ASSERT(frame.collision_box.w > 0.0f && frame.collision_box.h > 0.0f,
                "Player collision profile requires a positive collision box");
 
-    const float previousBottom = player.CollisionRect.y + player.CollisionRect.h;
+    const float previousBottom = player.CollisionBox.Rect.y + player.CollisionBox.Rect.h;
     const float anchorX = static_cast<float>(frame.anchor_x);
     const float anchorY = static_cast<float>(frame.anchor_y);
     const SDL_FRect collisionBox = frame.collision_box;
 
-    player.CollisionRect.w = collisionBox.w * config.RenderScale;
-    player.CollisionRect.h = collisionBox.h * config.RenderScale;
-    player.CollisionRect.y = previousBottom - player.CollisionRect.h;
+    player.CollisionBox.Rect.w = collisionBox.w * config.RenderScale;
+    player.CollisionBox.Rect.h = collisionBox.h * config.RenderScale;
+    player.CollisionBox.Rect.y = previousBottom - player.CollisionBox.Rect.h;
     player.CollisionAnchorOffset = SDL_FPoint{
         (anchorX - collisionBox.x) * config.RenderScale,
         (anchorY - collisionBox.y) * config.RenderScale,
@@ -157,8 +157,8 @@ void ApplyPlayerCollisionProfile(PlayerCharacterState& player,
 
     const SDL_FPoint offset = CollisionAnchorOffsetFor(player);
     player.AnchorPosition = SDL_FPoint{
-        player.CollisionRect.x + offset.x,
-        player.CollisionRect.y + offset.y,
+        player.CollisionBox.Rect.x + offset.x,
+        player.CollisionBox.Rect.y + offset.y,
     };
 }
 
@@ -184,18 +184,18 @@ void SetPlayerSpawn(PlayerCharacterState& player, float posX, float posY, bool f
     // init all values that may be useful on spawn / respawn
     player.FacingRight = facingRight;
     player.VerticalVelocity = 0.0f;
-    player.Grounded = true;
+    player.Grounded = false;
     player.AirDashAvailable = true;
     player.AirJumpAvailable = false;
     player.DashSecondsRemaining = 0.0;
     player.DashCooldownSecondsRemaining = 0.0;
     player.DashDirection = facingRight ? 1.0f : -1.0f;
     player.AirParticleCooldownSecondsRemaining = 0.0;
-    player.CollisionRect.x = posX;
-    player.CollisionRect.y = posY;
+    player.CollisionBox.Rect.x = posX;
+    player.CollisionBox.Rect.y = posY;
     const SDL_FPoint offset = CollisionAnchorOffsetFor(player);
     player.AnchorPosition =
-        SDL_FPoint{player.CollisionRect.x + offset.x, player.CollisionRect.y + offset.y};
+        SDL_FPoint{player.CollisionBox.Rect.x + offset.x, player.CollisionBox.Rect.y + offset.y};
 }
 
 void TickPlayer(PlayerCharacterState& player,
@@ -248,7 +248,7 @@ void TickPlayer(PlayerCharacterState& player,
     const float horizontalSpeed = IsDashActive(player) ? config.DashSpeed : config.MoveSpeed;
     player.AnchorPosition.x += horizontalDirection * horizontalSpeed * dt;
     SyncCollisionRectToAnchor(player);
-    SetPlayerCollisionX(player, std::clamp(player.CollisionRect.x, config.MinX, config.MaxX));
+    SetPlayerCollisionX(player, std::clamp(player.CollisionBox.Rect.x, config.MinX, config.MaxX));
 
     if (input.JumpRequested && !IsDashActive(player)) {
         bool jumpedThisTick = false;
@@ -271,7 +271,15 @@ void TickPlayer(PlayerCharacterState& player,
         //}
     }
     input.JumpRequested = false;
-
+    if (!IsDashActive(player)) {
+        player.VerticalVelocity += config.Gravity * dt;
+        player.AnchorPosition.y += player.VerticalVelocity * dt;
+        SyncCollisionRectToAnchor(player);
+        //const float previousY = player.CollisionRect.y;
+        //player.VerticalVelocity += config.Gravity * dt;
+        //player.AnchorPosition.y += player.VerticalVelocity * dt;
+    }
+    /*
     if (IsDashActive(player)) {
         player.VerticalVelocity = 0.0f;
     } else if (floorPlatforms.empty()) {
@@ -309,12 +317,13 @@ void TickPlayer(PlayerCharacterState& player,
             EmitJumpParticles(player, particleSystem);
         }
     }
-
+    */
     //if the player should emit air particles aka trails when in the air
     //if (!player.Grounded && !IsDashActive(player)) {
         //EmitAirTrailParticles(player, particleSystem);
     //}
     player.Animation.SetAnimation(SelectPlayerAnimation(player, input));
+    player.Grounded = false;
 }
 
 void ApplyPlayerViewport(PlayerControlConfig& config,
@@ -375,13 +384,13 @@ void ApplyPlayerViewport(PlayerControlConfig& config,
     (void)arenaRect;
 
     config.MinX = 0.0f;
-    config.MaxX = std::max(config.MinX, kDefaultArenaWidth - player.CollisionRect.w);
+    config.MaxX = std::max(config.MinX, kDefaultArenaWidth - player.CollisionBox.Rect.w);
     config.GroundY = std::max(0.0f,
-                              std::min(kDefaultArenaHeight - player.CollisionRect.h,
-                                       kDefaultPlayerFloorLineY - player.CollisionRect.h));
+                              std::min(kDefaultArenaHeight - player.CollisionBox.Rect.h,
+                                       kDefaultPlayerFloorLineY - player.CollisionBox.Rect.h));
 
     SyncCollisionRectToAnchor(player);
-    SetPlayerCollisionX(player, std::clamp(player.CollisionRect.x, config.MinX, config.MaxX));
+    SetPlayerCollisionX(player, std::clamp(player.CollisionBox.Rect.x, config.MinX, config.MaxX));
 }
 
 CharacterAnimation SelectPlayerAnimation(const PlayerCharacterState& player,

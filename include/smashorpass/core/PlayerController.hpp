@@ -10,6 +10,7 @@
 #include "smashorpass/core/InputBindings.hpp"
 #include "smashorpass/core/SpriteAnimationPlayer.hpp"
 #include "smashorpass/rendering/ParticleSystem.hpp"
+#include "smashorpass/core/GameSystem.hpp"
 
 namespace sop {
 
@@ -27,13 +28,6 @@ inline constexpr float kDefaultPlayerRenderHeight = kDefaultPlayerCollisionHeigh
 inline constexpr float kDefaultPlayerReferenceSourceHeight = 482.0f;
 inline constexpr float kDefaultPlayerRenderScale =
     kDefaultPlayerRenderHeight / kDefaultPlayerReferenceSourceHeight;
-
-struct PushState {
-    bool canPushLeft = true;
-    bool canPushRight = true;
-    bool canPushUp = true;
-    bool canPushDown = false;
-};
 
 struct PlayerControlConfig {
     float GroundY = kDefaultPlayerGroundY;
@@ -62,16 +56,16 @@ struct PlayerCharacterState {
     SpriteAnimationPlayer Animation{CharacterAnimation::Idle};
     SDL_FPoint AnchorPosition{kDefaultPlayerStartX + (kDefaultPlayerCollisionWidth * 0.5f),
                               kDefaultPlayerGroundY + (kDefaultPlayerCollisionHeight * 0.5f)};
-    SDL_FRect CollisionRect{kDefaultPlayerStartX,
-                            kDefaultPlayerGroundY,
-                            kDefaultPlayerCollisionWidth,
-                            kDefaultPlayerCollisionHeight};
+    //SDL_FRect CollisionRect{kDefaultPlayerStartX,
+      //                      kDefaultPlayerGroundY,
+        //                    kDefaultPlayerCollisionWidth,
+          //                  kDefaultPlayerCollisionHeight};
     SDL_FPoint CollisionAnchorOffset{kDefaultPlayerCollisionWidth * 0.5f,
                                      kDefaultPlayerCollisionHeight * 0.5f};
     SDL_FPoint FlippedCollisionAnchorOffset{kDefaultPlayerCollisionWidth * 0.5f,
                                             kDefaultPlayerCollisionHeight * 0.5f};
     float VerticalVelocity = 0.0f;
-    bool Grounded = true;
+    bool Grounded = false;
     bool AirDashAvailable = true;
     bool AirJumpAvailable = false;
     bool FacingRight = true;
@@ -81,7 +75,15 @@ struct PlayerCharacterState {
     double DashCooldownSecondsRemaining = 0.0;
     float DashDirection = 1.0f;
     
-    PushState Push{true, true, true, false};
+    //PushState Push{true, true, true, false};
+    CollisionBody CollisionBox{.Rect{kDefaultPlayerStartX,
+                                    kDefaultPlayerGroundY,
+                                    kDefaultPlayerCollisionWidth,
+                                    kDefaultPlayerCollisionHeight},
+                                .Push{true, true, true, false},
+                                .Dynamic = true,
+                                .Weight = 100.0f
+                            };
     Vec2 Position{};
     double AirParticleCooldownSecondsRemaining = 0.0;
 
