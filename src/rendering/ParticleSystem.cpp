@@ -10,6 +10,8 @@
 
 namespace sop {
 
+using sop_util::Ok;
+
 ParticleSystem::ParticleSystem(const Renderer& renderer, size_t maxParticles)
     : m_Particles(maxParticles), m_Random(std::random_device{}()) {
     auto path = std::filesystem::path(SOP_ASSET_ROOT_DIR) /
@@ -87,7 +89,7 @@ void ParticleSystem::Update(float dt) {
     }
 }
 
-void ParticleSystem::Render(Renderer& renderer) {
+Result<void> ParticleSystem::Render(Renderer& renderer) {
     for (const Particle& p : m_Particles) {
         if (!p.Active)
             continue;
@@ -102,13 +104,14 @@ void ParticleSystem::Render(Renderer& renderer) {
 
         // renderer.FillRect(rect, color);
 
-        renderer.DrawTexture(m_ParticleTexture,
-                             TextureDrawParams{
-                                 .dst = rect,
-                                 .tint = color,
-                                 .blendMode = SDL_BLENDMODE_BLEND,
-                             });
+        TRY_VOID(renderer.DrawTexture(m_ParticleTexture,
+                                      TextureDrawParams{
+                                          .dst = rect,
+                                          .tint = color,
+                                          .blendMode = SDL_BLENDMODE_BLEND,
+                                      }));
     }
+    return Ok();
 }
 
 Particle& ParticleSystem::GetFreeParticle() {

@@ -114,12 +114,12 @@ Result<void> InGameState::OnRender(AppCtx& ctx) {
     SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
 
     m_Game.SetDisplayMetrics(ctx.m_DisplayMetrics);
-    m_Game.Render(ctx);
-    ctx.m_ParticleSystem.Render(ctx.m_Renderer);
-    m_GameScreen.OnRender(ctx.m_Renderer);
+    TRY_VOID(m_Game.Render(ctx));
+    TRY_VOID(ctx.m_ParticleSystem.Render(ctx.m_Renderer));
+    TRY_VOID(m_GameScreen.OnRender(ctx.m_Renderer));
 
     if (m_Paused) {
-        m_PauseScreen.OnRender(ctx.m_Renderer);
+        TRY_VOID(m_PauseScreen.OnRender(ctx.m_Renderer));
     }
 
     return Ok();

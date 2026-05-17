@@ -32,7 +32,7 @@ class UIScreen {
 
     virtual EventFlow OnEvent(const Event& event);
     virtual void OnUpdate();
-    virtual void OnRender(Renderer& renderer);
+    virtual Result<void> OnRender(Renderer& renderer);
 
     void RebuildUI();
 
@@ -42,10 +42,10 @@ class UIScreen {
     }
 
    private:
-    Vec2 MeasureWidget(UIWidgetId id, Renderer& renderer);
+    Result<Vec2> MeasureWidget(UIWidgetId id, Renderer& renderer);
     void LayoutWidget(UIWidgetId id, SDL_FRect rect);
 
-    void RenderWidget(Renderer& renderer, const UIWidget& widget);
+    Result<void> RenderWidget(Renderer& renderer, const UIWidget& widget);
 
     bool PointInRect(const Vec2& point, const SDL_FRect& rect) const;
 

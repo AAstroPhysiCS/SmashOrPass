@@ -57,8 +57,8 @@ void GameScreen::OnUpdate() {
     UpdateHudText();
 }
 
-void GameScreen::OnRender(Renderer& renderer) {
-    UIScreen::OnRender(renderer);
+Result<void> GameScreen::OnRender(Renderer& renderer) {
+    return UIScreen::OnRender(renderer);
 }
 
 void GameScreen::UpdateHudText() {

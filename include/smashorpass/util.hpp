@@ -43,28 +43,47 @@ constexpr OkVoid Ok() {
 }
 
 // TRY and TRY_VOID macro for ergonomics
-#define TRY_CONCAT_IMPL(a, b) a##b
-#define TRY_CONCAT(a, b) TRY_CONCAT_IMPL(a, b)
+// Note: __COUNTER__ is a compiler extension, but it is supported everywhere we tested.
+#if defined(__clang__)
+#if __has_warning("-Wc2y-extensions")
+#define SOP_UTIL_CLANG_SUPPRESS_COUNTER_WARNING \
+    _Pragma("clang diagnostic push") _Pragma("clang diagnostic ignored \"-Wc2y-extensions\"")
+#define SOP_UTIL_CLANG_RESTORE_COUNTER_WARNING _Pragma("clang diagnostic pop")
+#else
+#define SOP_UTIL_CLANG_SUPPRESS_COUNTER_WARNING
+#define SOP_UTIL_CLANG_RESTORE_COUNTER_WARNING
+#endif
+#else
+#define SOP_UTIL_CLANG_SUPPRESS_COUNTER_WARNING
+#define SOP_UTIL_CLANG_RESTORE_COUNTER_WARNING
+#endif
 
-#define TRY_IMPL(result_var, value_var, expr)                             \
-    auto result_var = (expr);                                             \
-    if (!result_var.has_value()) {                                        \
-        return sop_util::Err(std::move(result_var).error());              \
-    }                                                                     \
+#define SOP_UTIL_TRY_CONCAT_IMPL(a, b) a##b
+#define SOP_UTIL_TRY_CONCAT(a, b) SOP_UTIL_TRY_CONCAT_IMPL(a, b)
+
+#define SOP_UTIL_TRY_IMPL(result_var, value_var, expr)       \
+    auto result_var = (expr);                                \
+    if (!result_var.has_value()) {                           \
+        return sop_util::Err(std::move(result_var).error()); \
+    }                                                        \
     auto value_var = *std::move(result_var)
 
-#define TRY(value_var, expr)                                              \
-    TRY_IMPL(TRY_CONCAT(_try_result_, __COUNTER__), value_var, expr)
+#define TRY(value_var, expr)                                                            \
+    SOP_UTIL_CLANG_SUPPRESS_COUNTER_WARNING                                             \
+    SOP_UTIL_TRY_IMPL(SOP_UTIL_TRY_CONCAT(_try_result_, __COUNTER__), value_var, expr); \
+    SOP_UTIL_CLANG_RESTORE_COUNTER_WARNING
 
-#define TRY_VOID_IMPL(result_var, expr)                                   \
-    do {                                                                  \
-        auto result_var = (expr);                                         \
-        if (!result_var.has_value()) {                                    \
-            return sop_util::Err(std::move(result_var).error());          \
-        }                                                                 \
+#define SOP_UTIL_TRY_VOID_IMPL(result_var, expr)                 \
+    do {                                                         \
+        auto result_var = (expr);                                \
+        if (!result_var.has_value()) {                           \
+            return sop_util::Err(std::move(result_var).error()); \
+        }                                                        \
     } while (false)
 
-#define TRY_VOID(expr)                                                    \
-    TRY_VOID_IMPL(TRY_CONCAT(_try_result_, __COUNTER__), expr)
+#define TRY_VOID(expr)                                                            \
+    SOP_UTIL_CLANG_SUPPRESS_COUNTER_WARNING                                       \
+    SOP_UTIL_TRY_VOID_IMPL(SOP_UTIL_TRY_CONCAT(_try_result_, __COUNTER__), expr); \
+    SOP_UTIL_CLANG_RESTORE_COUNTER_WARNING
 
 }  // namespace sop_util

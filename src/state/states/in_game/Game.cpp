@@ -12,6 +12,9 @@
 #include "smashorpass/state/states/in_game/PlayerSpritePlacement.hpp"
 
 namespace sop {
+
+using sop_util::Ok;
+
 namespace {
 
 [[nodiscard]] SDL_FPoint MapDesignPointToArena(SDL_FPoint designPoint, const SDL_FRect& arenaRect) {
@@ -83,8 +86,8 @@ void Game::AnimationTick(AppCtx& ctx) {
     AdvancePlayerAnimation(ctx, m_Player2.Character);
 }
 
-void Game::Render(AppCtx& ctx) {
-    RenderWorld(ctx);
+Result<void> Game::Render(AppCtx& ctx) {
+    return RenderWorld(ctx);
 }
 
 void Game::EnsurePlayerCollisionProfile(AppCtx& ctx) {
@@ -126,16 +129,18 @@ void Game::AdvancePlayerAnimation(AppCtx& ctx, PlayerCharacterState& player) {
     player.Animation.Advance(frames.size());
 }
 
-void Game::RenderWorld(AppCtx& ctx) {
+Result<void> Game::RenderWorld(AppCtx& ctx) {
     EnsurePlayerCollisionProfile(ctx);
-    UpdateArena(ctx.m_Renderer.GetLogicalOutputSize());
-    RenderStage(ctx);
-    RenderPlayers(ctx);
+    TRY(logicalSize, ctx.m_Renderer.GetLogicalOutputSize());
+    UpdateArena(logicalSize);
+    TRY_VOID(RenderStage(ctx));
+    TRY_VOID(RenderPlayers(ctx));
     RenderEffects(ctx);
-    RenderStageForeground(ctx);
+    TRY_VOID(RenderStageForeground(ctx));
     if (ctx.RenderCollisionBoxes) {
-        RenderCollisionBoxes(ctx);
+        TRY_VOID(RenderCollisionBoxes(ctx));
     }
+    return Ok();
 }
 
 void Game::UpdateArena(SDL_FPoint logicalSize) {
@@ -144,39 +149,38 @@ void Game::UpdateArena(SDL_FPoint logicalSize) {
     ApplyPlayerViewport(m_Player2.Control, m_Player2.Character, m_ArenaRect);
 }
 
-void Game::RenderStage(AppCtx& ctx) {
+Result<void> Game::RenderStage(AppCtx& ctx) {
     SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
 
     Renderer& renderer = ctx.m_Renderer;
     AssetManager& assetManager = *ctx.Assets;
-    const SDL_FPoint size = renderer.GetLogicalOutputSize();
+    TRY(size, renderer.GetLogicalOutputSize());
 
-    renderer.FillRect(SDL_FRect{0.0f, 0.0f, size.x, size.y}, Color{18, 18, 24, 255});
+    TRY_VOID(renderer.FillRect(SDL_FRect{0.0f, 0.0f, size.x, size.y}, Color{18, 18, 24, 255}));
 
-    const bool arenaDrawn =
-        renderer.DrawTexture(assetManager.getArenaBackgroundTexture(m_Arena), m_ArenaRect);
-    SOP_VERIFY(arenaDrawn, "Failed to draw arena background");
+    TRY_VOID(renderer.DrawTexture(assetManager.getArenaBackgroundTexture(m_Arena), m_ArenaRect));
+    return Ok();
 }
 
-void Game::RenderStageForeground(AppCtx& ctx) {
+Result<void> Game::RenderStageForeground(AppCtx& ctx) {
     SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
 
     Renderer& renderer = ctx.m_Renderer;
     AssetManager& assetManager = *ctx.Assets;
 
-    const bool arenaDrawn =
-        renderer.DrawTexture(assetManager.getArenaForegroundTexture(m_Arena), m_ArenaRect);
-    SOP_VERIFY(arenaDrawn, "Failed to draw arena foreground");
+    TRY_VOID(renderer.DrawTexture(assetManager.getArenaForegroundTexture(m_Arena), m_ArenaRect));
+    return Ok();
 }
 
-void Game::RenderPlayers(AppCtx& ctx) {
+Result<void> Game::RenderPlayers(AppCtx& ctx) {
     SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
 
     Renderer& renderer = ctx.m_Renderer;
     AssetManager& assetManager = *ctx.Assets;
     EventDispatcher& dispatcher = ctx.m_EventDispatcher;
 
-    const auto DrawPlayer = [&](PlayerCharacterState& player, const PlayerControlConfig& control) {
+    const auto DrawPlayer = [&](PlayerCharacterState& player,
+                                const PlayerControlConfig& control) -> Result<void> {
         const SpriteSheet& spriteSheet =
             assetManager.getSpriteSheet(player.Character, player.Animation.GetAnimation());
         const std::span<const SpriteSheetFrame> frames = spriteSheet.getFrames();
@@ -210,13 +214,12 @@ void Game::RenderPlayers(AppCtx& ctx) {
         return renderer.DrawTexture(spriteSheet.getSpriteTexture(), drawParams);
     };
 
-    const bool playerDrawn1 = DrawPlayer(m_Player1.Character, m_Player1.Control);
-    SOP_VERIFY(playerDrawn1, "Failed to draw player 1 sprite");
-    const bool playerDrawn2 = DrawPlayer(m_Player2.Character, m_Player2.Control);
-    SOP_VERIFY(playerDrawn2, "Failed to draw player 2 sprite");
+    TRY_VOID(DrawPlayer(m_Player1.Character, m_Player1.Control));
+    TRY_VOID(DrawPlayer(m_Player2.Character, m_Player2.Control));
+    return Ok();
 }
 
-void Game::RenderCollisionBoxes(AppCtx& ctx) {
+Result<void> Game::RenderCollisionBoxes(AppCtx& ctx) {
     SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
 
     Renderer& renderer = ctx.m_Renderer;
@@ -227,18 +230,16 @@ void Game::RenderCollisionBoxes(AppCtx& ctx) {
 
     for (const SDL_FRect& designRect : assetManager.getArenaCollisionBoxes(m_Arena)) {
         const SDL_FRect arenaRect = MapDesignRectToArena(designRect, m_ArenaRect);
-        const bool boxDrawn = renderer.DrawRect(arenaRect, kArenaCollisionBoxColor);
-        SOP_VERIFY(boxDrawn, "Failed to draw arena collision box");
+        TRY_VOID(renderer.DrawRect(arenaRect, kArenaCollisionBoxColor));
     }
 
     const SDL_FRect playerRect1 =
         MapDesignRectToArena(m_Player1.Character.CollisionRect, m_ArenaRect);
     const SDL_FRect playerRect2 =
         MapDesignRectToArena(m_Player2.Character.CollisionRect, m_ArenaRect);
-    const bool playerBoxDrawn1 = renderer.DrawRect(playerRect1, kPlayerCollisionBoxColor);
-    SOP_VERIFY(playerBoxDrawn1, "Failed to draw player 1 collision box");
-    const bool playerBoxDrawn2 = renderer.DrawRect(playerRect2, kPlayerCollisionBoxColor);
-    SOP_VERIFY(playerBoxDrawn2, "Failed to draw player 2 collision box");
+    TRY_VOID(renderer.DrawRect(playerRect1, kPlayerCollisionBoxColor));
+    TRY_VOID(renderer.DrawRect(playerRect2, kPlayerCollisionBoxColor));
+    return Ok();
 }
 
 void Game::RenderEffects(AppCtx&) {

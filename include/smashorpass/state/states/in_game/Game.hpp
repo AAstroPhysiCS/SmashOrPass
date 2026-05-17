@@ -5,13 +5,14 @@
 #include <string>
 
 #include "smashorpass/core/Event.hpp"
-#include "smashorpass/state/states/in_game/Arena.hpp"
 #include "smashorpass/state/states/in_game/InputBindings.hpp"
 #include "smashorpass/state/states/in_game/PlayerController.hpp"
 #include "smashorpass/state/states/in_game/PlayerEffectEmitter.hpp"
-#include "smashorpass/state/states/in_game/SpriteAnimationPlayer.hpp"
+#include "smashorpass/util.hpp"
 
 namespace sop {
+
+using sop_util::Result;
 
 class Renderer;
 struct AppCtx;
@@ -46,17 +47,17 @@ class Game final {
     void SetDisplayMetrics(const DisplayMetrics& metrics);
     void GameplayTick(AppCtx& ctx, std::chrono::steady_clock::duration step);
     void AnimationTick(AppCtx& ctx);
-    void Render(AppCtx& ctx);
+    Result<void> Render(AppCtx& ctx);
 
    private:
     void EnsurePlayerCollisionProfile(AppCtx& ctx);
     void UpdateArena(SDL_FPoint logicalSize);
     void AdvancePlayerAnimation(AppCtx& ctx, PlayerCharacterState& player);
-    void RenderWorld(AppCtx& ctx);
-    void RenderStage(AppCtx& ctx);
-    void RenderStageForeground(AppCtx& ctx);
-    void RenderPlayers(AppCtx& ctx);
-    void RenderCollisionBoxes(AppCtx& ctx);
+    Result<void> RenderWorld(AppCtx& ctx);
+    Result<void> RenderStage(AppCtx& ctx);
+    Result<void> RenderStageForeground(AppCtx& ctx);
+    Result<void> RenderPlayers(AppCtx& ctx);
+    Result<void> RenderCollisionBoxes(AppCtx& ctx);
     void RenderEffects(AppCtx& ctx);
 
     void EmitPlayerParticleEffect(AppCtx& ctx, const PlayerParticleEffectEvent& event);

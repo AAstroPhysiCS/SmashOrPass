@@ -13,7 +13,7 @@ class GameScreen : public UIScreen {
     void Build(UIBuilder& builder) final override;
     EventFlow OnEvent(const Event& event) final override;
     void OnUpdate() final override;
-    void OnRender(Renderer& renderer) final override;
+    Result<void> OnRender(Renderer& renderer) final override;
 
    private:
     void UpdateHudText();

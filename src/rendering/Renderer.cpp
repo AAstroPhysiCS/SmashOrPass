@@ -1,21 +1,41 @@
 #include "smashorpass/rendering/Renderer.hpp"
 
 #include <algorithm>
-#include <cstring>
 
 #include "smashorpass/ui/UIWidget.hpp"
 #include "spdlog/spdlog.h"
 
 namespace sop {
 
+using sop_util::Err;
+using sop_util::Ok;
+
+namespace {
+
+std::string SdlError(const char* operation) {
+    return std::string(operation) + " failed: " + SDL_GetError();
+}
+
+Result<void> SdlResult(bool ok, const char* operation) {
+    if (!ok) {
+        return Err(SdlError(operation));
+    }
+    return Ok();
+}
+
+}  // namespace
+
 Renderer::ScopedClip::ScopedClip(Renderer& renderer, std::optional<SDL_Rect> rect)
     : m_Renderer(&renderer) {
-    m_Renderer->PushClipRect(rect);
+    auto result = m_Renderer->PushClipRect(rect);
+    SOP_VERIFY(result.has_value(), result.error().c_str());
 }
 
 Renderer::ScopedClip::~ScopedClip() {
-    if (m_Renderer)
-        m_Renderer->PopClipRect();
+    if (m_Renderer) {
+        auto result = m_Renderer->PopClipRect();
+        SOP_VERIFY(result.has_value(), result.error().c_str());
+    }
 }
 
 Renderer::ScopedClip::ScopedClip(ScopedClip&& other) noexcept : m_Renderer(other.m_Renderer) {
@@ -26,8 +46,10 @@ Renderer::ScopedClip& Renderer::ScopedClip::operator=(ScopedClip&& other) noexce
     if (this == &other)
         return *this;
 
-    if (m_Renderer)
-        m_Renderer->PopClipRect();
+    if (m_Renderer) {
+        auto result = m_Renderer->PopClipRect();
+        SOP_VERIFY(result.has_value(), result.error().c_str());
+    }
 
     m_Renderer = other.m_Renderer;
     other.m_Renderer = nullptr;
@@ -71,237 +93,259 @@ Renderer::~Renderer() {
     TTF_Quit();
 }
 
-void Renderer::BeginFrame(Color clear) {
-    Clear(clear);
+Result<void> Renderer::BeginFrame(Color clear) {
+    return Clear(clear);
 }
 
-void Renderer::EndFrame() {
-    SOP_ASSERT(SDL_RenderPresent(m_NativeHandle), "SDL_RenderPresent");
+Result<void> Renderer::EndFrame() {
+    return SdlResult(SDL_RenderPresent(m_NativeHandle), "SDL_RenderPresent");
 }
 
-void Renderer::Flush() {
-    SOP_ASSERT(SDL_FlushRenderer(m_NativeHandle), "SDL_FlushRenderer");
+Result<void> Renderer::Flush() {
+    return SdlResult(SDL_FlushRenderer(m_NativeHandle), "SDL_FlushRenderer");
 }
 
-bool Renderer::SetVSync(bool enabled) {
-    return SDL_SetRenderVSync(m_NativeHandle, enabled ? 1 : 0);
+Result<void> Renderer::SetVSync(bool enabled) {
+    return SdlResult(SDL_SetRenderVSync(m_NativeHandle, enabled ? 1 : 0), "SDL_SetRenderVSync");
 }
 
-bool Renderer::IsVSync() const {
+Result<bool> Renderer::IsVSync() const {
     int vsync = 0;
-    SOP_ASSERT(SDL_GetRenderVSync(m_NativeHandle, &vsync), "SDL_GetRenderVSync");
-    return vsync != 0;
+    TRY_VOID(SdlResult(SDL_GetRenderVSync(m_NativeHandle, &vsync), "SDL_GetRenderVSync"));
+    return Ok(vsync != 0);
 }
 
-bool Renderer::SetLogicalPresentation(int width, int height, SDL_RendererLogicalPresentation mode) {
-    return SDL_SetRenderLogicalPresentation(m_NativeHandle, width, height, mode);
+Result<void> Renderer::SetLogicalPresentation(int width,
+                                              int height,
+                                              SDL_RendererLogicalPresentation mode) {
+    return SdlResult(SDL_SetRenderLogicalPresentation(m_NativeHandle, width, height, mode),
+                     "SDL_SetRenderLogicalPresentation");
 }
 
-bool Renderer::GetLogicalPresentation(int& width,
-                                      int& height,
-                                      SDL_RendererLogicalPresentation& mode) const {
-    return SDL_GetRenderLogicalPresentation(m_NativeHandle, &width, &height, &mode);
+Result<void> Renderer::GetLogicalPresentation(int& width,
+                                              int& height,
+                                              SDL_RendererLogicalPresentation& mode) const {
+    return SdlResult(SDL_GetRenderLogicalPresentation(m_NativeHandle, &width, &height, &mode),
+                     "SDL_GetRenderLogicalPresentation");
 }
 
-SDL_FRect Renderer::GetLogicalPresentationRect() const {
+Result<SDL_FRect> Renderer::GetLogicalPresentationRect() const {
     SDL_FRect rect{};
-    SOP_ASSERT(SDL_GetRenderLogicalPresentationRect(m_NativeHandle, &rect),
-               "SDL_GetRenderLogicalPresentationRect");
-    return rect;
+    TRY_VOID(SdlResult(SDL_GetRenderLogicalPresentationRect(m_NativeHandle, &rect),
+                       "SDL_GetRenderLogicalPresentationRect"));
+    return Ok(rect);
 }
 
-bool Renderer::SetViewport(std::optional<SDL_Rect> rect) {
-    return SDL_SetRenderViewport(m_NativeHandle, rect ? &*rect : nullptr);
+Result<void> Renderer::SetViewport(std::optional<SDL_Rect> rect) {
+    return SdlResult(SDL_SetRenderViewport(m_NativeHandle, rect ? &*rect : nullptr),
+                     "SDL_SetRenderViewport");
 }
 
-std::optional<SDL_Rect> Renderer::GetViewport() const {
+Result<std::optional<SDL_Rect>> Renderer::GetViewport() const {
     if (!SDL_RenderViewportSet(m_NativeHandle))
-        return std::nullopt;
+        return Ok(std::optional<SDL_Rect>{});
 
     SDL_Rect rect{};
-    SOP_ASSERT(SDL_GetRenderViewport(m_NativeHandle, &rect), "SDL_GetRenderViewport");
-    return rect;
+    TRY_VOID(SdlResult(SDL_GetRenderViewport(m_NativeHandle, &rect), "SDL_GetRenderViewport"));
+    return Ok(std::optional<SDL_Rect>{rect});
 }
 
-bool Renderer::SetClipRect(std::optional<SDL_Rect> rect) {
-    return SDL_SetRenderClipRect(m_NativeHandle, rect ? &*rect : nullptr);
+Result<void> Renderer::SetClipRect(std::optional<SDL_Rect> rect) {
+    return SdlResult(SDL_SetRenderClipRect(m_NativeHandle, rect ? &*rect : nullptr),
+                     "SDL_SetRenderClipRect");
 }
 
-void Renderer::PushClipRect(std::optional<SDL_Rect> rect) {
+Result<void> Renderer::PushClipRect(std::optional<SDL_Rect> rect) {
     m_ClipStack.push_back(rect);
-    ApplyClipStack();
+    return ApplyClipStack();
 }
 
-void Renderer::PopClipRect() {
+Result<void> Renderer::PopClipRect() {
     if (m_ClipStack.empty())
-        return;
+        return Ok();
 
     m_ClipStack.pop_back();
-    ApplyClipStack();
+    return ApplyClipStack();
 }
 
-bool Renderer::SetScale(float x, float y) {
-    return SDL_SetRenderScale(m_NativeHandle, x, y);
+Result<void> Renderer::SetScale(float x, float y) {
+    return SdlResult(SDL_SetRenderScale(m_NativeHandle, x, y), "SDL_SetRenderScale");
 }
 
-bool Renderer::ApplyDisplayScale(float displayScale) {
+Result<void> Renderer::ApplyDisplayScale(float displayScale) {
     const float scale = NormalizeDisplayScale(displayScale);
     return SetScale(scale, scale);
 }
 
-SDL_FPoint Renderer::GetScale() const {
+Result<SDL_FPoint> Renderer::GetScale() const {
     SDL_FPoint p{};
-    const bool ok = SDL_GetRenderScale(m_NativeHandle, &p.x, &p.y);
-    SOP_ASSERT(ok, "SDL_GetRenderScale");
-    return ok ? p : SDL_FPoint{1.0f, 1.0f};
+    TRY_VOID(SdlResult(SDL_GetRenderScale(m_NativeHandle, &p.x, &p.y), "SDL_GetRenderScale"));
+    return Ok(p);
 }
 
-bool Renderer::SetTarget(SDL_Texture* target) {
-    return SDL_SetRenderTarget(m_NativeHandle, target);
+Result<void> Renderer::SetTarget(SDL_Texture* target) {
+    return SdlResult(SDL_SetRenderTarget(m_NativeHandle, target), "SDL_SetRenderTarget");
 }
 
-void Renderer::ResetTarget() {
-    SOP_ASSERT(SDL_SetRenderTarget(m_NativeHandle, nullptr), "SDL_SetRenderTarget");
+Result<void> Renderer::ResetTarget() {
+    return SdlResult(SDL_SetRenderTarget(m_NativeHandle, nullptr), "SDL_SetRenderTarget");
 }
 
 SDL_Texture* Renderer::GetTarget() const {
     return SDL_GetRenderTarget(m_NativeHandle);
 }
 
-SDL_Point Renderer::GetOutputSize() const {
+Result<SDL_Point> Renderer::GetOutputSize() const {
     SDL_Point p{};
-    const bool ok = SDL_GetRenderOutputSize(m_NativeHandle, &p.x, &p.y);
-    SOP_ASSERT(ok, "SDL_GetRenderOutputSize");
-    return ok ? p : SDL_Point{};
+    TRY_VOID(
+        SdlResult(SDL_GetRenderOutputSize(m_NativeHandle, &p.x, &p.y), "SDL_GetRenderOutputSize"));
+    return Ok(p);
 }
 
-SDL_Point Renderer::GetCurrentOutputSize() const {
+Result<SDL_Point> Renderer::GetCurrentOutputSize() const {
     SDL_Point p{};
-    const bool ok = SDL_GetCurrentRenderOutputSize(m_NativeHandle, &p.x, &p.y);
-    SOP_ASSERT(ok, "SDL_GetCurrentRenderOutputSize");
-    return ok ? p : SDL_Point{};
+    TRY_VOID(SdlResult(SDL_GetCurrentRenderOutputSize(m_NativeHandle, &p.x, &p.y),
+                       "SDL_GetCurrentRenderOutputSize"));
+    return Ok(p);
 }
 
-SDL_FPoint Renderer::GetLogicalOutputSize() const {
-    const SDL_Point outputSize = GetCurrentOutputSize();
-    const SDL_FPoint scale = GetScale();
-    return SDL_FPoint{static_cast<float>(outputSize.x) / NormalizeDisplayScale(scale.x),
-                      static_cast<float>(outputSize.y) / NormalizeDisplayScale(scale.y)};
+Result<SDL_FPoint> Renderer::GetLogicalOutputSize() const {
+    TRY(outputSize, GetCurrentOutputSize());
+    TRY(scale, GetScale());
+    return Ok(SDL_FPoint{static_cast<float>(outputSize.x) / NormalizeDisplayScale(scale.x),
+                         static_cast<float>(outputSize.y) / NormalizeDisplayScale(scale.y)});
 }
 
-SDL_Rect Renderer::GetSafeArea() const {
+Result<SDL_Rect> Renderer::GetSafeArea() const {
     SDL_Rect r{};
-    SOP_ASSERT(SDL_GetRenderSafeArea(m_NativeHandle, &r), "SDL_GetRenderSafeArea");
-    return r;
+    TRY_VOID(SdlResult(SDL_GetRenderSafeArea(m_NativeHandle, &r), "SDL_GetRenderSafeArea"));
+    return Ok(r);
 }
 
-bool Renderer::WindowToRender(float windowX, float windowY, float& renderX, float& renderY) const {
-    return SDL_RenderCoordinatesFromWindow(m_NativeHandle, windowX, windowY, &renderX, &renderY);
+Result<void> Renderer::WindowToRender(float windowX,
+                                      float windowY,
+                                      float& renderX,
+                                      float& renderY) const {
+    return SdlResult(
+        SDL_RenderCoordinatesFromWindow(m_NativeHandle, windowX, windowY, &renderX, &renderY),
+        "SDL_RenderCoordinatesFromWindow");
 }
 
-bool Renderer::RenderToWindow(float renderX, float renderY, float& windowX, float& windowY) const {
-    return SDL_RenderCoordinatesToWindow(m_NativeHandle, renderX, renderY, &windowX, &windowY);
+Result<void> Renderer::RenderToWindow(float renderX,
+                                      float renderY,
+                                      float& windowX,
+                                      float& windowY) const {
+    return SdlResult(
+        SDL_RenderCoordinatesToWindow(m_NativeHandle, renderX, renderY, &windowX, &windowY),
+        "SDL_RenderCoordinatesToWindow");
 }
 
-bool Renderer::ConvertEventToRenderCoordinates(SDL_Event& event) const {
-    return SDL_ConvertEventToRenderCoordinates(m_NativeHandle, &event);
+Result<void> Renderer::ConvertEventToRenderCoordinates(SDL_Event& event) const {
+    return SdlResult(SDL_ConvertEventToRenderCoordinates(m_NativeHandle, &event),
+                     "SDL_ConvertEventToRenderCoordinates");
 }
 
-bool Renderer::Clear(Color color) {
-    if (!SetDrawColor(color))
-        return false;
-    return SDL_RenderClear(m_NativeHandle);
+Result<void> Renderer::Clear(Color color) {
+    TRY_VOID(SetDrawColor(color));
+    return SdlResult(SDL_RenderClear(m_NativeHandle), "SDL_RenderClear");
 }
 
-bool Renderer::SetDrawColor(Color color) {
-    return SDL_SetRenderDrawColor(m_NativeHandle, color.r, color.g, color.b, color.a);
+Result<void> Renderer::SetDrawColor(Color color) {
+    return SdlResult(SDL_SetRenderDrawColor(m_NativeHandle, color.r, color.g, color.b, color.a),
+                     "SDL_SetRenderDrawColor");
 }
 
-Color Renderer::GetDrawColor() const {
+Result<Color> Renderer::GetDrawColor() const {
     Color c{};
-    SOP_ASSERT(SDL_GetRenderDrawColor(m_NativeHandle, &c.r, &c.g, &c.b, &c.a),
-               "SDL_GetRenderDrawColor");
-    return c;
+    TRY_VOID(SdlResult(SDL_GetRenderDrawColor(m_NativeHandle, &c.r, &c.g, &c.b, &c.a),
+                       "SDL_GetRenderDrawColor"));
+    return Ok(c);
 }
 
-bool Renderer::SetBlendMode(SDL_BlendMode blendMode) {
-    return SDL_SetRenderDrawBlendMode(m_NativeHandle, blendMode);
+Result<void> Renderer::SetBlendMode(SDL_BlendMode blendMode) {
+    return SdlResult(SDL_SetRenderDrawBlendMode(m_NativeHandle, blendMode),
+                     "SDL_SetRenderDrawBlendMode");
 }
 
-SDL_BlendMode Renderer::GetBlendMode() const {
+Result<SDL_BlendMode> Renderer::GetBlendMode() const {
     SDL_BlendMode mode{};
-    SOP_ASSERT(SDL_GetRenderDrawBlendMode(m_NativeHandle, &mode), "SDL_GetRenderDrawBlendMode");
-    return mode;
+    TRY_VOID(
+        SdlResult(SDL_GetRenderDrawBlendMode(m_NativeHandle, &mode), "SDL_GetRenderDrawBlendMode"));
+    return Ok(mode);
 }
 
-bool Renderer::DrawPoint(float x, float y, Color color) {
-    if (!SetDrawColor(color))
-        return false;
-    return SDL_RenderPoint(m_NativeHandle, x, y);
+Result<void> Renderer::DrawPoint(float x, float y, Color color) {
+    TRY_VOID(SetDrawColor(color));
+    return SdlResult(SDL_RenderPoint(m_NativeHandle, x, y), "SDL_RenderPoint");
 }
 
-bool Renderer::DrawLine(float x1, float y1, float x2, float y2, Color color) {
-    if (!SetDrawColor(color))
-        return false;
-    return SDL_RenderLine(m_NativeHandle, x1, y1, x2, y2);
+Result<void> Renderer::DrawLine(float x1, float y1, float x2, float y2, Color color) {
+    TRY_VOID(SetDrawColor(color));
+    return SdlResult(SDL_RenderLine(m_NativeHandle, x1, y1, x2, y2), "SDL_RenderLine");
 }
 
-bool Renderer::DrawLines(std::span<const SDL_FPoint> points, Color color) {
+Result<void> Renderer::DrawLines(std::span<const SDL_FPoint> points, Color color) {
     if (points.empty())
-        return true;
+        return Ok();
 
-    if (!SetDrawColor(color))
-        return false;
+    TRY_VOID(SetDrawColor(color));
 
-    return SDL_RenderLines(m_NativeHandle, points.data(), static_cast<int>(points.size()));
+    return SdlResult(
+        SDL_RenderLines(m_NativeHandle, points.data(), static_cast<int>(points.size())),
+        "SDL_RenderLines");
 }
 
-bool Renderer::DrawRect(const SDL_FRect& rect, Color color) {
-    if (!SetDrawColor(color))
-        return false;
-    return SDL_RenderRect(m_NativeHandle, &rect);
+Result<void> Renderer::DrawRect(const SDL_FRect& rect, Color color) {
+    TRY_VOID(SetDrawColor(color));
+    return SdlResult(SDL_RenderRect(m_NativeHandle, &rect), "SDL_RenderRect");
 }
 
-bool Renderer::DrawRects(std::span<const SDL_FRect> rects, Color color) {
+Result<void> Renderer::DrawRects(std::span<const SDL_FRect> rects, Color color) {
     if (rects.empty())
-        return true;
+        return Ok();
 
-    if (!SetDrawColor(color))
-        return false;
+    TRY_VOID(SetDrawColor(color));
 
-    return SDL_RenderRects(m_NativeHandle, rects.data(), static_cast<int>(rects.size()));
+    return SdlResult(SDL_RenderRects(m_NativeHandle, rects.data(), static_cast<int>(rects.size())),
+                     "SDL_RenderRects");
 }
 
-bool Renderer::FillRect(const SDL_FRect& rect, Color color) {
-    if (!SetDrawColor(color))
-        return false;
-    return SDL_RenderFillRect(m_NativeHandle, &rect);
+Result<void> Renderer::FillRect(const SDL_FRect& rect, Color color) {
+    TRY_VOID(SetDrawColor(color));
+    return SdlResult(SDL_RenderFillRect(m_NativeHandle, &rect), "SDL_RenderFillRect");
 }
 
-bool Renderer::FillRects(std::span<const SDL_FRect> rects, Color color) {
+Result<void> Renderer::FillRects(std::span<const SDL_FRect> rects, Color color) {
     if (rects.empty())
-        return true;
+        return Ok();
 
-    if (!SetDrawColor(color))
-        return false;
+    TRY_VOID(SetDrawColor(color));
 
-    return SDL_RenderFillRects(m_NativeHandle, rects.data(), static_cast<int>(rects.size()));
+    return SdlResult(
+        SDL_RenderFillRects(m_NativeHandle, rects.data(), static_cast<int>(rects.size())),
+        "SDL_RenderFillRects");
 }
 
-bool Renderer::DrawTexture(SDL_Texture* texture, const SDL_FRect& dst) {
+Result<void> Renderer::DrawTexture(SDL_Texture* texture, const SDL_FRect& dst) {
     TextureDrawParams params{};
     params.dst = dst;
     return DrawTexture(texture, params);
 }
 
-bool Renderer::DrawTexture(SDL_Texture* texture, const TextureDrawParams& params) {
+Result<void> Renderer::DrawTexture(SDL_Texture* texture, const TextureDrawParams& params) {
     if (!texture)
-        return false;
+        return Err(std::string("Renderer::DrawTexture failed: texture is null"));
 
-    const auto backup = BackupTextureState(texture);
-    ApplyTextureState(texture, params.tint, params.blendMode);
+    TRY(backup, BackupTextureState(texture));
+    auto stateResult = ApplyTextureState(texture, params.tint, params.blendMode);
+    if (!stateResult) {
+        TRY_VOID(RestoreTextureState(texture, backup));
+        return Err(std::move(stateResult).error());
+    }
 
-    const bool ok = (params.rotationDeg == 0.0 && params.flip == SDL_FLIP_NONE)
+    const bool usesSimpleDraw = params.rotationDeg == 0.0 && params.flip == SDL_FLIP_NONE;
+    const char* operation = usesSimpleDraw ? "SDL_RenderTexture" : "SDL_RenderTextureRotated";
+    const bool ok = usesSimpleDraw
                         ? SDL_RenderTexture(m_NativeHandle, texture, params.src, &params.dst)
                         : SDL_RenderTextureRotated(m_NativeHandle,
                                                    texture,
@@ -311,30 +355,51 @@ bool Renderer::DrawTexture(SDL_Texture* texture, const TextureDrawParams& params
                                                    &params.origin,
                                                    params.flip);
 
-    RestoreTextureState(texture, backup);
-    return ok;
+    if (!ok) {
+        std::string renderError = SdlError(operation);
+        TRY_VOID(RestoreTextureState(texture, backup));
+        return Err(std::move(renderError));
+    }
+
+    TRY_VOID(RestoreTextureState(texture, backup));
+    return Ok();
 }
 
-bool Renderer::DrawTextureTiled(SDL_Texture* texture, const TiledTextureDrawParams& params) {
+Result<void> Renderer::DrawTextureTiled(SDL_Texture* texture,
+                                        const TiledTextureDrawParams& params) {
     if (!texture)
-        return false;
+        return Err(std::string("Renderer::DrawTextureTiled failed: texture is null"));
 
-    const auto backup = BackupTextureState(texture);
-    ApplyTextureState(texture, params.tint, params.blendMode);
+    TRY(backup, BackupTextureState(texture));
+    auto stateResult = ApplyTextureState(texture, params.tint, params.blendMode);
+    if (!stateResult) {
+        TRY_VOID(RestoreTextureState(texture, backup));
+        return Err(std::move(stateResult).error());
+    }
 
     const bool ok =
         SDL_RenderTextureTiled(m_NativeHandle, texture, params.src, params.scale, &params.dst);
 
-    RestoreTextureState(texture, backup);
-    return ok;
+    if (!ok) {
+        std::string renderError = SdlError("SDL_RenderTextureTiled");
+        TRY_VOID(RestoreTextureState(texture, backup));
+        return Err(std::move(renderError));
+    }
+
+    TRY_VOID(RestoreTextureState(texture, backup));
+    return Ok();
 }
 
-bool Renderer::DrawTexture9Grid(SDL_Texture* texture, const NineGridDrawParams& params) {
+Result<void> Renderer::DrawTexture9Grid(SDL_Texture* texture, const NineGridDrawParams& params) {
     if (!texture)
-        return false;
+        return Err(std::string("Renderer::DrawTexture9Grid failed: texture is null"));
 
-    const auto backup = BackupTextureState(texture);
-    ApplyTextureState(texture, params.tint, params.blendMode);
+    TRY(backup, BackupTextureState(texture));
+    auto stateResult = ApplyTextureState(texture, params.tint, params.blendMode);
+    if (!stateResult) {
+        TRY_VOID(RestoreTextureState(texture, backup));
+        return Err(std::move(stateResult).error());
+    }
 
     const bool ok = SDL_RenderTexture9Grid(m_NativeHandle,
                                            texture,
@@ -346,31 +411,47 @@ bool Renderer::DrawTexture9Grid(SDL_Texture* texture, const NineGridDrawParams& 
                                            params.scale,
                                            &params.dst);
 
-    RestoreTextureState(texture, backup);
-    return ok;
+    if (!ok) {
+        std::string renderError = SdlError("SDL_RenderTexture9Grid");
+        TRY_VOID(RestoreTextureState(texture, backup));
+        return Err(std::move(renderError));
+    }
+
+    TRY_VOID(RestoreTextureState(texture, backup));
+    return Ok();
 }
 
-bool Renderer::DrawGeometry(SDL_Texture* texture,
-                            std::span<const SDL_Vertex> vertices,
-                            std::span<const int> indices) {
+Result<void> Renderer::DrawGeometry(SDL_Texture* texture,
+                                    std::span<const SDL_Vertex> vertices,
+                                    std::span<const int> indices) {
     if (vertices.empty())
-        return true;
+        return Ok();
 
-    return SDL_RenderGeometry(m_NativeHandle,
-                              texture,
-                              vertices.data(),
-                              static_cast<int>(vertices.size()),
-                              indices.empty() ? nullptr : indices.data(),
-                              static_cast<int>(indices.size()));
+    return SdlResult(SDL_RenderGeometry(m_NativeHandle,
+                                        texture,
+                                        vertices.data(),
+                                        static_cast<int>(vertices.size()),
+                                        indices.empty() ? nullptr : indices.data(),
+                                        static_cast<int>(indices.size())),
+                     "SDL_RenderGeometry");
 }
 
-bool Renderer::DrawText(FontId id, float x, float y, std::string_view text, Color color) {
+Result<void> Renderer::DrawText(FontId id, float x, float y, std::string_view text, Color color) {
     std::string owned(text);
 
-    SDL_Surface* surface = TTF_RenderText_Blended(GetFontById(id), text.data(), 0, color);
-    SOP_ASSERT(surface, std::format("TTF_RenderText_Blended failed: %s", SDL_GetError()).c_str());
+    TTF_Font* font = GetFontById(id);
+    if (!font)
+        return Err(std::string("Renderer::DrawText failed: font is null"));
+
+    SDL_Surface* surface = TTF_RenderText_Blended(font, text.data(), 0, color);
+    if (!surface)
+        return Err(SdlError("TTF_RenderText_Blended"));
 
     SDL_Texture* texture = SDL_CreateTextureFromSurface(m_NativeHandle, surface);
+    if (!texture) {
+        SDL_DestroySurface(surface);
+        return Err(SdlError("SDL_CreateTextureFromSurface"));
+    }
 
     SDL_FRect dst{x, y, static_cast<float>(surface->w), static_cast<float>(surface->h)};
     bool ok = SDL_RenderTexture(m_NativeHandle, texture, nullptr, &dst);
@@ -378,11 +459,14 @@ bool Renderer::DrawText(FontId id, float x, float y, std::string_view text, Colo
     SDL_DestroyTexture(texture);
     SDL_DestroySurface(surface);
 
-    return ok;
+    return SdlResult(ok, "SDL_RenderTexture");
 }
 
-SDL_Surface* Renderer::ReadPixels(const SDL_Rect* rect) const {
-    return SDL_RenderReadPixels(m_NativeHandle, rect);
+Result<SDL_Surface*> Renderer::ReadPixels(const SDL_Rect* rect) const {
+    SDL_Surface* surface = SDL_RenderReadPixels(m_NativeHandle, rect);
+    if (!surface)
+        return Err(SdlError("SDL_RenderReadPixels"));
+    return Ok(surface);
 }
 
 std::optional<SDL_Rect> Renderer::Intersect(const std::optional<SDL_Rect>& a,
@@ -403,52 +487,63 @@ std::optional<SDL_Rect> Renderer::Intersect(const std::optional<SDL_Rect>& a,
     return SDL_Rect{x1, y1, x2 - x1, y2 - y1};
 }
 
-void Renderer::ApplyClipStack() {
+Result<void> Renderer::ApplyClipStack() {
     std::optional<SDL_Rect> effective;
     for (const auto& clip : m_ClipStack)
         effective = Intersect(effective, clip);
 
-    SOP_ASSERT(SDL_SetRenderClipRect(m_NativeHandle, effective ? &*effective : nullptr),
-               "SDL_SetRenderClipRect");
+    return SdlResult(SDL_SetRenderClipRect(m_NativeHandle, effective ? &*effective : nullptr),
+                     "SDL_SetRenderClipRect");
 }
 
-Renderer::TextureStateBackup Renderer::BackupTextureState(SDL_Texture* texture) const {
+Result<Renderer::TextureStateBackup> Renderer::BackupTextureState(SDL_Texture* texture) const {
     TextureStateBackup backup{};
-    SOP_ASSERT(SDL_GetTextureColorMod(texture, &backup.r, &backup.g, &backup.b),
-               "SDL_GetTextureColorMod");
-    SOP_ASSERT(SDL_GetTextureAlphaMod(texture, &backup.a), "SDL_GetTextureAlphaMod");
-    SOP_ASSERT(SDL_GetTextureBlendMode(texture, &backup.blendMode), "SDL_GetTextureBlendMode");
-    return backup;
+    TRY_VOID(SdlResult(SDL_GetTextureColorMod(texture, &backup.r, &backup.g, &backup.b),
+                       "SDL_GetTextureColorMod"));
+    TRY_VOID(SdlResult(SDL_GetTextureAlphaMod(texture, &backup.a), "SDL_GetTextureAlphaMod"));
+    TRY_VOID(
+        SdlResult(SDL_GetTextureBlendMode(texture, &backup.blendMode), "SDL_GetTextureBlendMode"));
+    return Ok(backup);
 }
 
-void Renderer::RestoreTextureState(SDL_Texture* texture, const TextureStateBackup& backup) const {
-    SOP_ASSERT(SDL_SetTextureColorMod(texture, backup.r, backup.g, backup.b),
-               "SDL_SetTextureColorMod");
-    SOP_ASSERT(SDL_SetTextureAlphaMod(texture, backup.a), "SDL_SetTextureAlphaMod");
-    SOP_ASSERT(SDL_SetTextureBlendMode(texture, backup.blendMode), "SDL_SetTextureBlendMode");
+Result<void> Renderer::RestoreTextureState(SDL_Texture* texture,
+                                           const TextureStateBackup& backup) const {
+    TRY_VOID(SdlResult(SDL_SetTextureColorMod(texture, backup.r, backup.g, backup.b),
+                       "SDL_SetTextureColorMod"));
+    TRY_VOID(SdlResult(SDL_SetTextureAlphaMod(texture, backup.a), "SDL_SetTextureAlphaMod"));
+    TRY_VOID(
+        SdlResult(SDL_SetTextureBlendMode(texture, backup.blendMode), "SDL_SetTextureBlendMode"));
+    return Ok();
 }
 
-void Renderer::ApplyTextureState(SDL_Texture* texture, Color tint, SDL_BlendMode blendMode) const {
-    SOP_ASSERT(SDL_SetTextureColorMod(texture, tint.r, tint.g, tint.b), "SDL_SetTextureColorMod");
-    SOP_ASSERT(SDL_SetTextureAlphaMod(texture, tint.a), "SDL_SetTextureAlphaMod");
-    SOP_ASSERT(SDL_SetTextureBlendMode(texture, blendMode), "SDL_SetTextureBlendMode");
+Result<void> Renderer::ApplyTextureState(SDL_Texture* texture,
+                                         Color tint,
+                                         SDL_BlendMode blendMode) const {
+    TRY_VOID(SdlResult(SDL_SetTextureColorMod(texture, tint.r, tint.g, tint.b),
+                       "SDL_SetTextureColorMod"));
+    TRY_VOID(SdlResult(SDL_SetTextureAlphaMod(texture, tint.a), "SDL_SetTextureAlphaMod"));
+    TRY_VOID(SdlResult(SDL_SetTextureBlendMode(texture, blendMode), "SDL_SetTextureBlendMode"));
+    return Ok();
 }
 
-Vec2 Renderer::MeasureText(FontId id, std::string_view text) {
+Result<Vec2> Renderer::MeasureText(FontId id, std::string_view text) {
     TTF_Font* font = GetFontById(id);
 
-    if (!font || text.empty())
-        return Vec2{0.0f, 0.0f};
+    if (!font)
+        return Err(std::string("Renderer::MeasureText failed: font is null"));
+
+    if (text.empty())
+        return Ok(Vec2{0.0f, 0.0f});
 
     int32_t w = 0;
     int32_t h = 0;
 
     if (!TTF_GetStringSize(font, text.data(), text.size(), &w, &h)) {
         spdlog::warn("TTF_GetStringSize failed: {}", SDL_GetError());
-        return Vec2{0.0f, 0.0f};
+        return Err(SdlError("TTF_GetStringSize"));
     }
 
-    return Vec2{static_cast<float>(w), static_cast<float>(h)};
+    return Ok(Vec2{static_cast<float>(w), static_cast<float>(h)});
 }
 
 TTF_Font* Renderer::GetFontById(FontId id) {

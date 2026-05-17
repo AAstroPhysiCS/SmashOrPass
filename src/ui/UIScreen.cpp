@@ -6,6 +6,8 @@
 
 namespace sop {
 
+using sop_util::Ok;
+
 UIScreen::UIScreen(EventDispatcher& dispatcher) : m_EventDispatcher(dispatcher) {}
 
 EventFlow UIScreen::OnEvent(const Event& event) {
@@ -54,7 +56,7 @@ EventFlow UIScreen::OnEvent(const Event& event) {
 
 void UIScreen::OnUpdate() {}
 
-void UIScreen::OnRender(Renderer& renderer) {
+Result<void> UIScreen::OnRender(Renderer& renderer) {
     if (m_RebuildRequested) {
         m_Widgets.clear();
         m_Root = g_InvalidWidgetId;
@@ -66,22 +68,25 @@ void UIScreen::OnRender(Renderer& renderer) {
     }
 
     if (m_Root == g_InvalidWidgetId)
-        return;
+        return Ok();
 
-    const SDL_FPoint outputSize = renderer.GetLogicalOutputSize();
+    TRY(outputSize, renderer.GetLogicalOutputSize());
 
-    MeasureWidget(m_Root, renderer);
+    TRY(rootSize, MeasureWidget(m_Root, renderer));
+    (void)rootSize;
     LayoutWidget(m_Root, SDL_FRect{0.0f, 0.0f, outputSize.x, outputSize.y});
 
     for (const UIWidget& w : m_Widgets)
-        RenderWidget(renderer, w);
+        TRY_VOID(RenderWidget(renderer, w));
+
+    return Ok();
 }
 
 void UIScreen::RebuildUI() {
     m_RebuildRequested = true;
 }
 
-void UIScreen::RenderWidget(Renderer& renderer, const UIWidget& widget) {
+Result<void> UIScreen::RenderWidget(Renderer& renderer, const UIWidget& widget) {
     switch (widget.Kind) {
         case WidgetKind::Stack:
         case WidgetKind::Column:
@@ -91,50 +96,52 @@ void UIScreen::RenderWidget(Renderer& renderer, const UIWidget& widget) {
             break;
         case WidgetKind::Label: {
             const auto& d = std::get<LabelData>(widget.Data);
-            renderer.DrawText(
-                d.Font, widget.LayoutRect.x, widget.LayoutRect.y, d.Text, d.TextColor);
+            TRY_VOID(renderer.DrawText(
+                d.Font, widget.LayoutRect.x, widget.LayoutRect.y, d.Text, d.TextColor));
             break;
         }
         case WidgetKind::Button: {
             const auto& d = std::get<ButtonData>(widget.Data);
             const SDL_FRect buttonRect = widget.LayoutRect;
 
-            renderer.FillRect(buttonRect, d.BackgroundColor);
-            renderer.DrawRect(buttonRect, d.BorderColor);
+            TRY_VOID(renderer.FillRect(buttonRect, d.BackgroundColor));
+            TRY_VOID(renderer.DrawRect(buttonRect, d.BorderColor));
 
-            Vec2 textSize = renderer.MeasureText(d.Font, d.Text);
+            TRY(textSize, renderer.MeasureText(d.Font, d.Text));
 
             const float textX = buttonRect.x + (buttonRect.w - textSize.x) * 0.5f;
             const float textY = buttonRect.y + (buttonRect.h - textSize.y) * 0.5f;
 
-            renderer.DrawText(d.Font, textX, textY, d.Text, d.TextColor);
+            TRY_VOID(renderer.DrawText(d.Font, textX, textY, d.Text, d.TextColor));
 
             break;
         }
     }
+
+    return Ok();
 }
 
-Vec2 UIScreen::MeasureWidget(UIWidgetId id, Renderer& renderer) {
+Result<Vec2> UIScreen::MeasureWidget(UIWidgetId id, Renderer& renderer) {
     UIWidget& w = GetWidgetById(id);
 
     switch (w.Kind) {
         case WidgetKind::Label: {
             auto& d = std::get<LabelData>(w.Data);
-            Vec2 s = renderer.MeasureText(d.Font, d.Text);
+            TRY(s, renderer.MeasureText(d.Font, d.Text));
             w.Measured = SDL_FRect{0, 0, s.x, s.y};
-            return s;
+            return Ok(s);
         }
         case WidgetKind::Button: {
             auto& d = std::get<ButtonData>(w.Data);
 
-            Vec2 textSize = renderer.MeasureText(d.Font, d.Text);
+            TRY(textSize, renderer.MeasureText(d.Font, d.Text));
 
             w.Measured = SDL_FRect{0.0f,
                                    0.0f,
                                    textSize.x + Theme::BUTTON_PADDING_X * 2.0f,
                                    textSize.y + Theme::BUTTON_PADDING_Y * 2.0f};
 
-            return Vec2{w.Measured.w, w.Measured.h};
+            return Ok(Vec2{w.Measured.w, w.Measured.h});
         }
         case WidgetKind::Column: {
             auto& d = std::get<ColumnData>(w.Data);
@@ -144,7 +151,7 @@ Vec2 UIScreen::MeasureWidget(UIWidgetId id, Renderer& renderer) {
 
             for (UIWidgetId c = w.FirstChild; c != g_InvalidWidgetId;
                  c = GetWidgetById(c).NextSibling) {
-                Vec2 cs = MeasureWidget(c, renderer);
+                TRY(cs, MeasureWidget(c, renderer));
                 maxW = std::max(maxW, cs.x);
                 totalH += cs.y;
                 ++count;
@@ -154,7 +161,7 @@ Vec2 UIScreen::MeasureWidget(UIWidgetId id, Renderer& renderer) {
                 totalH += d.Spacing * static_cast<float>(count - 1);
 
             w.Measured = SDL_FRect{0, 0, maxW, totalH};
-            return Vec2{maxW, totalH};
+            return Ok(Vec2{maxW, totalH});
         }
         case WidgetKind::Row: {
             auto& d = std::get<RowData>(w.Data);
@@ -164,7 +171,7 @@ Vec2 UIScreen::MeasureWidget(UIWidgetId id, Renderer& renderer) {
 
             for (UIWidgetId c = w.FirstChild; c != g_InvalidWidgetId;
                  c = GetWidgetById(c).NextSibling) {
-                Vec2 cs = MeasureWidget(c, renderer);
+                TRY(cs, MeasureWidget(c, renderer));
                 totalW += cs.x;
                 maxH = std::max(maxH, cs.y);
                 ++count;
@@ -174,7 +181,7 @@ Vec2 UIScreen::MeasureWidget(UIWidgetId id, Renderer& renderer) {
                 totalW += d.Spacing * static_cast<float>(count - 1);
 
             w.Measured = SDL_FRect{0, 0, totalW, maxH};
-            return Vec2{totalW, maxH};
+            return Ok(Vec2{totalW, maxH});
         }
         case WidgetKind::Stack: {
             float maxW = 0.0f;
@@ -182,30 +189,30 @@ Vec2 UIScreen::MeasureWidget(UIWidgetId id, Renderer& renderer) {
 
             for (UIWidgetId c = w.FirstChild; c != g_InvalidWidgetId;
                  c = GetWidgetById(c).NextSibling) {
-                Vec2 cs = MeasureWidget(c, renderer);
+                TRY(cs, MeasureWidget(c, renderer));
                 maxW = std::max(maxW, cs.x);
                 maxH = std::max(maxH, cs.y);
             }
 
             w.Measured = SDL_FRect{0, 0, maxW, maxH};
-            return Vec2{maxW, maxH};
+            return Ok(Vec2{maxW, maxH});
         }
         case WidgetKind::Align: {
             if (w.FirstChild == g_InvalidWidgetId) {
                 w.Measured = SDL_FRect{0, 0, 0, 0};
-                return Vec2{};
+                return Ok(Vec2{});
             }
 
-            Vec2 childSize = MeasureWidget(w.FirstChild, renderer);
+            TRY(childSize, MeasureWidget(w.FirstChild, renderer));
             w.Measured = SDL_FRect{0, 0, childSize.x, childSize.y};
-            return childSize;
+            return Ok(childSize);
         }
         case WidgetKind::Image:
             w.Measured = SDL_FRect{0, 0, 0, 0};
-            return Vec2{};
+            return Ok(Vec2{});
     }
 
-    return Vec2{};
+    return Ok(Vec2{});
 }
 
 void UIScreen::LayoutWidget(UIWidgetId id, SDL_FRect rect) {

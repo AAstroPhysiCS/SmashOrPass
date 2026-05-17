@@ -38,8 +38,7 @@ Result<void> MainMenuState::OnUpdate(AppCtx&) {
 }
 
 Result<void> MainMenuState::OnRender(AppCtx& ctx) {
-    ActiveScreen().OnRender(ctx.m_Renderer);
-    return Ok();
+    return ActiveScreen().OnRender(ctx.m_Renderer);
 }
 
 UIScreen& MainMenuState::ActiveScreen() {

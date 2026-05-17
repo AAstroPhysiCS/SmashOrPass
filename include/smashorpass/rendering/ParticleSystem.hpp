@@ -59,7 +59,7 @@ class ParticleSystem {
 
     void Clear();
     void Update(float dt);
-    void Render(Renderer& renderer);
+    Result<void> Render(Renderer& renderer);
 
    private:
     Particle& GetFreeParticle();

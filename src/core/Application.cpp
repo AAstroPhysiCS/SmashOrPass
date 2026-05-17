@@ -16,7 +16,8 @@
 namespace sop {
 
 Application::Application() {
-    SOP_VERIFY(ctx.m_Renderer.SetVSync(true), "SDL_SetRenderVSync");
+    auto vsyncResult = ctx.m_Renderer.SetVSync(true);
+    SOP_VERIFY(vsyncResult.has_value(), vsyncResult.error().c_str());
 
     auto displayMetricsResult = RefreshDisplayMetrics();
     if (!displayMetricsResult) {
@@ -57,10 +58,7 @@ Result<void> Application::ProcessEvents() {
 
         SDL_Event translatedSource = event;
         if (IsPointerEventType(event.type)) {
-            if (!ctx.m_Renderer.ConvertEventToRenderCoordinates(translatedSource)) {
-                return Err(std::string("SDL_ConvertEventToRenderCoordinates failed: ") +
-                           SDL_GetError());
-            }
+            TRY_VOID(ctx.m_Renderer.ConvertEventToRenderCoordinates(translatedSource));
         }
 
         const Event translatedEvent = TranslateSDLEvent(translatedSource, &event);
@@ -85,9 +83,9 @@ Result<void> Application::Update() {
 }
 
 Result<void> Application::Render() {
-    ctx.m_Renderer.BeginFrame();
+    TRY_VOID(ctx.m_Renderer.BeginFrame());
     auto result = ctx.m_StateManager.Render(ctx);
-    ctx.m_Renderer.EndFrame();
+    TRY_VOID(ctx.m_Renderer.EndFrame());
     return result;
 }
 
@@ -112,11 +110,7 @@ Result<void> Application::DispatchEvent(const Event& event) {
 Result<void> Application::RefreshDisplayMetrics() {
     ctx.m_DisplayMetrics = ctx.m_Window.GetDisplayMetrics();
 
-    const bool scaleApplied = ctx.m_Renderer.ApplyDisplayScale(ctx.m_DisplayMetrics.DisplayScale);
-    if (!scaleApplied) {
-        return Err(std::string("SDL_SetRenderScale failed: ") + SDL_GetError());
-    }
-    return Ok();
+    return ctx.m_Renderer.ApplyDisplayScale(ctx.m_DisplayMetrics.DisplayScale);
 }
 
 Result<void> Application::OnEvent(const Event& event) {
