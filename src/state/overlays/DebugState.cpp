@@ -5,7 +5,7 @@
 #include <imgui_impl_sdlrenderer3.h>
 
 #include "SDL3/SDL.h"
-#include "smashorpass/app/AppCtx.hpp"
+#include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/core/Base.hpp"
 
 namespace sop {
@@ -20,8 +20,8 @@ DebugState::DebugState(AppCtx& ctx) {
 
     ImGui::StyleColorsDark();
 
-    const bool sdl3Initialized =
-        ImGui_ImplSDL3_InitForSDLRenderer(ctx.m_Window.NativeHandle(), ctx.m_Renderer.NativeHandle());
+    const bool sdl3Initialized = ImGui_ImplSDL3_InitForSDLRenderer(ctx.m_Window.NativeHandle(),
+                                                                   ctx.m_Renderer.NativeHandle());
     SOP_VERIFY(sdl3Initialized, "Failed to initialize ImGui SDL3 backend");
 
     const bool rendererInitialized = ImGui_ImplSDLRenderer3_Init(ctx.m_Renderer.NativeHandle());
@@ -58,19 +58,15 @@ void DebugState::Draw(AppCtx& ctx) {
     ImGui::Text("FPS: %.1f", framesPerSecond);
 
     ImGui::Separator();
-    ImGui::Text("Window: %d x %d",
-                ctx.m_DisplayMetrics.WindowSize.x,
-                ctx.m_DisplayMetrics.WindowSize.y);
-    ImGui::Text("Pixels: %d x %d",
-                ctx.m_DisplayMetrics.PixelSize.x,
-                ctx.m_DisplayMetrics.PixelSize.y);
+    ImGui::Text(
+        "Window: %d x %d", ctx.m_DisplayMetrics.WindowSize.x, ctx.m_DisplayMetrics.WindowSize.y);
+    ImGui::Text(
+        "Pixels: %d x %d", ctx.m_DisplayMetrics.PixelSize.x, ctx.m_DisplayMetrics.PixelSize.y);
     ImGui::Text("Logical: %.1f x %.1f",
                 static_cast<double>(logicalSize.x),
                 static_cast<double>(logicalSize.y));
-    ImGui::Text("Display scale: %.2f",
-                static_cast<double>(ctx.m_DisplayMetrics.DisplayScale));
-    ImGui::Text("Pixel density: %.2f",
-                static_cast<double>(ctx.m_DisplayMetrics.PixelDensity));
+    ImGui::Text("Display scale: %.2f", static_cast<double>(ctx.m_DisplayMetrics.DisplayScale));
+    ImGui::Text("Pixel density: %.2f", static_cast<double>(ctx.m_DisplayMetrics.PixelDensity));
 
     ImGui::Separator();
     ImGui::Checkbox("Render collision boxes", &ctx.RenderCollisionBoxes);

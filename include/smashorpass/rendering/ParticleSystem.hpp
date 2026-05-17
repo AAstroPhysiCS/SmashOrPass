@@ -60,10 +60,12 @@ class ParticleSystem {
     void Clear();
     void Update(float dt);
     void Render(Renderer& renderer);
+
    private:
     Particle& GetFreeParticle();
 
     float RandomFloat(float min, float max);
+
    private:
     std::vector<Particle> m_Particles;
     size_t m_NextParticle = 0;

@@ -1,4 +1,4 @@
-#include "smashorpass/ui/MenuScreen.hpp"
+#include "smashorpass/state/states/main_menu/ui/MenuScreen.hpp"
 
 #include "smashorpass/core/Event.hpp"
 #include "smashorpass/ui/UIBuilder.hpp"
@@ -18,19 +18,15 @@ void MainMenuScreen::Build(UIBuilder& builder) {
             }),
         builder.Button("Options")
             .Align(Alignment::TopCenter)
-            .OnClick([](EventDispatcher&, ButtonData& d) {
-            spdlog::info("Options clicked");
-        }),
+            .OnClick([](EventDispatcher&, ButtonData& d) { spdlog::info("Options clicked"); }),
         builder.Button("Scoreboard")
             .Align(Alignment::TopCenter)
-            .OnClick([](EventDispatcher&, ButtonData& d) {
-            spdlog::info("Scoreboard clicked");
-        }),
+            .OnClick([](EventDispatcher&, ButtonData& d) { spdlog::info("Scoreboard clicked"); }),
         builder.Button("Exit")
             .Align(Alignment::TopCenter)
             .OnClick([](EventDispatcher& dispatcher, ButtonData& d) {
                 dispatcher.Enqueue(ApplicationQuitEvent{});
-        }));
+            }));
 
     auto root = builder.Align(Alignment::Center, std::move(menu));
     builder.SetRoot(root);

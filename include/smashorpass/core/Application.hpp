@@ -3,7 +3,7 @@
 #include <string_view>
 #include <utility>
 
-#include "smashorpass/app/AppCtx.hpp"
+#include "smashorpass/core/AppCtx.hpp"
 using namespace sop_util;
 
 namespace sop {

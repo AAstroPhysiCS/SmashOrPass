@@ -1,4 +1,4 @@
-#include "smashorpass/ui/GameScreen.hpp"
+#include "smashorpass/state/states/in_game/ui/GameScreen.hpp"
 
 #include <format>
 
@@ -11,7 +11,7 @@ namespace sop {
 GameScreen::GameScreen(EventDispatcher& dispatcher) : UIScreen(dispatcher) {}
 
 void GameScreen::Build(UIBuilder& builder) {
-    auto p1Label = builder.Label("P1").Font(FontId::Small).TextColor(Color{ 255, 0, 0, 255 });
+    auto p1Label = builder.Label("P1").Font(FontId::Small).TextColor(Color{255, 0, 0, 255});
     m_P1Label = p1Label.GetId();
 
     auto centerLabel = builder.Label("Match").Font(FontId::Small);
@@ -19,7 +19,7 @@ void GameScreen::Build(UIBuilder& builder) {
 
     auto animationsWipLabel = builder.Label("ANIMATIONS WIP DONT JUDGE XD").Font(FontId::Small);
 
-    auto p2Label = builder.Label("P2").Font(FontId::Small).TextColor(Color{ 0, 80, 255, 255 });
+    auto p2Label = builder.Label("P2").Font(FontId::Small).TextColor(Color{0, 80, 255, 255});
     m_P2Label = p2Label.GetId();
 
     auto hintLabel = builder.Label("ESC = Pause   F1 = Debug").Font(FontId::Small);
@@ -27,8 +27,7 @@ void GameScreen::Build(UIBuilder& builder) {
 
     auto root = builder.Stack().Add(
         builder.Align(Alignment::TopLeft, p1Label),
-        builder.Align(Alignment::TopCenter,
-                      builder.Column().Add(centerLabel, animationsWipLabel)),
+        builder.Align(Alignment::TopCenter, builder.Column().Add(centerLabel, animationsWipLabel)),
         builder.Align(Alignment::TopRight, p2Label),
         builder.Align(Alignment::BottomCenter, hintLabel));
 

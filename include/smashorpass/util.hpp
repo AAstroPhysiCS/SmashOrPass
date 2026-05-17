@@ -13,12 +13,12 @@ template <class T, class E = std::string>
 using Result = std::expected<T, E>;
 
 template <class E>
-constexpr auto Err(E &&error) {
+constexpr auto Err(E&& error) {
     return std::unexpected<std::decay_t<E>>(std::forward<E>(error));
 }
 
 template <class T>
-constexpr auto Ok(T &&value) {
+constexpr auto Ok(T&& value) {
     return std::forward<T>(value);
 }
 
@@ -33,4 +33,4 @@ constexpr OkVoid Ok() {
     return {};
 }
 
-} // namespace sop_util
+}  // namespace sop_util

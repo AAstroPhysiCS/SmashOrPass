@@ -1,4 +1,4 @@
-#include "smashorpass/app/Application.hpp"
+#include "smashorpass/core/Application.hpp"
 
 #include <SDL3/SDL.h>
 #include <spdlog/spdlog.h>
@@ -10,8 +10,8 @@
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/core/Base.hpp"
 #include "smashorpass/state/overlays/DebugState.hpp"
-#include "smashorpass/state/states/InGameState.hpp"
-#include "smashorpass/state/states/MainMenuState.hpp"
+#include "smashorpass/state/states/in_game/InGameState.hpp"
+#include "smashorpass/state/states/main_menu/MainMenuState.hpp"
 
 namespace sop {
 
@@ -23,8 +23,7 @@ Application::Application() {
         SOP_VERIFY(false, displayMetricsResult.error().c_str());
     }
 
-    ctx.Assets =
-        std::make_unique<AssetManager>(SOP_ASSET_ROOT_DIR, ctx.m_Renderer.NativeHandle());
+    ctx.Assets = std::make_unique<AssetManager>(SOP_ASSET_ROOT_DIR, ctx.m_Renderer.NativeHandle());
     ctx.m_StateManager.ResetToState<MainMenuState>(ctx);
     ctx.m_StateManager.PushOverlay<DebugState>(ctx);
 }

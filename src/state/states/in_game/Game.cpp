@@ -1,15 +1,15 @@
-#include "smashorpass/core/Game.hpp"
-#include "smashorpass/core/Base.hpp"
+#include "smashorpass/state/states/in_game/Game.hpp"
 
 #include <SDL3/SDL_keycode.h>
 
 #include <span>
 
 #include "smashorpass/asset/AssetManager.hpp"
-#include "smashorpass/app/AppCtx.hpp"
+#include "smashorpass/core/AppCtx.hpp"
+#include "smashorpass/core/Base.hpp"
 #include "smashorpass/core/Event.hpp"
-#include "smashorpass/core/PlayerController.hpp"
-#include "smashorpass/core/PlayerSpritePlacement.hpp"
+#include "smashorpass/state/states/in_game/PlayerController.hpp"
+#include "smashorpass/state/states/in_game/PlayerSpritePlacement.hpp"
 
 namespace sop {
 namespace {
@@ -176,8 +176,7 @@ void Game::RenderPlayers(AppCtx& ctx) {
     AssetManager& assetManager = *ctx.Assets;
     EventDispatcher& dispatcher = ctx.m_EventDispatcher;
 
-    const auto DrawPlayer = [&](PlayerCharacterState& player,
-                                const PlayerControlConfig& control) {
+    const auto DrawPlayer = [&](PlayerCharacterState& player, const PlayerControlConfig& control) {
         const SpriteSheet& spriteSheet =
             assetManager.getSpriteSheet(player.Character, player.Animation.GetAnimation());
         const std::span<const SpriteSheetFrame> frames = spriteSheet.getFrames();
@@ -197,9 +196,16 @@ void Game::RenderPlayers(AppCtx& ctx) {
         drawParams.origin = placement.Origin;
         drawParams.flip = placement.Flip;
 
-        m_PlayerEffectEmitter
-            .Update(player, player.Animation.GetAnimation(), player.Animation.GetFrameIndex(), frame,
-                    assetManager.GetCharacterAnimationEffectMasks(player.Character, player.Animation.GetAnimation(), EffectMaskKind::SwordGreen), scale, 0.0, dispatcher);
+        m_PlayerEffectEmitter.Update(
+            player,
+            player.Animation.GetAnimation(),
+            player.Animation.GetFrameIndex(),
+            frame,
+            assetManager.GetCharacterAnimationEffectMasks(
+                player.Character, player.Animation.GetAnimation(), EffectMaskKind::SwordGreen),
+            scale,
+            0.0,
+            dispatcher);
 
         return renderer.DrawTexture(spriteSheet.getSpriteTexture(), drawParams);
     };

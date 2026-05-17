@@ -4,12 +4,12 @@
 #include <cstdint>
 #include <string>
 
-#include "Event.hpp"
-#include "smashorpass/core/Arena.hpp"
-#include "smashorpass/core/InputBindings.hpp"
-#include "smashorpass/core/PlayerEffectEmitter.hpp"
-#include "smashorpass/core/PlayerController.hpp"
-#include "smashorpass/core/SpriteAnimationPlayer.hpp"
+#include "smashorpass/core/Event.hpp"
+#include "smashorpass/state/states/in_game/Arena.hpp"
+#include "smashorpass/state/states/in_game/InputBindings.hpp"
+#include "smashorpass/state/states/in_game/PlayerController.hpp"
+#include "smashorpass/state/states/in_game/PlayerEffectEmitter.hpp"
+#include "smashorpass/state/states/in_game/SpriteAnimationPlayer.hpp"
 
 namespace sop {
 
@@ -59,12 +59,9 @@ class Game final {
     void RenderCollisionBoxes(AppCtx& ctx);
     void RenderEffects(AppCtx& ctx);
 
-    void EmitPlayerParticleEffect(AppCtx& ctx,
-                                  const PlayerParticleEffectEvent& event);
-    void EmitSwordFireParticleEffect(AppCtx& ctx,
-                                     const PlayerParticleEffectEvent& event);
-    void EmitDashParticleEffect(AppCtx& ctx,
-                                const PlayerParticleEffectEvent& event);
+    void EmitPlayerParticleEffect(AppCtx& ctx, const PlayerParticleEffectEvent& event);
+    void EmitSwordFireParticleEffect(AppCtx& ctx, const PlayerParticleEffectEvent& event);
+    void EmitDashParticleEffect(AppCtx& ctx, const PlayerParticleEffectEvent& event);
 
     PlayerState m_Player1{.Bindings{.MoveLeft = SDLK_A,
                                     .MoveRight = SDLK_D,

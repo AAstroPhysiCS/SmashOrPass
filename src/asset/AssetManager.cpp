@@ -1,7 +1,6 @@
 #include "smashorpass/asset/AssetManager.hpp"
 
 #include <SDL3_image/SDL_image.h>
-#include "SDL3/SDL.h"
 
 #include <array>
 #include <cstdint>
@@ -14,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include "SDL3/SDL.h"
 #include "smashorpass/core/Base.hpp"
 #include "spdlog/spdlog.h"
 
@@ -197,14 +197,14 @@ std::span<const FrameEffectMask> AssetManager::GetCharacterAnimationEffectMasks(
         return std::span<const FrameEffectMask>{it->second.data(), it->second.size()};
     }
 
-    const std::vector<FrameEffectMask>& masks = LoadCharacterAnimationEffectMasks(character, animation, kind);
+    const std::vector<FrameEffectMask>& masks =
+        LoadCharacterAnimationEffectMasks(character, animation, kind);
 
     return std::span<const FrameEffectMask>{masks.data(), masks.size()};
 }
 
 const SpriteSheet& AssetManager::loadSpriteSheet(CharacterId character,
                                                  CharacterAnimation animation) {
-    
     const std::filesystem::path basePath = m_AssetRootDir / "sprites" / "characters" /
                                            GetCharacterDirName(character) /
                                            GetAnimationBaseName(animation);
@@ -300,15 +300,16 @@ const char* AssetManager::GetAnimationBaseName(CharacterAnimation animation) con
 
 const std::vector<FrameEffectMask>& AssetManager::LoadCharacterAnimationEffectMasks(
     CharacterId character, CharacterAnimation animation, EffectMaskKind kind) {
-
-    const auto CharacterAnimationBasePath = [&](const std::filesystem::path& assetRootDir,
-        CharacterId character,
-        CharacterAnimation animation) -> std::filesystem::path {
+    const auto CharacterAnimationBasePath =
+        [&](const std::filesystem::path& assetRootDir,
+            CharacterId character,
+            CharacterAnimation animation) -> std::filesystem::path {
         return assetRootDir / "sprites" / "characters" / GetCharacterDirName(character) /
                GetAnimationBaseName(animation);
     };
 
-    const auto LoadSurfaceFromBytes = [](std::span<const uint8_t> bytes, const char* name) -> SDL_Surface* {
+    const auto LoadSurfaceFromBytes = [](std::span<const uint8_t> bytes,
+                                         const char* name) -> SDL_Surface* {
         SDL_IOStream* io = SDL_IOFromConstMem(bytes.data(), bytes.size());
         SOP_ASSERT(io != nullptr, "Failed to create IO stream");
 
@@ -324,13 +325,14 @@ const std::vector<FrameEffectMask>& AssetManager::LoadCharacterAnimationEffectMa
             case EffectMaskKind::SwordGreen:
                 return EffectMaskDefinition{
                     .SampleStep = 4,
-                    .PixelPredicate = [](const EffectMaskPixel& pixel) {
+                    .PixelPredicate =
+                        [](const EffectMaskPixel& pixel) {
                             const float r = static_cast<float>(pixel.R);
                             const float g = static_cast<float>(pixel.G);
                             const float b = static_cast<float>(pixel.B);
 
                             return pixel.A > 64 && g > 110.0f && g > r * 1.25f && g > b * 1.25f;
-                    },
+                        },
                 };
         }
         SOP_ASSERT(false, "Unhandled effect mask kind");
@@ -343,11 +345,10 @@ const std::vector<FrameEffectMask>& AssetManager::LoadCharacterAnimationEffectMa
     const std::filesystem::path basePath =
         CharacterAnimationBasePath(m_AssetRootDir, character, animation);
 
-    const SpriteSheetBytes bytes =
-        ReadCharacterSpriteSheetBytes(m_AssetRootDir,
-                                                    basePath.string() + ".png",
-                                                    basePath.string() + "_boxes.png",
-                                                    basePath.string() + ".json");
+    const SpriteSheetBytes bytes = ReadCharacterSpriteSheetBytes(m_AssetRootDir,
+                                                                 basePath.string() + ".png",
+                                                                 basePath.string() + "_boxes.png",
+                                                                 basePath.string() + ".json");
 
     auto spriteSurface = LoadSurfaceFromBytes(bytes.Sprite, "Failed to load sprite surface");
 

@@ -1,5 +1,6 @@
 #include <print>
-#include "smashorpass/app/Application.hpp"
+
+#include "smashorpass/core/Application.hpp"
 
 int main() {
     sop::Application application;

@@ -1,8 +1,8 @@
-#include "smashorpass/state/states/InGameState.hpp"
+#include "smashorpass/state/states/in_game/InGameState.hpp"
 
 #include <chrono>
 
-#include "smashorpass/app/AppCtx.hpp"
+#include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/core/Base.hpp"
 #include "smashorpass/ui/UIBuilder.hpp"
 
@@ -16,17 +16,12 @@ constexpr int kAnimationTicksPerSecond = 60;
 constexpr int kAnimationMaxCatchUpTicks = 10;
 // Derived from above
 constexpr Clock::duration kGameLogicTickDuration =
-    duration_cast<Clock::duration>(
-        std::chrono::duration<double>(1.0 / kGameLogicTicksPerSecond));
+    duration_cast<Clock::duration>(std::chrono::duration<double>(1.0 / kGameLogicTicksPerSecond));
 constexpr Clock::duration kAnimationTickDuration =
-    duration_cast<Clock::duration>(
-        std::chrono::duration<double>(1.0 / kAnimationTicksPerSecond));
-
-
+    duration_cast<Clock::duration>(std::chrono::duration<double>(1.0 / kAnimationTicksPerSecond));
 
 InGameState::InGameState(AppCtx& ctx)
-    : m_GameScreen(ctx.m_EventDispatcher),
-      m_PauseScreen(ctx.m_EventDispatcher) {
+    : m_GameScreen(ctx.m_EventDispatcher), m_PauseScreen(ctx.m_EventDispatcher) {
     UIBuilder gameScreenBuilder(m_GameScreen);
     m_GameScreen.Build(gameScreenBuilder);
 

@@ -1,10 +1,10 @@
 #include "smashorpass/rendering/Renderer.hpp"
 
-#include "smashorpass/ui/UIWidget.hpp"
-#include "spdlog/spdlog.h"
-
 #include <algorithm>
 #include <cstring>
+
+#include "smashorpass/ui/UIWidget.hpp"
+#include "spdlog/spdlog.h"
 
 namespace sop {
 
@@ -39,16 +39,25 @@ Renderer::Renderer(Window& window, const char* driverName) : m_Window(window) {
     // driverName if provided.
     driverName = driverName ? driverName : SDL_GetRenderDriver(0);
     m_NativeHandle = SDL_CreateRenderer(window.NativeHandle(), driverName);
-    SOP_ASSERT(m_NativeHandle, std::format("SDL_CreateRenderer failed: {0}", SDL_GetError()).c_str());
+    SOP_ASSERT(m_NativeHandle,
+               std::format("SDL_CreateRenderer failed: {0}", SDL_GetError()).c_str());
 
     // Apparently good default for most UI/game rendering.
     SOP_ASSERT(SDL_SetRenderDrawBlendMode(m_NativeHandle, SDL_BLENDMODE_BLEND),
                "SDL_SetRenderDrawBlendMode");
 
-    m_TitleFont = TTF_OpenFont((std::string(SOP_ASSET_ROOT_DIR) + "/fonts/Oxanium/static/Oxanium-ExtraBold.ttf").c_str(), 64.0f);
-    m_BigFont = TTF_OpenFont((std::string(SOP_ASSET_ROOT_DIR) + "/fonts/Oxanium/static/Oxanium-SemiBold.ttf").c_str(), 32.0f);
-    m_MediumFont = TTF_OpenFont((std::string(SOP_ASSET_ROOT_DIR) + "/fonts/Oxanium/static/Oxanium-Bold.ttf").c_str(), 32.0f);
-    m_SmallFont = TTF_OpenFont((std::string(SOP_ASSET_ROOT_DIR) + "/fonts/Oxanium/static/Oxanium-Regular.ttf").c_str(), 24.0f);
+    m_TitleFont = TTF_OpenFont(
+        (std::string(SOP_ASSET_ROOT_DIR) + "/fonts/Oxanium/static/Oxanium-ExtraBold.ttf").c_str(),
+        64.0f);
+    m_BigFont = TTF_OpenFont(
+        (std::string(SOP_ASSET_ROOT_DIR) + "/fonts/Oxanium/static/Oxanium-SemiBold.ttf").c_str(),
+        32.0f);
+    m_MediumFont = TTF_OpenFont(
+        (std::string(SOP_ASSET_ROOT_DIR) + "/fonts/Oxanium/static/Oxanium-Bold.ttf").c_str(),
+        32.0f);
+    m_SmallFont = TTF_OpenFont(
+        (std::string(SOP_ASSET_ROOT_DIR) + "/fonts/Oxanium/static/Oxanium-Regular.ttf").c_str(),
+        24.0f);
 
     SOP_ASSERT(m_TitleFont, std::format("TTF_OpenFont failed: {0}", SDL_GetError()).c_str());
 }
@@ -356,7 +365,6 @@ bool Renderer::DrawGeometry(SDL_Texture* texture,
 }
 
 bool Renderer::DrawText(FontId id, float x, float y, std::string_view text, Color color) {
-    
     std::string owned(text);
 
     SDL_Surface* surface = TTF_RenderText_Blended(GetFontById(id), text.data(), 0, color);

@@ -7,20 +7,13 @@
 #include <span>
 #include <unordered_map>
 
-#include "smashorpass/core/Base.hpp"
-
 #include "smashorpass/asset/ArenaMetadata.hpp"
 #include "smashorpass/asset/SpriteSheet.hpp"
-
+#include "smashorpass/core/Base.hpp"
 
 namespace sop {
 
-enum class CharacterId {
-    Samurai,
-    Brawler,
-    Tank,
-    Mage
-};
+enum class CharacterId { Samurai, Brawler, Tank, Mage };
 
 inline constexpr CharacterId kDefaultCharacterId = CharacterId::Samurai;
 

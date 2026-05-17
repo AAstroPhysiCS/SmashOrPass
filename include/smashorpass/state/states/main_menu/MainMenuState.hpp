@@ -1,8 +1,8 @@
 #pragma once
 
 #include "smashorpass/state/State.hpp"
-#include "smashorpass/ui/CharacterSelectScreen.hpp"
-#include "smashorpass/ui/MenuScreen.hpp"
+#include "smashorpass/state/states/main_menu/ui/CharacterSelectScreen.hpp"
+#include "smashorpass/state/states/main_menu/ui/MenuScreen.hpp"
 
 namespace sop {
 

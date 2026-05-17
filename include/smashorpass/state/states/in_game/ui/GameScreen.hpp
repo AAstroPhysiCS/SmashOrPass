@@ -1,6 +1,6 @@
 #pragma once
 
-#include "smashorpass/core/Game.hpp"
+#include "smashorpass/state/states/in_game/Game.hpp"
 #include "smashorpass/ui/UIScreen.hpp"
 
 namespace sop {

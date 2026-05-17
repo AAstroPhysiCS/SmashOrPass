@@ -1,10 +1,11 @@
 #pragma once
 
 #include <chrono>
-#include "smashorpass/core/Game.hpp"
+
 #include "smashorpass/state/State.hpp"
-#include "smashorpass/ui/GameScreen.hpp"
-#include "smashorpass/ui/PauseScreen.hpp"
+#include "smashorpass/state/states/in_game/Game.hpp"
+#include "smashorpass/state/states/in_game/ui/GameScreen.hpp"
+#include "smashorpass/state/states/in_game/ui/PauseScreen.hpp"
 
 namespace sop {
 

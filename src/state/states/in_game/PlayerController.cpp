@@ -1,4 +1,4 @@
-#include "smashorpass/core/PlayerController.hpp"
+#include "smashorpass/state/states/in_game/PlayerController.hpp"
 
 #include <SDL3/SDL_keycode.h>
 
@@ -7,8 +7,8 @@
 #include <optional>
 
 #include "smashorpass/core/Base.hpp"
-#include "smashorpass/core/InputBindings.hpp"
 #include "smashorpass/rendering/ParticleSystem.hpp"
+#include "smashorpass/state/states/in_game/InputBindings.hpp"
 
 namespace sop {
 namespace {
@@ -265,9 +265,9 @@ void TickPlayer(PlayerCharacterState& player,
             jumpedThisTick = true;
         }
 
-        //if jumping should emit additional jump particles
-        //if (jumpedThisTick) {
-            //EmitJumpParticles(player, particleSystem);
+        // if jumping should emit additional jump particles
+        // if (jumpedThisTick) {
+        // EmitJumpParticles(player, particleSystem);
         //}
     }
     input.JumpRequested = false;
@@ -310,9 +310,9 @@ void TickPlayer(PlayerCharacterState& player,
         }
     }
 
-    //if the player should emit air particles aka trails when in the air
-    //if (!player.Grounded && !IsDashActive(player)) {
-        //EmitAirTrailParticles(player, particleSystem);
+    // if the player should emit air particles aka trails when in the air
+    // if (!player.Grounded && !IsDashActive(player)) {
+    // EmitAirTrailParticles(player, particleSystem);
     //}
     player.Animation.SetAnimation(SelectPlayerAnimation(player, input));
 }
@@ -365,8 +365,8 @@ void EmitAirTrailParticles(PlayerCharacterState& player, ParticleSystem& particl
     desc.EndColor = Color{180, 220, 255, 0};
     desc.Acceleration = Vec2{0.0f, 120.0f};
 
-    //dont like how it looks...
-    //particleSystem.EmitBurst(desc);
+    // dont like how it looks...
+    // particleSystem.EmitBurst(desc);
 }
 
 void ApplyPlayerViewport(PlayerControlConfig& config,

@@ -1,10 +1,11 @@
 #pragma once
 
 #include <memory>
+
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/core/DisplayMetrics.hpp"
 #include "smashorpass/core/Event.hpp"
-#include "smashorpass/platform/Window.hpp"
+#include "smashorpass/core/Window.hpp"
 #include "smashorpass/rendering/ParticleSystem.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
 #include "smashorpass/state/StateManager.hpp"

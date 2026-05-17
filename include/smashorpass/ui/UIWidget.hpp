@@ -1,8 +1,8 @@
 #pragma once
 
 #include "smashorpass/core/Base.hpp"
-
 #include "smashorpass/rendering/Renderer.hpp"
+#include "smashorpass/ui/Theme.hpp"
 
 namespace sop {
 
@@ -109,7 +109,7 @@ using OnHoverFunc = std::function<void(EventDispatcher&, ButtonData&)>;
 struct ButtonData {
     std::string Text;
     FontId Font = FontId::Medium;
-    
+
     Color BackgroundColor = Theme::BUTTON_BACKGROUND_COLOR;
     Color BorderColor = Theme::BUTTON_BORDER_COLOR;
     Color TextColor = Theme::BUTTON_TEXT_COLOR;

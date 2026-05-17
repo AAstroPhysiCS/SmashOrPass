@@ -5,11 +5,11 @@
 #include <span>
 
 #include "smashorpass/asset/AssetManager.hpp"
-#include "smashorpass/core/Arena.hpp"
 #include "smashorpass/core/Event.hpp"
-#include "smashorpass/core/InputBindings.hpp"
-#include "smashorpass/core/SpriteAnimationPlayer.hpp"
 #include "smashorpass/rendering/ParticleSystem.hpp"
+#include "smashorpass/state/states/in_game/Arena.hpp"
+#include "smashorpass/state/states/in_game/InputBindings.hpp"
+#include "smashorpass/state/states/in_game/SpriteAnimationPlayer.hpp"
 
 namespace sop {
 

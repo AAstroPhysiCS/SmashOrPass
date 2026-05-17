@@ -1,10 +1,10 @@
-#include "smashorpass/platform/Window.hpp"
+#include "smashorpass/core/Window.hpp"
 
 #include <SDL3/SDL.h>
-#include "SDL3_ttf/SDL_ttf.h"
 
 #include <stdexcept>
 
+#include "SDL3_ttf/SDL_ttf.h"
 #include "smashorpass/core/Base.hpp"
 
 namespace sop {

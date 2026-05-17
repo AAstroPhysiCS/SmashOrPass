@@ -1,10 +1,9 @@
 #pragma once
 
+#include "SDL3_ttf/SDL_ttf.h"
 #include "smashorpass/core/Base.hpp"
 #include "smashorpass/core/DisplayMetrics.hpp"
-#include "smashorpass/platform/Window.hpp"
-
-#include "SDL3_ttf/SDL_ttf.h"
+#include "smashorpass/core/Window.hpp"
 
 namespace sop {
 
@@ -164,6 +163,7 @@ class Renderer final {
 
     Vec2 MeasureText(FontId id, std::string_view text);
     TTF_Font* GetFontById(FontId id);
+
    private:
     Window& m_Window;
     SDL_Renderer* m_NativeHandle{nullptr};
@@ -174,6 +174,6 @@ class Renderer final {
     TTF_Font* m_MediumFont = nullptr;
     TTF_Font* m_SmallFont = nullptr;
 
-    friend class UIScreen; //for MeasureText
+    friend class UIScreen;  // for MeasureText
 };
 }  // namespace sop

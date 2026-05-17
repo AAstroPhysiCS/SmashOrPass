@@ -1,4 +1,4 @@
-#include "smashorpass/app/AppCtx.hpp"
+#include "smashorpass/core/AppCtx.hpp"
 
 namespace sop {
 

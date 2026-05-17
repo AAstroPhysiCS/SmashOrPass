@@ -20,4 +20,4 @@ class PlayerEffectEmitter final {
     uint32_t m_PreviousFrameIndex = std::numeric_limits<uint32_t>::max();
     double m_DashEffectCooldown = 0.0;
 };
-}
+}  // namespace sop

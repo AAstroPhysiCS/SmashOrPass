@@ -1,15 +1,15 @@
-#include "smashorpass/core/PlayerSpritePlacement.hpp"
-#include "smashorpass/core/PlayerController.hpp"
+#include "smashorpass/state/states/in_game/PlayerSpritePlacement.hpp"
 
 #include "smashorpass/core/Base.hpp"
+#include "smashorpass/state/states/in_game/PlayerController.hpp"
 
 namespace sop::detail {
 
 Vec2 LocalFramePointToWorld(const PlayerCharacterState& player,
-                                  const SpriteSheetFrame& frame,
-                                  Vec2 localPoint,
-                                  bool facingRight,
-                                  float scale) {
+                            const SpriteSheetFrame& frame,
+                            Vec2 localPoint,
+                            bool facingRight,
+                            float scale) {
     const float frameWidth = static_cast<float>(frame.x_right - frame.x_left);
     const float frameHeight = static_cast<float>(frame.y_bottom - frame.y_top);
 

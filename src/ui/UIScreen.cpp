@@ -1,9 +1,8 @@
 #include "smashorpass/ui/UIScreen.hpp"
 
 #include "smashorpass/rendering/Renderer.hpp"
-#include "spdlog/spdlog.h"
-
 #include "smashorpass/ui/UIBuilder.hpp"
+#include "spdlog/spdlog.h"
 
 namespace sop {
 
@@ -12,25 +11,26 @@ UIScreen::UIScreen(EventDispatcher& dispatcher) : m_EventDispatcher(dispatcher) 
 EventFlow UIScreen::OnEvent(const Event& event) {
     bool consumed = false;
 
-    EventDispatcher::Dispatch<MouseButtonEvent>(event, [this, &consumed](const MouseButtonEvent& e) {
-        if (!e.Down)
-            return;
-        Vec2 mousePos{e.X, e.Y};
+    EventDispatcher::Dispatch<MouseButtonEvent>(event,
+                                                [this, &consumed](const MouseButtonEvent& e) {
+                                                    if (!e.Down)
+                                                        return;
+                                                    Vec2 mousePos{e.X, e.Y};
 
-        for (UIWidget& w : m_Widgets) {
-            if (w.Kind != WidgetKind::Button)
-                continue;
+                                                    for (UIWidget& w : m_Widgets) {
+                                                        if (w.Kind != WidgetKind::Button)
+                                                            continue;
 
-            if (!PointInRect(mousePos, w.LayoutRect))
-                continue;
+                                                        if (!PointInRect(mousePos, w.LayoutRect))
+                                                            continue;
 
-            auto& d = std::get<ButtonData>(w.Data);
-            if (d.OnClick)
-                d.OnClick(m_EventDispatcher, d);
-            consumed = true;
-            return;
-        }
-    });
+                                                        auto& d = std::get<ButtonData>(w.Data);
+                                                        if (d.OnClick)
+                                                            d.OnClick(m_EventDispatcher, d);
+                                                        consumed = true;
+                                                        return;
+                                                    }
+                                                });
 
     EventDispatcher::Dispatch<MouseMovedEvent>(event, [this, &consumed](const MouseMovedEvent& e) {
         Vec2 mousePos{e.X, e.Y};
@@ -91,8 +91,8 @@ void UIScreen::RenderWidget(Renderer& renderer, const UIWidget& widget) {
             break;
         case WidgetKind::Label: {
             const auto& d = std::get<LabelData>(widget.Data);
-            renderer.DrawText(d.Font, 
-                widget.LayoutRect.x, widget.LayoutRect.y, d.Text, d.TextColor);
+            renderer.DrawText(
+                d.Font, widget.LayoutRect.x, widget.LayoutRect.y, d.Text, d.TextColor);
             break;
         }
         case WidgetKind::Button: {
@@ -115,7 +115,6 @@ void UIScreen::RenderWidget(Renderer& renderer, const UIWidget& widget) {
 }
 
 Vec2 UIScreen::MeasureWidget(UIWidgetId id, Renderer& renderer) {
-    
     UIWidget& w = GetWidgetById(id);
 
     switch (w.Kind) {

@@ -1,13 +1,12 @@
-#include "smashorpass/state/states/MainMenuState.hpp"
+#include "smashorpass/state/states/main_menu/MainMenuState.hpp"
 
-#include "smashorpass/app/AppCtx.hpp"
+#include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/ui/UIBuilder.hpp"
 
 namespace sop {
 
 MainMenuState::MainMenuState(AppCtx& ctx)
-    : m_MainMenuScreen(ctx.m_EventDispatcher),
-      m_CharacterSelectScreen(ctx.m_EventDispatcher) {
+    : m_MainMenuScreen(ctx.m_EventDispatcher), m_CharacterSelectScreen(ctx.m_EventDispatcher) {
     UIBuilder mainMenuBuilder(m_MainMenuScreen);
     m_MainMenuScreen.Build(mainMenuBuilder);
 

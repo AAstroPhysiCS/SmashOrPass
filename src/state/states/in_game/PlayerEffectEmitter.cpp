@@ -1,5 +1,6 @@
-#include "smashorpass/core/PlayerEffectEmitter.hpp"
-#include "smashorpass/core/PlayerSpritePlacement.hpp"
+#include "smashorpass/state/states/in_game/PlayerEffectEmitter.hpp"
+
+#include "smashorpass/state/states/in_game/PlayerSpritePlacement.hpp"
 
 namespace sop {
 
@@ -69,4 +70,4 @@ void PlayerEffectEmitter::Update(const PlayerCharacterState& player,
     m_PreviousAnimation = animation;
     m_PreviousFrameIndex = frameIndex;
 }
-}
+}  // namespace sop
