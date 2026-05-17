@@ -1,6 +1,7 @@
 #include "smashorpass/state/states/in_game/InGameState.hpp"
 
 #include <chrono>
+#include <string>
 
 #include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/core/Base.hpp"
@@ -9,6 +10,8 @@
 using Clock = std::chrono::steady_clock;
 
 namespace sop {
+
+using namespace sop_util;
 
 constexpr int kGameLogicTicksPerSecond = 120;
 constexpr int kGameLogicMaxCatchUpTicks = 10;
@@ -82,7 +85,7 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
     int gameLogicTicks = 0;
     while (now - m_PreviousGameLogicTick >= kGameLogicTickDuration &&
            gameLogicTicks < kGameLogicMaxCatchUpTicks) {
-        m_Game.GameplayTick(ctx, kGameLogicTickDuration);
+        TRY_VOID(m_Game.GameplayTick(ctx, kGameLogicTickDuration));
         m_PreviousGameLogicTick += kGameLogicTickDuration;
         ++gameLogicTicks;
     }
@@ -95,7 +98,7 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
     int animationTicks = 0;
     while (now - m_PreviousAnimationTick >= kAnimationTickDuration &&
            animationTicks < kAnimationMaxCatchUpTicks) {
-        m_Game.AnimationTick(ctx);
+        TRY_VOID(m_Game.AnimationTick(ctx));
         m_PreviousAnimationTick += kAnimationTickDuration;
         ++animationTicks;
     }
@@ -111,7 +114,9 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
 }
 
 Result<void> InGameState::OnRender(AppCtx& ctx) {
-    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+    if (ctx.Assets == nullptr) {
+        return Err(std::string("Application context missing asset manager"));
+    }
 
     m_Game.SetDisplayMetrics(ctx.m_DisplayMetrics);
     TRY_VOID(m_Game.Render(ctx));

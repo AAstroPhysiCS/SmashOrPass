@@ -6,7 +6,7 @@
 
 namespace sop {
 
-using sop_util::Ok;
+using namespace sop_util;
 
 UIScreen::UIScreen(EventDispatcher& dispatcher) : m_EventDispatcher(dispatcher) {}
 

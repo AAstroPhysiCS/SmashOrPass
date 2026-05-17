@@ -13,6 +13,7 @@ class Application {
     Application();
     ~Application();
 
+    Result<void> Initialize();
     Result<void> Run();
 
    private:
@@ -26,5 +27,6 @@ class Application {
     Result<void> ToggleDebugOverlay();
 
     AppCtx ctx;
+    bool m_Initialized{false};
 };
 }  // namespace sop

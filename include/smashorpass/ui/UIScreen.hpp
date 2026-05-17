@@ -7,6 +7,8 @@
 
 namespace sop {
 
+using namespace sop_util;
+
 class UIBuilder;
 
 class UIScreen {

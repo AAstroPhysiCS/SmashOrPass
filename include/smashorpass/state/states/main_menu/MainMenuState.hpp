@@ -6,6 +6,8 @@
 
 namespace sop {
 
+using namespace sop_util;
+
 class MainMenuState final : public State {
    public:
     explicit MainMenuState(AppCtx& ctx);

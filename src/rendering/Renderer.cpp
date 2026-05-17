@@ -3,38 +3,21 @@
 #include <algorithm>
 
 #include "smashorpass/ui/UIWidget.hpp"
+#include "smashorpass/util.hpp"
 #include "spdlog/spdlog.h"
 
 namespace sop {
 
-using sop_util::Err;
-using sop_util::Ok;
+using namespace sop_util;
 
-namespace {
-
-std::string SdlError(const char* operation) {
-    return std::string(operation) + " failed: " + SDL_GetError();
-}
-
-Result<void> SdlResult(bool ok, const char* operation) {
-    if (!ok) {
-        return Err(SdlError(operation));
-    }
-    return Ok();
-}
-
-}  // namespace
-
-Renderer::ScopedClip::ScopedClip(Renderer& renderer, std::optional<SDL_Rect> rect)
-    : m_Renderer(&renderer) {
-    auto result = m_Renderer->PushClipRect(rect);
-    SOP_VERIFY(result.has_value(), result.error().c_str());
-}
+Renderer::ScopedClip::ScopedClip(Renderer& renderer) : m_Renderer(&renderer) {}
 
 Renderer::ScopedClip::~ScopedClip() {
     if (m_Renderer) {
         auto result = m_Renderer->PopClipRect();
-        SOP_VERIFY(result.has_value(), result.error().c_str());
+        if (!result) {
+            spdlog::error("Failed to pop renderer clip rect: {}", result.error());
+        }
     }
 }
 
@@ -48,7 +31,9 @@ Renderer::ScopedClip& Renderer::ScopedClip::operator=(ScopedClip&& other) noexce
 
     if (m_Renderer) {
         auto result = m_Renderer->PopClipRect();
-        SOP_VERIFY(result.has_value(), result.error().c_str());
+        if (!result) {
+            spdlog::error("Failed to pop renderer clip rect: {}", result.error());
+        }
     }
 
     m_Renderer = other.m_Renderer;
@@ -56,17 +41,26 @@ Renderer::ScopedClip& Renderer::ScopedClip::operator=(ScopedClip&& other) noexce
     return *this;
 }
 
-Renderer::Renderer(Window& window, const char* driverName) : m_Window(window) {
+Result<void> Renderer::Initialize(Window& window, const char* driverName) {
     // Assuming that index 0 is the main gpu-accelerated driver, but allow overriding it with
     // driverName if provided.
     driverName = driverName ? driverName : SDL_GetRenderDriver(0);
+    if (driverName == nullptr) {
+        return Err(SdlError("SDL_GetRenderDriver"));
+    }
+
     m_NativeHandle = SDL_CreateRenderer(window.NativeHandle(), driverName);
-    SOP_ASSERT(m_NativeHandle,
-               std::format("SDL_CreateRenderer failed: {0}", SDL_GetError()).c_str());
+    if (m_NativeHandle == nullptr) {
+        return Err(SdlError("SDL_CreateRenderer"));
+    }
 
     // Apparently good default for most UI/game rendering.
-    SOP_ASSERT(SDL_SetRenderDrawBlendMode(m_NativeHandle, SDL_BLENDMODE_BLEND),
-               "SDL_SetRenderDrawBlendMode");
+    if (!SDL_SetRenderDrawBlendMode(m_NativeHandle, SDL_BLENDMODE_BLEND)) {
+        const std::string error = SdlError("SDL_SetRenderDrawBlendMode");
+        SDL_DestroyRenderer(m_NativeHandle);
+        m_NativeHandle = nullptr;
+        return Err(error);
+    }
 
     m_TitleFont = TTF_OpenFont(
         (std::string(SOP_ASSET_ROOT_DIR) + "/fonts/Oxanium/static/Oxanium-ExtraBold.ttf").c_str(),
@@ -81,16 +75,55 @@ Renderer::Renderer(Window& window, const char* driverName) : m_Window(window) {
         (std::string(SOP_ASSET_ROOT_DIR) + "/fonts/Oxanium/static/Oxanium-Regular.ttf").c_str(),
         24.0f);
 
-    SOP_ASSERT(m_TitleFont, std::format("TTF_OpenFont failed: {0}", SDL_GetError()).c_str());
+    if (m_TitleFont == nullptr || m_BigFont == nullptr || m_MediumFont == nullptr ||
+        m_SmallFont == nullptr) {
+        const std::string error = SdlError("TTF_OpenFont");
+        if (m_TitleFont != nullptr) {
+            TTF_CloseFont(m_TitleFont);
+        }
+        if (m_BigFont != nullptr) {
+            TTF_CloseFont(m_BigFont);
+        }
+        if (m_MediumFont != nullptr) {
+            TTF_CloseFont(m_MediumFont);
+        }
+        if (m_SmallFont != nullptr) {
+            TTF_CloseFont(m_SmallFont);
+        }
+        m_TitleFont = nullptr;
+        m_BigFont = nullptr;
+        m_MediumFont = nullptr;
+        m_SmallFont = nullptr;
+        SDL_DestroyRenderer(m_NativeHandle);
+        m_NativeHandle = nullptr;
+        return Err(error);
+    }
+
+    return Ok();
 }
 
 Renderer::~Renderer() {
+    if (m_TitleFont != nullptr) {
+        TTF_CloseFont(m_TitleFont);
+    }
+    if (m_BigFont != nullptr) {
+        TTF_CloseFont(m_BigFont);
+    }
+    if (m_MediumFont != nullptr) {
+        TTF_CloseFont(m_MediumFont);
+    }
+    if (m_SmallFont != nullptr) {
+        TTF_CloseFont(m_SmallFont);
+    }
+    m_TitleFont = nullptr;
+    m_BigFont = nullptr;
+    m_MediumFont = nullptr;
+    m_SmallFont = nullptr;
+
     if (m_NativeHandle) {
         SDL_DestroyRenderer(m_NativeHandle);
         m_NativeHandle = nullptr;
     }
-    TTF_CloseFont(m_TitleFont);
-    TTF_Quit();
 }
 
 Result<void> Renderer::BeginFrame(Color clear) {
@@ -157,7 +190,12 @@ Result<void> Renderer::SetClipRect(std::optional<SDL_Rect> rect) {
 
 Result<void> Renderer::PushClipRect(std::optional<SDL_Rect> rect) {
     m_ClipStack.push_back(rect);
-    return ApplyClipStack();
+    auto result = ApplyClipStack();
+    if (!result) {
+        m_ClipStack.pop_back();
+        return result;
+    }
+    return Ok();
 }
 
 Result<void> Renderer::PopClipRect() {
@@ -557,5 +595,6 @@ TTF_Font* Renderer::GetFontById(FontId id) {
         case FontId::Small:
             return m_SmallFont;
     }
+    return nullptr;
 };
 }  // namespace sop

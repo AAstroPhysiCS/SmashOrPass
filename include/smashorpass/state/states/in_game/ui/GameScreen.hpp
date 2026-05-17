@@ -5,6 +5,8 @@
 
 namespace sop {
 
+using namespace sop_util;
+
 class GameScreen : public UIScreen {
    public:
     GameScreen(EventDispatcher& dispatcher);

@@ -7,7 +7,7 @@
 
 namespace sop {
 
-using sop_util::Result;
+using namespace sop_util;
 
 enum class FontId : uint8_t;
 
@@ -50,7 +50,6 @@ class Renderer final {
    public:
     class ScopedClip final {
        public:
-        ScopedClip(Renderer& renderer, std::optional<SDL_Rect> rect);
         ~ScopedClip();
 
         ScopedClip(const ScopedClip&) = delete;
@@ -60,17 +59,23 @@ class Renderer final {
         ScopedClip& operator=(ScopedClip&& other) noexcept;
 
        private:
+        explicit ScopedClip(Renderer& renderer);
+
         Renderer* m_Renderer{nullptr};
+
+        friend class Renderer;
     };
 
    public:
-    explicit Renderer(Window& window, const char* driverName = nullptr);
+    Renderer() = default;
     ~Renderer();
 
     Renderer(const Renderer&) = delete;
     Renderer& operator=(const Renderer&) = delete;
     Renderer(Renderer&&) = delete;
     Renderer& operator=(Renderer&&) = delete;
+
+    [[nodiscard]] Result<void> Initialize(Window& window, const char* driverName = nullptr);
 
     Result<void> BeginFrame(Color clear = Color{18, 18, 24, 255});
     Result<void> EndFrame();
@@ -93,8 +98,9 @@ class Renderer final {
     Result<void> SetClipRect(std::optional<SDL_Rect> rect);
     Result<void> PushClipRect(std::optional<SDL_Rect> rect);
     Result<void> PopClipRect();
-    [[nodiscard]] ScopedClip Clip(std::optional<SDL_Rect> rect) {
-        return ScopedClip(*this, rect);
+    [[nodiscard]] Result<ScopedClip> Clip(std::optional<SDL_Rect> rect) {
+        TRY_VOID(PushClipRect(rect));
+        return Ok(ScopedClip(*this));
     }
 
     Result<void> SetScale(float x, float y);
@@ -170,7 +176,6 @@ class Renderer final {
     TTF_Font* GetFontById(FontId id);
 
    private:
-    Window& m_Window;
     SDL_Renderer* m_NativeHandle{nullptr};
     std::vector<std::optional<SDL_Rect>> m_ClipStack;
 

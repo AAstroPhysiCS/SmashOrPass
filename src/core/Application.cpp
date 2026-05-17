@@ -15,23 +15,34 @@
 
 namespace sop {
 
-Application::Application() {
-    auto vsyncResult = ctx.m_Renderer.SetVSync(true);
-    SOP_VERIFY(vsyncResult.has_value(), vsyncResult.error().c_str());
+using namespace sop_util;
 
-    auto displayMetricsResult = RefreshDisplayMetrics();
-    if (!displayMetricsResult) {
-        SOP_VERIFY(false, displayMetricsResult.error().c_str());
-    }
+Application::Application() {}
 
-    ctx.Assets = std::make_unique<AssetManager>(SOP_ASSET_ROOT_DIR, ctx.m_Renderer.NativeHandle());
-    ctx.m_StateManager.ResetToState<MainMenuState>(ctx);
-    ctx.m_StateManager.PushOverlay<DebugState>(ctx);
+Result<void> Application::Initialize() {
+    TRY_VOID(ctx.Initialize());
+    TRY_VOID(ctx.m_Renderer.SetVSync(true));
+    TRY_VOID(RefreshDisplayMetrics());
+
+    TRY(assets, AssetManager::Create(SOP_ASSET_ROOT_DIR, ctx.m_Renderer.NativeHandle()));
+    ctx.Assets = std::move(assets);
+
+    TRY(mainMenu, ctx.m_StateManager.ResetToState<MainMenuState>(ctx));
+    (void)mainMenu;
+    TRY(debugOverlay, ctx.m_StateManager.PushOverlay<DebugState>(ctx));
+    (void)debugOverlay;
+
+    m_Initialized = true;
+    return Ok();
 }
 
 Application::~Application() = default;
 
 Result<void> Application::Run() {
+    if (!m_Initialized) {
+        return Err(std::string("Application::Run called before Application::Initialize"));
+    }
+
     spdlog::info("Starting the game");
 
     while (ctx.AppRunning) {
@@ -108,7 +119,8 @@ Result<void> Application::DispatchEvent(const Event& event) {
 }
 
 Result<void> Application::RefreshDisplayMetrics() {
-    ctx.m_DisplayMetrics = ctx.m_Window.GetDisplayMetrics();
+    TRY(displayMetrics, ctx.m_Window.GetDisplayMetrics());
+    ctx.m_DisplayMetrics = displayMetrics;
 
     return ctx.m_Renderer.ApplyDisplayScale(ctx.m_DisplayMetrics.DisplayScale);
 }
@@ -121,19 +133,25 @@ Result<void> Application::OnEvent(const Event& event) {
 
     if (const auto* navigation = std::get_if<NavigationEvent>(&event.Payload)) {
         switch (navigation->Action) {
-            case NavigationAction::ShowMainMenu:
+            case NavigationAction::ShowMainMenu: {
                 ctx.m_ParticleSystem.Clear();
-                ctx.m_StateManager.ResetToState<MainMenuState>(ctx);
+                TRY(mainMenuState, ctx.m_StateManager.ResetToState<MainMenuState>(ctx));
+                (void)mainMenuState;
                 return Ok();
-            case NavigationAction::StartMatch:
+            }
+            case NavigationAction::StartMatch: {
                 if (ctx.Assets != nullptr) {
-                    (void)ctx.Assets->getArenaBackgroundTexture(ArenaId::Chains);
-                    (void)ctx.Assets->getArenaForegroundTexture(ArenaId::Chains);
-                    ctx.Assets->preloadCharacterSpriteSheets(kDefaultCharacterId);
+                    TRY(backgroundTexture, ctx.Assets->getArenaBackgroundTexture(ArenaId::Chains));
+                    (void)backgroundTexture;
+                    TRY(foregroundTexture, ctx.Assets->getArenaForegroundTexture(ArenaId::Chains));
+                    (void)foregroundTexture;
+                    TRY_VOID(ctx.Assets->preloadCharacterSpriteSheets(kDefaultCharacterId));
                 }
                 ctx.m_ParticleSystem.Clear();
-                ctx.m_StateManager.ResetToState<InGameState>(ctx);
+                TRY(inGameState, ctx.m_StateManager.ResetToState<InGameState>(ctx));
+                (void)inGameState;
                 return Ok();
+            }
             case NavigationAction::ShowCharacterSelect:
             case NavigationAction::ResumeMatch:
                 return Ok();

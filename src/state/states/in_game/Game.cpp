@@ -3,6 +3,7 @@
 #include <SDL3/SDL_keycode.h>
 
 #include <span>
+#include <string>
 
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/core/AppCtx.hpp"
@@ -13,7 +14,7 @@
 
 namespace sop {
 
-using sop_util::Ok;
+using namespace sop_util;
 
 namespace {
 
@@ -57,16 +58,18 @@ void Game::SetDisplayMetrics(const DisplayMetrics& metrics) {
     UpdateArena(metrics.LogicalSize());
 }
 
-void Game::GameplayTick(AppCtx& ctx, std::chrono::steady_clock::duration step) {
-    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+Result<void> Game::GameplayTick(AppCtx& ctx, std::chrono::steady_clock::duration step) {
+    if (ctx.Assets == nullptr) {
+        return Err(std::string("Application context missing asset manager"));
+    }
 
     AssetManager& assetManager = *ctx.Assets;
     const double stepSeconds = std::chrono::duration<double>(step).count();
 
-    EnsurePlayerCollisionProfile(ctx);
+    TRY_VOID(EnsurePlayerCollisionProfile(ctx));
     ApplyPlayerViewport(m_Player1.Control, m_Player1.Character, m_ArenaRect);
     ApplyPlayerViewport(m_Player2.Control, m_Player2.Character, m_ArenaRect);
-    std::span<const SDL_FRect> arenaCollisions = assetManager.getArenaCollisionBoxes(m_Arena);
+    TRY(arenaCollisions, assetManager.getArenaCollisionBoxes(m_Arena));
     TickPlayer(m_Player1.Character,
                m_Player1.Input,
                stepSeconds,
@@ -79,35 +82,45 @@ void Game::GameplayTick(AppCtx& ctx, std::chrono::steady_clock::duration step) {
                m_Player2.Control,
                arenaCollisions,
                ctx.m_ParticleSystem);
+    return Ok();
 }
 
-void Game::AnimationTick(AppCtx& ctx) {
-    AdvancePlayerAnimation(ctx, m_Player1.Character);
-    AdvancePlayerAnimation(ctx, m_Player2.Character);
+Result<void> Game::AnimationTick(AppCtx& ctx) {
+    TRY_VOID(AdvancePlayerAnimation(ctx, m_Player1.Character));
+    TRY_VOID(AdvancePlayerAnimation(ctx, m_Player2.Character));
+    return Ok();
 }
 
 Result<void> Game::Render(AppCtx& ctx) {
     return RenderWorld(ctx);
 }
 
-void Game::EnsurePlayerCollisionProfile(AppCtx& ctx) {
+Result<void> Game::EnsurePlayerCollisionProfile(AppCtx& ctx) {
     if (m_Player1.Character.CollisionProfileInitialized &&
         m_Player2.Character.CollisionProfileInitialized) {
-        return;
+        return Ok();
     }
 
-    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+    if (ctx.Assets == nullptr) {
+        return Err(std::string("Application context missing asset manager"));
+    }
     AssetManager& assetManager = *ctx.Assets;
 
-    const SpriteSheet& spriteSheet1 =
-        assetManager.getSpriteSheet(m_Player1.Character.Character, CharacterAnimation::Idle);
+    TRY(spriteSheetRef1,
+        assetManager.getSpriteSheet(m_Player1.Character.Character, CharacterAnimation::Idle));
+    const SpriteSheet& spriteSheet1 = spriteSheetRef1.get();
     const std::span<const SpriteSheetFrame> frames1 = spriteSheet1.getFrames();
-    SOP_ASSERT(!frames1.empty(), "Character idle sprite sheet has no frames");
+    if (frames1.empty()) {
+        return Err(std::string("Character idle sprite sheet has no frames"));
+    }
 
-    const SpriteSheet& spriteSheet2 =
-        assetManager.getSpriteSheet(m_Player2.Character.Character, CharacterAnimation::Idle);
+    TRY(spriteSheetRef2,
+        assetManager.getSpriteSheet(m_Player2.Character.Character, CharacterAnimation::Idle));
+    const SpriteSheet& spriteSheet2 = spriteSheetRef2.get();
     const std::span<const SpriteSheetFrame> frames2 = spriteSheet2.getFrames();
-    SOP_ASSERT(!frames2.empty(), "Character idle sprite sheet has no frames");
+    if (frames2.empty()) {
+        return Err(std::string("Character idle sprite sheet has no frames"));
+    }
 
     ApplyPlayerCollisionProfile(m_Player1.Character, frames1.front(), m_Player1.Control);
     ApplyPlayerCollisionProfile(m_Player2.Character, frames2.front(), m_Player2.Control);
@@ -115,22 +128,29 @@ void Game::EnsurePlayerCollisionProfile(AppCtx& ctx) {
     SetPlayerSpawn(m_Player2.Character, 1354.0f, 448.0f, false);
     ApplyPlayerViewport(m_Player1.Control, m_Player1.Character, m_ArenaRect);
     ApplyPlayerViewport(m_Player2.Control, m_Player2.Character, m_ArenaRect);
+    return Ok();
 }
 
-void Game::AdvancePlayerAnimation(AppCtx& ctx, PlayerCharacterState& player) {
-    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+Result<void> Game::AdvancePlayerAnimation(AppCtx& ctx, PlayerCharacterState& player) {
+    if (ctx.Assets == nullptr) {
+        return Err(std::string("Application context missing asset manager"));
+    }
     AssetManager& assetManager = *ctx.Assets;
 
-    const SpriteSheet& spriteSheet =
-        assetManager.getSpriteSheet(player.Character, player.Animation.GetAnimation());
+    TRY(spriteSheetRef,
+        assetManager.getSpriteSheet(player.Character, player.Animation.GetAnimation()));
+    const SpriteSheet& spriteSheet = spriteSheetRef.get();
     const std::span<const SpriteSheetFrame> frames = spriteSheet.getFrames();
-    SOP_ASSERT(!frames.empty(), "Character sprite sheet has no frames");
+    if (frames.empty()) {
+        return Err(std::string("Character sprite sheet has no frames"));
+    }
 
     player.Animation.Advance(frames.size());
+    return Ok();
 }
 
 Result<void> Game::RenderWorld(AppCtx& ctx) {
-    EnsurePlayerCollisionProfile(ctx);
+    TRY_VOID(EnsurePlayerCollisionProfile(ctx));
     TRY(logicalSize, ctx.m_Renderer.GetLogicalOutputSize());
     UpdateArena(logicalSize);
     TRY_VOID(RenderStage(ctx));
@@ -150,7 +170,9 @@ void Game::UpdateArena(SDL_FPoint logicalSize) {
 }
 
 Result<void> Game::RenderStage(AppCtx& ctx) {
-    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+    if (ctx.Assets == nullptr) {
+        return Err(std::string("Application context missing asset manager"));
+    }
 
     Renderer& renderer = ctx.m_Renderer;
     AssetManager& assetManager = *ctx.Assets;
@@ -158,22 +180,28 @@ Result<void> Game::RenderStage(AppCtx& ctx) {
 
     TRY_VOID(renderer.FillRect(SDL_FRect{0.0f, 0.0f, size.x, size.y}, Color{18, 18, 24, 255}));
 
-    TRY_VOID(renderer.DrawTexture(assetManager.getArenaBackgroundTexture(m_Arena), m_ArenaRect));
+    TRY(backgroundTexture, assetManager.getArenaBackgroundTexture(m_Arena));
+    TRY_VOID(renderer.DrawTexture(backgroundTexture, m_ArenaRect));
     return Ok();
 }
 
 Result<void> Game::RenderStageForeground(AppCtx& ctx) {
-    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+    if (ctx.Assets == nullptr) {
+        return Err(std::string("Application context missing asset manager"));
+    }
 
     Renderer& renderer = ctx.m_Renderer;
     AssetManager& assetManager = *ctx.Assets;
 
-    TRY_VOID(renderer.DrawTexture(assetManager.getArenaForegroundTexture(m_Arena), m_ArenaRect));
+    TRY(foregroundTexture, assetManager.getArenaForegroundTexture(m_Arena));
+    TRY_VOID(renderer.DrawTexture(foregroundTexture, m_ArenaRect));
     return Ok();
 }
 
 Result<void> Game::RenderPlayers(AppCtx& ctx) {
-    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+    if (ctx.Assets == nullptr) {
+        return Err(std::string("Application context missing asset manager"));
+    }
 
     Renderer& renderer = ctx.m_Renderer;
     AssetManager& assetManager = *ctx.Assets;
@@ -181,10 +209,13 @@ Result<void> Game::RenderPlayers(AppCtx& ctx) {
 
     const auto DrawPlayer = [&](PlayerCharacterState& player,
                                 const PlayerControlConfig& control) -> Result<void> {
-        const SpriteSheet& spriteSheet =
-            assetManager.getSpriteSheet(player.Character, player.Animation.GetAnimation());
+        TRY(spriteSheetRef,
+            assetManager.getSpriteSheet(player.Character, player.Animation.GetAnimation()));
+        const SpriteSheet& spriteSheet = spriteSheetRef.get();
         const std::span<const SpriteSheetFrame> frames = spriteSheet.getFrames();
-        SOP_ASSERT(!frames.empty(), "Character sprite sheet has no frames");
+        if (frames.empty()) {
+            return Err(std::string("Character sprite sheet has no frames"));
+        }
 
         const SpriteSheetFrame& frame = frames[player.Animation.GetFrameIndex() % frames.size()];
         const SDL_FPoint anchorPosition = MapDesignPointToArena(player.AnchorPosition, m_ArenaRect);
@@ -200,16 +231,17 @@ Result<void> Game::RenderPlayers(AppCtx& ctx) {
         drawParams.origin = placement.Origin;
         drawParams.flip = placement.Flip;
 
-        m_PlayerEffectEmitter.Update(
-            player,
-            player.Animation.GetAnimation(),
-            player.Animation.GetFrameIndex(),
-            frame,
+        TRY(swordMasks,
             assetManager.GetCharacterAnimationEffectMasks(
-                player.Character, player.Animation.GetAnimation(), EffectMaskKind::SwordGreen),
-            scale,
-            0.0,
-            dispatcher);
+                player.Character, player.Animation.GetAnimation(), EffectMaskKind::SwordGreen));
+        m_PlayerEffectEmitter.Update(player,
+                                     player.Animation.GetAnimation(),
+                                     player.Animation.GetFrameIndex(),
+                                     frame,
+                                     swordMasks,
+                                     scale,
+                                     0.0,
+                                     dispatcher);
 
         return renderer.DrawTexture(spriteSheet.getSpriteTexture(), drawParams);
     };
@@ -220,7 +252,9 @@ Result<void> Game::RenderPlayers(AppCtx& ctx) {
 }
 
 Result<void> Game::RenderCollisionBoxes(AppCtx& ctx) {
-    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+    if (ctx.Assets == nullptr) {
+        return Err(std::string("Application context missing asset manager"));
+    }
 
     Renderer& renderer = ctx.m_Renderer;
     AssetManager& assetManager = *ctx.Assets;
@@ -228,7 +262,8 @@ Result<void> Game::RenderCollisionBoxes(AppCtx& ctx) {
     constexpr Color kArenaCollisionBoxColor{0, 255, 0, 255};
     constexpr Color kPlayerCollisionBoxColor{255, 230, 0, 255};
 
-    for (const SDL_FRect& designRect : assetManager.getArenaCollisionBoxes(m_Arena)) {
+    TRY(arenaCollisionBoxes, assetManager.getArenaCollisionBoxes(m_Arena));
+    for (const SDL_FRect& designRect : arenaCollisionBoxes) {
         const SDL_FRect arenaRect = MapDesignRectToArena(designRect, m_ArenaRect);
         TRY_VOID(renderer.DrawRect(arenaRect, kArenaCollisionBoxColor));
     }

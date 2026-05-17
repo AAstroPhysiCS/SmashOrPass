@@ -12,7 +12,7 @@
 
 namespace sop {
 
-using sop_util::Result;
+using namespace sop_util;
 
 class Renderer;
 struct AppCtx;
@@ -45,14 +45,14 @@ class Game final {
    public:
     void OnEvent(AppCtx& ctx, const Event& event);
     void SetDisplayMetrics(const DisplayMetrics& metrics);
-    void GameplayTick(AppCtx& ctx, std::chrono::steady_clock::duration step);
-    void AnimationTick(AppCtx& ctx);
+    Result<void> GameplayTick(AppCtx& ctx, std::chrono::steady_clock::duration step);
+    Result<void> AnimationTick(AppCtx& ctx);
     Result<void> Render(AppCtx& ctx);
 
    private:
-    void EnsurePlayerCollisionProfile(AppCtx& ctx);
+    Result<void> EnsurePlayerCollisionProfile(AppCtx& ctx);
     void UpdateArena(SDL_FPoint logicalSize);
-    void AdvancePlayerAnimation(AppCtx& ctx, PlayerCharacterState& player);
+    Result<void> AdvancePlayerAnimation(AppCtx& ctx, PlayerCharacterState& player);
     Result<void> RenderWorld(AppCtx& ctx);
     Result<void> RenderStage(AppCtx& ctx);
     Result<void> RenderStageForeground(AppCtx& ctx);

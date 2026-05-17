@@ -9,7 +9,12 @@
 #include <utility>
 #include <vector>
 
+#include "smashorpass/util.hpp"
+
 namespace sop {
+
+using namespace sop_util;
+
 struct SpriteSheetFrame {
     // Where the frame is in the sprite sheet.
     uint32_t x_left;
@@ -27,16 +32,16 @@ struct SpriteSheetFrame {
 
 class SpriteSheet {
    public:
-    [[nodiscard]] static SpriteSheet parse(std::span<const uint8_t> spriteSheet,
-                                           std::span<const uint8_t> hitboxSheet,
-                                           std::span<const uint8_t> metadata);
+    [[nodiscard]] static Result<SpriteSheet> parse(std::span<const uint8_t> spriteSheet,
+                                                   std::span<const uint8_t> hitboxSheet,
+                                                   std::span<const uint8_t> metadata);
 
     SpriteSheet() = default;
 
     SpriteSheet(const SpriteSheet&) = delete;
     SpriteSheet& operator=(const SpriteSheet&) = delete;
 
-    void createSpriteTexture(SDL_Renderer* renderer);
+    [[nodiscard]] Result<void> createSpriteTexture(SDL_Renderer* renderer);
 
     [[nodiscard]] SDL_Texture* getSpriteTexture() const {
         return m_SpriteTexture;

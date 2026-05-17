@@ -9,6 +9,8 @@
 
 namespace sop {
 
+using namespace sop_util;
+
 class InGameState final : public State {
    public:
     explicit InGameState(AppCtx& ctx);

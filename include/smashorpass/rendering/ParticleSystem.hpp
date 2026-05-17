@@ -7,6 +7,8 @@
 
 namespace sop {
 
+using namespace sop_util;
+
 struct Particle {
     Vec2 Position{};
     Vec2 Velocity{};
@@ -47,13 +49,16 @@ struct ParticleBurstDesc {
 
 class ParticleSystem {
    public:
-    ParticleSystem(const Renderer& renderer, size_t maxParticles = std::pow(2, 12));
+    ParticleSystem() = default;
     ~ParticleSystem();
 
     ParticleSystem(const ParticleSystem&) = delete;
     ParticleSystem& operator=(const ParticleSystem&) = delete;
     ParticleSystem(ParticleSystem&&) = delete;
     ParticleSystem& operator=(ParticleSystem&&) = delete;
+
+    [[nodiscard]] Result<void> Initialize(const Renderer& renderer,
+                                          size_t maxParticles = std::pow(2, 12));
 
     void EmitBurst(const ParticleBurstDesc& desc);
 

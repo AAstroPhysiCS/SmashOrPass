@@ -2,68 +2,106 @@
 
 #include <SDL3/SDL.h>
 
-#include <stdexcept>
+#include <string>
 
 #include "SDL3_ttf/SDL_ttf.h"
-#include "smashorpass/core/Base.hpp"
 
 namespace sop {
 
-Window::Window(const WindowCreateInfo& createInfo) : m_CreateInfo(createInfo) {
-    const bool initialized = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD);
-    SOP_SDL_ASSERT(initialized, SDL_GetError());
-    SOP_SDL_ASSERT(TTF_Init(), std::format("TTF_Init failed: %s", SDL_GetError()).c_str());
+using namespace sop_util;
+
+Result<void> Window::Initialize(const WindowCreateInfo& createInfo) {
+    m_CreateInfo = createInfo;
+
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD)) {
+        return Err(SdlError("SDL_Init"));
+    }
+    m_SdlInitialized = true;
+
+    if (!TTF_Init()) {
+        SDL_Quit();
+        m_SdlInitialized = false;
+        return Err(SdlError("TTF_Init"));
+    }
+    m_TtfInitialized = true;
 
     m_NativeHandle = SDL_CreateWindow(m_CreateInfo.Title.c_str(),
                                       m_CreateInfo.Width,
                                       m_CreateInfo.Height,
                                       SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
 
-    SOP_SDL_ASSERT(m_NativeHandle, SDL_GetError());
     if (m_NativeHandle == nullptr) {
-        throw std::runtime_error(std::string("SDL_CreateWindow failed: ") + SDL_GetError());
+        const std::string error = SdlError("SDL_CreateWindow");
+        TTF_Quit();
+        SDL_Quit();
+        m_TtfInitialized = false;
+        m_SdlInitialized = false;
+        return Err(error);
     }
+
+    return Ok();
 }
 
 Window::~Window() {
     SDL_DestroyWindow(m_NativeHandle);
     m_NativeHandle = nullptr;
 
-    SDL_Quit();
+    if (m_TtfInitialized) {
+        TTF_Quit();
+        m_TtfInitialized = false;
+    }
+
+    if (m_SdlInitialized) {
+        SDL_Quit();
+        m_SdlInitialized = false;
+    }
 }
 
-SDL_Point Window::GetSize() const {
+Result<SDL_Point> Window::GetSize() const {
     SDL_Point size{};
     const bool ok = SDL_GetWindowSize(m_NativeHandle, &size.x, &size.y);
-    SOP_SDL_ASSERT(ok, SDL_GetError());
-    return ok ? size : SDL_Point{};
+    if (!ok) {
+        return Err(SdlError("SDL_GetWindowSize"));
+    }
+    return Ok(size);
 }
 
-SDL_Point Window::GetPixelSize() const {
+Result<SDL_Point> Window::GetPixelSize() const {
     SDL_Point size{};
     const bool ok = SDL_GetWindowSizeInPixels(m_NativeHandle, &size.x, &size.y);
-    SOP_SDL_ASSERT(ok, SDL_GetError());
-    return ok ? size : SDL_Point{};
+    if (!ok) {
+        return Err(SdlError("SDL_GetWindowSizeInPixels"));
+    }
+    return Ok(size);
 }
 
-float Window::GetDisplayScale() const {
+Result<float> Window::GetDisplayScale() const {
     const float scale = SDL_GetWindowDisplayScale(m_NativeHandle);
-    SOP_SDL_ASSERT(scale > 0.0f, SDL_GetError());
-    return NormalizeDisplayScale(scale);
+    if (scale <= 0.0f) {
+        return Err(SdlError("SDL_GetWindowDisplayScale"));
+    }
+    return Ok(NormalizeDisplayScale(scale));
 }
 
-float Window::GetPixelDensity() const {
+Result<float> Window::GetPixelDensity() const {
     const float density = SDL_GetWindowPixelDensity(m_NativeHandle);
-    SOP_SDL_ASSERT(density > 0.0f, SDL_GetError());
-    return NormalizeDisplayScale(density);
+    if (density <= 0.0f) {
+        return Err(SdlError("SDL_GetWindowPixelDensity"));
+    }
+    return Ok(NormalizeDisplayScale(density));
 }
 
-DisplayMetrics Window::GetDisplayMetrics() const {
-    return DisplayMetrics{
-        .WindowSize = GetSize(),
-        .PixelSize = GetPixelSize(),
-        .DisplayScale = GetDisplayScale(),
-        .PixelDensity = GetPixelDensity(),
-    };
+Result<DisplayMetrics> Window::GetDisplayMetrics() const {
+    TRY(windowSize, GetSize());
+    TRY(pixelSize, GetPixelSize());
+    TRY(displayScale, GetDisplayScale());
+    TRY(pixelDensity, GetPixelDensity());
+
+    return Ok(DisplayMetrics{
+        .WindowSize = windowSize,
+        .PixelSize = pixelSize,
+        .DisplayScale = displayScale,
+        .PixelDensity = pixelDensity,
+    });
 }
 }  // namespace sop

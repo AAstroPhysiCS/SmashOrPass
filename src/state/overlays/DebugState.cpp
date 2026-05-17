@@ -4,13 +4,19 @@
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlrenderer3.h>
 
+#include <string>
+
 #include "SDL3/SDL.h"
 #include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/core/Base.hpp"
 
 namespace sop {
 
-DebugState::DebugState(AppCtx& ctx) {
+using namespace sop_util;
+
+DebugState::DebugState(AppCtx&) {}
+
+Result<void> DebugState::Initialize(AppCtx& ctx) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
@@ -22,16 +28,29 @@ DebugState::DebugState(AppCtx& ctx) {
 
     const bool sdl3Initialized = ImGui_ImplSDL3_InitForSDLRenderer(ctx.m_Window.NativeHandle(),
                                                                    ctx.m_Renderer.NativeHandle());
-    SOP_VERIFY(sdl3Initialized, "Failed to initialize ImGui SDL3 backend");
+    if (!sdl3Initialized) {
+        ImGui::DestroyContext();
+        return Err(std::string("Failed to initialize ImGui SDL3 backend"));
+    }
 
     const bool rendererInitialized = ImGui_ImplSDLRenderer3_Init(ctx.m_Renderer.NativeHandle());
-    SOP_VERIFY(rendererInitialized, "Failed to initialize ImGui SDLRenderer3 backend");
+    if (!rendererInitialized) {
+        ImGui_ImplSDL3_Shutdown();
+        ImGui::DestroyContext();
+        return Err(std::string("Failed to initialize ImGui SDLRenderer3 backend"));
+    }
+
+    m_Initialized = true;
+    return Ok();
 }
 
 DebugState::~DebugState() {
-    ImGui_ImplSDLRenderer3_Shutdown();
-    ImGui_ImplSDL3_Shutdown();
-    ImGui::DestroyContext();
+    if (m_Initialized) {
+        ImGui_ImplSDLRenderer3_Shutdown();
+        ImGui_ImplSDL3_Shutdown();
+        ImGui::DestroyContext();
+        m_Initialized = false;
+    }
 }
 
 void DebugState::BeginFrame() {

@@ -3,15 +3,20 @@
 #include <SDL3/SDL_render.h>
 
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <span>
+#include <string_view>
 #include <unordered_map>
 
 #include "smashorpass/asset/ArenaMetadata.hpp"
 #include "smashorpass/asset/SpriteSheet.hpp"
 #include "smashorpass/core/Base.hpp"
+#include "smashorpass/util.hpp"
 
 namespace sop {
+
+using namespace sop_util;
 
 enum class CharacterId { Samurai, Brawler, Tank, Mage };
 
@@ -87,23 +92,26 @@ struct EnumClassHash {
 
 class AssetManager {
    public:
-    explicit AssetManager(std::filesystem::path assetRootDir, SDL_Renderer* renderer);
+    [[nodiscard]] static Result<std::unique_ptr<AssetManager>> Create(
+        std::filesystem::path assetRootDir, SDL_Renderer* renderer);
     AssetManager(const AssetManager&) = delete;
     AssetManager& operator=(const AssetManager&) = delete;
     AssetManager(AssetManager&&) = delete;
     AssetManager& operator=(AssetManager&&) = delete;
 
-    [[nodiscard]] const SpriteSheet& getSpriteSheet(CharacterId character,
-                                                    CharacterAnimation animation);
-    [[nodiscard]] SDL_Texture* getArenaBackgroundTexture(ArenaId arena);
-    [[nodiscard]] SDL_Texture* getArenaForegroundTexture(ArenaId arena);
-    [[nodiscard]] std::span<const SDL_FRect> getArenaCollisionBoxes(ArenaId arena);
-    void preloadCharacterSpriteSheets(CharacterId character);
+    [[nodiscard]] Result<std::reference_wrapper<const SpriteSheet>> getSpriteSheet(
+        CharacterId character, CharacterAnimation animation);
+    [[nodiscard]] Result<SDL_Texture*> getArenaBackgroundTexture(ArenaId arena);
+    [[nodiscard]] Result<SDL_Texture*> getArenaForegroundTexture(ArenaId arena);
+    [[nodiscard]] Result<std::span<const SDL_FRect>> getArenaCollisionBoxes(ArenaId arena);
+    [[nodiscard]] Result<void> preloadCharacterSpriteSheets(CharacterId character);
 
-    [[nodiscard]] std::span<const FrameEffectMask> GetCharacterAnimationEffectMasks(
+    [[nodiscard]] Result<std::span<const FrameEffectMask>> GetCharacterAnimationEffectMasks(
         CharacterId character, CharacterAnimation animation, EffectMaskKind kind);
 
    private:
+    explicit AssetManager(std::filesystem::path assetRootDir, SDL_Renderer* renderer);
+
     struct SdlTextureDeleter {
         void operator()(SDL_Texture* texture) const {
             if (texture != nullptr) {
@@ -128,17 +136,19 @@ class AssetManager {
         ArenaMetadata Metadata;
     };
 
-    [[nodiscard]] const SpriteSheet& loadSpriteSheet(CharacterId character,
-                                                     CharacterAnimation animation);
-    [[nodiscard]] ArenaAsset& getArenaAsset(ArenaId arena);
-    [[nodiscard]] ArenaAsset& loadArenaAsset(ArenaId arena);
+    [[nodiscard]] Result<std::reference_wrapper<const SpriteSheet>> loadSpriteSheet(
+        CharacterId character, CharacterAnimation animation);
+    [[nodiscard]] Result<std::reference_wrapper<ArenaAsset>> getArenaAsset(ArenaId arena);
+    [[nodiscard]] Result<std::reference_wrapper<ArenaAsset>> loadArenaAsset(ArenaId arena);
 
-    const char* GetCharacterDirName(CharacterId character) const;
-    const char* GetAnimationBaseName(CharacterAnimation animation) const;
+    Result<std::string_view> GetCharacterDirName(CharacterId character) const;
+    Result<std::string_view> GetAnimationBaseName(CharacterAnimation animation) const;
 
-    [[nodiscard]] const std::vector<FrameEffectMask>& LoadCharacterAnimationEffectMasks(
-        CharacterId character, CharacterAnimation animation, EffectMaskKind kind);
-    [[nodiscard]] std::vector<FrameEffectMask> BuildEffectMasks(
+    [[nodiscard]] Result<std::reference_wrapper<const std::vector<FrameEffectMask>>>
+    LoadCharacterAnimationEffectMasks(CharacterId character,
+                                      CharacterAnimation animation,
+                                      EffectMaskKind kind);
+    [[nodiscard]] Result<std::vector<FrameEffectMask>> BuildEffectMasks(
         SDL_Surface* surface,
         std::span<const SpriteSheetFrame> frames,
         const EffectMaskDefinition& definition);

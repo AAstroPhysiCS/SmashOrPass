@@ -10,27 +10,56 @@
 
 namespace sop {
 
-using sop_util::Ok;
+using namespace sop_util;
 
-ParticleSystem::ParticleSystem(const Renderer& renderer, size_t maxParticles)
-    : m_Particles(maxParticles), m_Random(std::random_device{}()) {
+Result<void> ParticleSystem::Initialize(const Renderer& renderer, size_t maxParticles) {
+    if (maxParticles == 0) {
+        return Err(std::string(
+            "ParticleSystem::Initialize failed: maxParticles must be greater than zero"));
+    }
+
+    m_Particles.assign(maxParticles, Particle{});
+    m_NextParticle = 0;
+    m_Random = std::mt19937(std::random_device{}());
+
     auto path = std::filesystem::path(SOP_ASSET_ROOT_DIR) /
                 "particles/soft_circle_particle_textures/soft_circle_particle_128.png";
     auto pathString = path.string();
     m_ParticleTexture = IMG_LoadTexture(renderer.NativeHandle(), pathString.c_str());
-    SOP_ASSERT(m_ParticleTexture,
-               std::format("Failed to load particle texture '{0}'", pathString).c_str());
+    if (m_ParticleTexture == nullptr) {
+        return Err(
+            std::format("Failed to load particle texture '{}': {}", pathString, SDL_GetError()));
+    }
 
-    SDL_SetTextureBlendMode(m_ParticleTexture, SDL_BLENDMODE_BLEND);
-    SDL_SetTextureScaleMode(m_ParticleTexture, SDL_SCALEMODE_LINEAR);
+    if (!SDL_SetTextureBlendMode(m_ParticleTexture, SDL_BLENDMODE_BLEND)) {
+        const std::string error = SdlError("SDL_SetTextureBlendMode");
+        SDL_DestroyTexture(m_ParticleTexture);
+        m_ParticleTexture = nullptr;
+        return Err(error);
+    }
+
+    if (!SDL_SetTextureScaleMode(m_ParticleTexture, SDL_SCALEMODE_LINEAR)) {
+        const std::string error = SdlError("SDL_SetTextureScaleMode");
+        SDL_DestroyTexture(m_ParticleTexture);
+        m_ParticleTexture = nullptr;
+        return Err(error);
+    }
+
+    return Ok();
 }
 
 ParticleSystem::~ParticleSystem() {
-    SDL_DestroyTexture(m_ParticleTexture);
-    m_ParticleTexture = nullptr;
+    if (m_ParticleTexture != nullptr) {
+        SDL_DestroyTexture(m_ParticleTexture);
+        m_ParticleTexture = nullptr;
+    }
 }
 
 void ParticleSystem::EmitBurst(const ParticleBurstDesc& desc) {
+    if (m_Particles.empty()) {
+        return;
+    }
+
     constexpr float twoPi = 6.28318530718f;
 
     for (uint32_t i = 0; i < desc.Count; ++i) {
@@ -90,6 +119,10 @@ void ParticleSystem::Update(float dt) {
 }
 
 Result<void> ParticleSystem::Render(Renderer& renderer) {
+    if (m_ParticleTexture == nullptr) {
+        return Err(std::string("ParticleSystem::Render failed: particle texture is null"));
+    }
+
     for (const Particle& p : m_Particles) {
         if (!p.Active)
             continue;

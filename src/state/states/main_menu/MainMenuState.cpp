@@ -5,6 +5,8 @@
 
 namespace sop {
 
+using namespace sop_util;
+
 MainMenuState::MainMenuState(AppCtx& ctx)
     : m_MainMenuScreen(ctx.m_EventDispatcher), m_CharacterSelectScreen(ctx.m_EventDispatcher) {
     UIBuilder mainMenuBuilder(m_MainMenuScreen);

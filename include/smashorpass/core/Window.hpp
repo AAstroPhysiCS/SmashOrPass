@@ -5,10 +5,13 @@
 #include <string>
 
 #include "smashorpass/core/DisplayMetrics.hpp"
+#include "smashorpass/util.hpp"
 
 struct SDL_Window;
 
 namespace sop {
+
+using namespace sop_util;
 
 struct WindowCreateInfo {
     int32_t Width{800};
@@ -18,7 +21,7 @@ struct WindowCreateInfo {
 
 class Window {
    public:
-    Window(const WindowCreateInfo& createInfo);
+    Window() = default;
     ~Window();
 
     Window(const Window&) = delete;
@@ -26,11 +29,13 @@ class Window {
     Window(Window&&) = delete;
     Window& operator=(Window&&) = delete;
 
-    [[nodiscard]] SDL_Point GetSize() const;
-    [[nodiscard]] SDL_Point GetPixelSize() const;
-    [[nodiscard]] float GetDisplayScale() const;
-    [[nodiscard]] float GetPixelDensity() const;
-    [[nodiscard]] DisplayMetrics GetDisplayMetrics() const;
+    [[nodiscard]] Result<void> Initialize(const WindowCreateInfo& createInfo);
+
+    [[nodiscard]] Result<SDL_Point> GetSize() const;
+    [[nodiscard]] Result<SDL_Point> GetPixelSize() const;
+    [[nodiscard]] Result<float> GetDisplayScale() const;
+    [[nodiscard]] Result<float> GetPixelDensity() const;
+    [[nodiscard]] Result<DisplayMetrics> GetDisplayMetrics() const;
 
     [[nodiscard]] inline SDL_Window* NativeHandle() const noexcept {
         return m_NativeHandle;
@@ -40,5 +45,7 @@ class Window {
     WindowCreateInfo m_CreateInfo;
 
     SDL_Window* m_NativeHandle{nullptr};
+    bool m_SdlInitialized{false};
+    bool m_TtfInitialized{false};
 };
 }  // namespace sop

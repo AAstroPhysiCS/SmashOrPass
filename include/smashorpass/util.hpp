@@ -1,7 +1,10 @@
 #pragma once
 
+#include <SDL3/SDL_error.h>
+
 #include <expected>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -40,6 +43,17 @@ struct OkVoid {
 
 constexpr OkVoid Ok() {
     return {};
+}
+
+inline std::string SdlError(std::string_view operation) {
+    return std::string(operation) + " failed: " + SDL_GetError();
+}
+
+inline Result<void> SdlResult(bool ok, std::string_view operation) {
+    if (!ok) {
+        return Err(SdlError(operation));
+    }
+    return Ok();
 }
 
 // TRY and TRY_VOID macro for ergonomics

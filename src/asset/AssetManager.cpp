@@ -4,9 +4,9 @@
 
 #include <array>
 #include <cstdint>
+#include <format>
 #include <fstream>
 #include <iterator>
-#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -18,6 +18,9 @@
 #include "spdlog/spdlog.h"
 
 namespace sop {
+
+using namespace sop_util;
+
 namespace {
 
 struct SpriteSheetBytes {
@@ -26,21 +29,19 @@ struct SpriteSheetBytes {
     std::vector<uint8_t> Metadata;
 };
 
-[[nodiscard]] std::optional<std::vector<uint8_t>> TryReadBytes(const std::filesystem::path& path) {
+[[nodiscard]] Result<std::vector<uint8_t>> ReadBytes(const std::filesystem::path& path) {
     std::ifstream file(path, std::ios::binary);
     if (!file.is_open()) {
-        return std::nullopt;
+        return Err(std::format("Failed to open asset file: {}", path.string()));
     }
 
-    return std::vector<uint8_t>(std::istreambuf_iterator<char>(file),
-                                std::istreambuf_iterator<char>());
-}
+    std::vector<uint8_t> bytes{std::istreambuf_iterator<char>(file),
+                               std::istreambuf_iterator<char>()};
+    if (file.bad()) {
+        return Err(std::format("Failed to read asset file: {}", path.string()));
+    }
 
-[[nodiscard]] std::vector<uint8_t> ReadBytes(const std::filesystem::path& path) {
-    std::optional<std::vector<uint8_t>> bytes = TryReadBytes(path);
-    SOP_VERIFY(bytes.has_value(), "Failed to open asset file");
-
-    return std::move(*bytes);
+    return Ok(std::move(bytes));
 }
 
 void AppendPath(std::string& paths, const std::filesystem::path& path) {
@@ -84,21 +85,21 @@ void AppendPath(std::string& paths, const std::filesystem::path& path) {
     return bytes;
 }
 
-[[nodiscard]] SpriteSheetBytes ReadCharacterSpriteSheetBytes(
+[[nodiscard]] Result<SpriteSheetBytes> ReadCharacterSpriteSheetBytes(
     const std::filesystem::path& assetRootDir,
     const std::filesystem::path& spritePath,
     const std::filesystem::path& hitboxPath,
     const std::filesystem::path& metadataPath) {
-    std::optional<std::vector<uint8_t>> spriteBytes = TryReadBytes(spritePath);
-    std::optional<std::vector<uint8_t>> hitboxBytes = TryReadBytes(hitboxPath);
-    std::optional<std::vector<uint8_t>> metadataBytes = TryReadBytes(metadataPath);
+    Result<std::vector<uint8_t>> spriteBytes = ReadBytes(spritePath);
+    Result<std::vector<uint8_t>> hitboxBytes = ReadBytes(hitboxPath);
+    Result<std::vector<uint8_t>> metadataBytes = ReadBytes(metadataPath);
 
     if (spriteBytes.has_value() && hitboxBytes.has_value() && metadataBytes.has_value()) {
-        return SpriteSheetBytes{
+        return Ok(SpriteSheetBytes{
             .Sprite = std::move(*spriteBytes),
             .Hitbox = std::move(*hitboxBytes),
             .Metadata = std::move(*metadataBytes),
-        };
+        });
     }
 
     std::string missingPaths;
@@ -117,59 +118,76 @@ void AppendPath(std::string& paths, const std::filesystem::path& path) {
                  missingPaths,
                  fallbackPath.string());
 
-    std::vector<uint8_t> fallbackSpriteBytes = ReadBytes(fallbackPath);
+    TRY(fallbackSpriteBytes, ReadBytes(fallbackPath));
     std::vector<uint8_t> fallbackHitboxBytes = fallbackSpriteBytes;
 
-    return SpriteSheetBytes{
+    return Ok(SpriteSheetBytes{
         .Sprite = std::move(fallbackSpriteBytes),
         .Hitbox = std::move(fallbackHitboxBytes),
         .Metadata = MakeErrorSpriteSheetMetadata(),
-    };
+    });
 }
 
-[[nodiscard]] std::string_view ArenaBaseName(ArenaId arenaId) {
+[[nodiscard]] Result<std::string_view> ArenaBaseName(ArenaId arenaId) {
     switch (arenaId) {
         case ArenaId::Chains:
-            return "chains";
+            return Ok(std::string_view{"chains"});
     }
 
-    SOP_ASSERT(false, "Unhandled arena id");
-    return "";
+    return Err(std::string("Unhandled arena id"));
 }
 
 }  // namespace
 
-AssetManager::AssetManager(std::filesystem::path assetRootDir, SDL_Renderer* renderer)
-    : m_AssetRootDir(std::move(assetRootDir)), m_Renderer(renderer) {
-    SOP_ASSERT(m_Renderer != nullptr, "Asset manager requires a valid SDL renderer");
+Result<std::unique_ptr<AssetManager>> AssetManager::Create(std::filesystem::path assetRootDir,
+                                                           SDL_Renderer* renderer) {
+    if (renderer == nullptr) {
+        return Err(std::string("AssetManager::Create failed: renderer is null"));
+    }
+
+    return Ok(std::unique_ptr<AssetManager>(new AssetManager(std::move(assetRootDir), renderer)));
 }
 
-const SpriteSheet& AssetManager::getSpriteSheet(CharacterId character,
-                                                CharacterAnimation animation) {
+AssetManager::AssetManager(std::filesystem::path assetRootDir, SDL_Renderer* renderer)
+    : m_AssetRootDir(std::move(assetRootDir)), m_Renderer(renderer) {}
+
+Result<std::reference_wrapper<const SpriteSheet>> AssetManager::getSpriteSheet(
+    CharacterId character, CharacterAnimation animation) {
     auto characterIt = m_SpriteSheets.find(character);
     if (characterIt != m_SpriteSheets.end()) {
         auto animationIt = characterIt->second.find(animation);
         if (animationIt != characterIt->second.end()) {
-            return animationIt->second;
+            return Ok(std::cref(animationIt->second));
         }
     }
 
     return loadSpriteSheet(character, animation);
 }
 
-SDL_Texture* AssetManager::getArenaBackgroundTexture(ArenaId arena) {
-    return getArenaAsset(arena).BackgroundTexture.get();
+Result<SDL_Texture*> AssetManager::getArenaBackgroundTexture(ArenaId arena) {
+    TRY(asset, getArenaAsset(arena));
+    SDL_Texture* texture = asset.get().BackgroundTexture.get();
+    if (texture == nullptr) {
+        return Err(std::string("Arena background texture is null"));
+    }
+    return Ok(texture);
 }
 
-SDL_Texture* AssetManager::getArenaForegroundTexture(ArenaId arena) {
-    return getArenaAsset(arena).ForegroundTexture.get();
+Result<SDL_Texture*> AssetManager::getArenaForegroundTexture(ArenaId arena) {
+    TRY(asset, getArenaAsset(arena));
+    SDL_Texture* texture = asset.get().ForegroundTexture.get();
+    if (texture == nullptr) {
+        return Err(std::string("Arena foreground texture is null"));
+    }
+    return Ok(texture);
 }
 
-std::span<const SDL_FRect> AssetManager::getArenaCollisionBoxes(ArenaId arena) {
-    return getArenaAsset(arena).Metadata.getCollisionBoxes();
+Result<std::span<const SDL_FRect>> AssetManager::getArenaCollisionBoxes(ArenaId arena) {
+    TRY(asset, getArenaAsset(arena));
+    return Ok(asset.get().Metadata.getCollisionBoxes());
 }
 
-void AssetManager::preloadCharacterSpriteSheets(CharacterId character) {
+Result<void> AssetManager::preloadCharacterSpriteSheets(CharacterId character) {
     constexpr std::array kAnimations{
         CharacterAnimation::Ascending,
         CharacterAnimation::Attacks,
@@ -180,11 +198,13 @@ void AssetManager::preloadCharacterSpriteSheets(CharacterId character) {
     };
 
     for (const CharacterAnimation animation : kAnimations) {
-        (void)getSpriteSheet(character, animation);
+        TRY(spriteSheet, getSpriteSheet(character, animation));
+        (void)spriteSheet;
     }
+    return Ok();
 }
 
-std::span<const FrameEffectMask> AssetManager::GetCharacterAnimationEffectMasks(
+Result<std::span<const FrameEffectMask>> AssetManager::GetCharacterAnimationEffectMasks(
     CharacterId character, CharacterAnimation animation, EffectMaskKind kind) {
     const CharacterAnimationEffectMaskKey key{
         .Character = character,
@@ -194,136 +214,167 @@ std::span<const FrameEffectMask> AssetManager::GetCharacterAnimationEffectMasks(
 
     const auto it = m_CharacterAnimationEffectMasks.find(key);
     if (it != m_CharacterAnimationEffectMasks.end()) {
-        return std::span<const FrameEffectMask>{it->second.data(), it->second.size()};
+        return Ok(std::span<const FrameEffectMask>{it->second.data(), it->second.size()});
     }
 
-    const std::vector<FrameEffectMask>& masks =
-        LoadCharacterAnimationEffectMasks(character, animation, kind);
+    TRY(masksRef, LoadCharacterAnimationEffectMasks(character, animation, kind));
+    const std::vector<FrameEffectMask>& masks = masksRef.get();
 
-    return std::span<const FrameEffectMask>{masks.data(), masks.size()};
+    return Ok(std::span<const FrameEffectMask>{masks.data(), masks.size()});
 }
 
-const SpriteSheet& AssetManager::loadSpriteSheet(CharacterId character,
-                                                 CharacterAnimation animation) {
+Result<std::reference_wrapper<const SpriteSheet>> AssetManager::loadSpriteSheet(
+    CharacterId character, CharacterAnimation animation) {
+    TRY(characterDir, GetCharacterDirName(character));
+    TRY(animationBase, GetAnimationBaseName(animation));
     const std::filesystem::path basePath = m_AssetRootDir / "sprites" / "characters" /
-                                           GetCharacterDirName(character) /
-                                           GetAnimationBaseName(animation);
+                                           std::string{characterDir} / std::string{animationBase};
 
-    const SpriteSheetBytes bytes = ReadCharacterSpriteSheetBytes(m_AssetRootDir,
-                                                                 basePath.string() + ".png",
-                                                                 basePath.string() + "_boxes.png",
-                                                                 basePath.string() + ".json");
+    TRY(bytes,
+        ReadCharacterSpriteSheetBytes(m_AssetRootDir,
+                                      basePath.string() + ".png",
+                                      basePath.string() + "_boxes.png",
+                                      basePath.string() + ".json"));
 
     auto& animations = m_SpriteSheets[character];
-    SpriteSheet spriteSheet = SpriteSheet::parse(bytes.Sprite, bytes.Hitbox, bytes.Metadata);
-    spriteSheet.createSpriteTexture(m_Renderer);
+    TRY(spriteSheet, SpriteSheet::parse(bytes.Sprite, bytes.Hitbox, bytes.Metadata));
+    TRY_VOID(spriteSheet.createSpriteTexture(m_Renderer));
 
     auto [it, inserted] = animations.try_emplace(animation, std::move(spriteSheet));
 
-    SOP_ASSERT(inserted, "Sprite sheet should only be loaded once");
+    if (!inserted) {
+        return Err(std::string("Sprite sheet should only be loaded once"));
+    }
 
-    return it->second;
+    return Ok(std::cref(it->second));
 }
 
-AssetManager::ArenaAsset& AssetManager::getArenaAsset(ArenaId arena) {
+Result<std::reference_wrapper<AssetManager::ArenaAsset>> AssetManager::getArenaAsset(
+    ArenaId arena) {
     auto it = m_Arenas.find(arena);
     if (it != m_Arenas.end()) {
-        return it->second;
+        return Ok(std::ref(it->second));
     }
 
     return loadArenaAsset(arena);
 }
 
-AssetManager::ArenaAsset& AssetManager::loadArenaAsset(ArenaId arena) {
+Result<std::reference_wrapper<AssetManager::ArenaAsset>> AssetManager::loadArenaAsset(
+    ArenaId arena) {
+    TRY(arenaBaseName, ArenaBaseName(arena));
     const std::filesystem::path basePath =
-        m_AssetRootDir / "sprites" / "arenas" / std::string{ArenaBaseName(arena)};
+        m_AssetRootDir / "sprites" / "arenas" / std::string{arenaBaseName};
     const std::filesystem::path backgroundTexturePath = basePath.string() + "_background.png";
     const std::filesystem::path foregroundTexturePath = basePath.string() + "_foreground.png";
     const std::filesystem::path metadataPath = basePath.string() + ".json";
     const std::string backgroundTexturePathString = backgroundTexturePath.string();
     const std::string foregroundTexturePathString = foregroundTexturePath.string();
-    const auto metadataBytes = ReadBytes(metadataPath);
+    TRY(metadataBytes, ReadBytes(metadataPath));
 
-    SDL_Texture* rawBackgroundTexture =
-        IMG_LoadTexture(m_Renderer, backgroundTexturePathString.c_str());
-    SOP_SDL_ASSERT(rawBackgroundTexture != nullptr, "Failed to load arena background texture");
+    TexturePtr backgroundTexture{IMG_LoadTexture(m_Renderer, backgroundTexturePathString.c_str())};
+    if (backgroundTexture == nullptr) {
+        return Err(std::format("Failed to load arena background texture '{}': {}",
+                               backgroundTexturePathString,
+                               SDL_GetError()));
+    }
 
-    SDL_Texture* rawForegroundTexture =
-        IMG_LoadTexture(m_Renderer, foregroundTexturePathString.c_str());
-    SOP_SDL_ASSERT(rawForegroundTexture != nullptr, "Failed to load arena foreground texture");
+    TexturePtr foregroundTexture{IMG_LoadTexture(m_Renderer, foregroundTexturePathString.c_str())};
+    if (foregroundTexture == nullptr) {
+        return Err(std::format("Failed to load arena foreground texture '{}': {}",
+                               foregroundTexturePathString,
+                               SDL_GetError()));
+    }
+
+    TRY(metadata, ArenaMetadata::parse(metadataBytes));
 
     ArenaAsset arenaAsset{
-        .BackgroundTexture = TexturePtr{rawBackgroundTexture},
-        .ForegroundTexture = TexturePtr{rawForegroundTexture},
-        .Metadata = ArenaMetadata::parse(metadataBytes),
+        .BackgroundTexture = std::move(backgroundTexture),
+        .ForegroundTexture = std::move(foregroundTexture),
+        .Metadata = std::move(metadata),
     };
 
     auto [it, inserted] = m_Arenas.try_emplace(arena, std::move(arenaAsset));
-    SOP_ASSERT(inserted, "Arena asset should only be loaded once");
+    if (!inserted) {
+        return Err(std::string("Arena asset should only be loaded once"));
+    }
 
-    return it->second;
+    return Ok(std::ref(it->second));
 }
 
-const char* AssetManager::GetCharacterDirName(CharacterId character) const {
+Result<std::string_view> AssetManager::GetCharacterDirName(CharacterId character) const {
     switch (character) {
         case CharacterId::Samurai:
-            return "samurai";
+            return Ok(std::string_view{"samurai"});
         case CharacterId::Brawler:
-            return "brawler";
+            return Ok(std::string_view{"brawler"});
         case CharacterId::Tank:
-            return "tank";
+            return Ok(std::string_view{"tank"});
         case CharacterId::Mage:
-            return "mage";
+            return Ok(std::string_view{"mage"});
     }
-    return "Unk";
+    return Err(std::string("Unhandled character id"));
 }
 
-const char* AssetManager::GetAnimationBaseName(CharacterAnimation animation) const {
+Result<std::string_view> AssetManager::GetAnimationBaseName(CharacterAnimation animation) const {
     switch (animation) {
         case CharacterAnimation::Ascending:
-            return "Ascending";
+            return Ok(std::string_view{"Ascending"});
         case CharacterAnimation::Attacks:
-            return "Attacks";
+            return Ok(std::string_view{"Attacks"});
         case CharacterAnimation::Dash:
-            return "Dash";
+            return Ok(std::string_view{"Dash"});
         case CharacterAnimation::Falling:
-            return "Falling";
+            return Ok(std::string_view{"Falling"});
         case CharacterAnimation::Idle:
-            return "Idle";
+            return Ok(std::string_view{"Idle"});
         case CharacterAnimation::Walk:
-            return "Walk";
+            return Ok(std::string_view{"Walk"});
     }
 
-    SOP_ASSERT(false, "Unhandled character animation");
-    return "";
+    return Err(std::string("Unhandled character animation"));
 }
 
-const std::vector<FrameEffectMask>& AssetManager::LoadCharacterAnimationEffectMasks(
-    CharacterId character, CharacterAnimation animation, EffectMaskKind kind) {
+Result<std::reference_wrapper<const std::vector<FrameEffectMask>>>
+AssetManager::LoadCharacterAnimationEffectMasks(CharacterId character,
+                                                CharacterAnimation animation,
+                                                EffectMaskKind kind) {
     const auto CharacterAnimationBasePath =
         [&](const std::filesystem::path& assetRootDir,
             CharacterId character,
-            CharacterAnimation animation) -> std::filesystem::path {
-        return assetRootDir / "sprites" / "characters" / GetCharacterDirName(character) /
-               GetAnimationBaseName(animation);
+            CharacterAnimation animation) -> Result<std::filesystem::path> {
+        TRY(characterDir, GetCharacterDirName(character));
+        TRY(animationBase, GetAnimationBaseName(animation));
+        return Ok(assetRootDir / "sprites" / "characters" / std::string{characterDir} /
+                  std::string{animationBase});
     };
 
     const auto LoadSurfaceFromBytes = [](std::span<const uint8_t> bytes,
-                                         const char* name) -> SDL_Surface* {
+                                         const char* name) -> Result<SDL_Surface*> {
         SDL_IOStream* io = SDL_IOFromConstMem(bytes.data(), bytes.size());
-        SOP_ASSERT(io != nullptr, "Failed to create IO stream");
+        if (io == nullptr) {
+            return Err(std::format("Failed to create IO stream for {}: {}", name, SDL_GetError()));
+        }
 
         SDL_Surface* surface = IMG_LoadPNG_IO(io);
-        SOP_SDL_ASSERT(SDL_CloseIO(io), "SDL_CloseIO");
-        SOP_SDL_ASSERT(surface != nullptr, name);
+        const std::string loadError = surface == nullptr ? SDL_GetError() : "";
+        if (!SDL_CloseIO(io)) {
+            if (surface != nullptr) {
+                SDL_DestroySurface(surface);
+            }
+            return Err(std::format("SDL_CloseIO failed: {}", SDL_GetError()));
+        }
+        if (surface == nullptr) {
+            return Err(std::format("Failed to load PNG surface for {}: {}", name, loadError));
+        }
 
-        return surface;
+        return Ok(surface);
     };
 
-    const auto CreateEffectMaskDefinition = [](EffectMaskKind kind) -> EffectMaskDefinition {
+    const auto CreateEffectMaskDefinition =
+        [](EffectMaskKind kind) -> Result<EffectMaskDefinition> {
         switch (kind) {
             case EffectMaskKind::SwordGreen:
-                return EffectMaskDefinition{
+                return Ok(EffectMaskDefinition{
                     .SampleStep = 4,
                     .PixelPredicate =
                         [](const EffectMaskPixel& pixel) {
@@ -333,28 +384,29 @@ const std::vector<FrameEffectMask>& AssetManager::LoadCharacterAnimationEffectMa
 
                             return pixel.A > 64 && g > 110.0f && g > r * 1.25f && g > b * 1.25f;
                         },
-                };
+                });
         }
-        SOP_ASSERT(false, "Unhandled effect mask kind");
-        return {};
+        return Err(std::string("Unhandled effect mask kind"));
     };
 
-    const SpriteSheet& spriteSheet = getSpriteSheet(character, animation);
+    TRY(spriteSheetRef, getSpriteSheet(character, animation));
+    const SpriteSheet& spriteSheet = spriteSheetRef.get();
     const std::span<const SpriteSheetFrame> frames = spriteSheet.getFrames();
 
-    const std::filesystem::path basePath =
-        CharacterAnimationBasePath(m_AssetRootDir, character, animation);
+    TRY(basePath, CharacterAnimationBasePath(m_AssetRootDir, character, animation));
 
-    const SpriteSheetBytes bytes = ReadCharacterSpriteSheetBytes(m_AssetRootDir,
-                                                                 basePath.string() + ".png",
-                                                                 basePath.string() + "_boxes.png",
-                                                                 basePath.string() + ".json");
+    TRY(bytes,
+        ReadCharacterSpriteSheetBytes(m_AssetRootDir,
+                                      basePath.string() + ".png",
+                                      basePath.string() + "_boxes.png",
+                                      basePath.string() + ".json"));
 
-    auto spriteSurface = LoadSurfaceFromBytes(bytes.Sprite, "Failed to load sprite surface");
+    TRY(rawSpriteSurface, LoadSurfaceFromBytes(bytes.Sprite, "effect mask sprite surface"));
+    std::unique_ptr<SDL_Surface, SdlSurfaceDeleter> spriteSurface{rawSpriteSurface};
 
-    const EffectMaskDefinition definition = CreateEffectMaskDefinition(kind);
+    TRY(definition, CreateEffectMaskDefinition(kind));
 
-    std::vector<FrameEffectMask> masks = BuildEffectMasks(spriteSurface, frames, definition);
+    TRY(masks, BuildEffectMasks(spriteSurface.get(), frames, definition));
 
     const CharacterAnimationEffectMaskKey key{
         .Character = character,
@@ -364,29 +416,48 @@ const std::vector<FrameEffectMask>& AssetManager::LoadCharacterAnimationEffectMa
 
     auto [it, inserted] = m_CharacterAnimationEffectMasks.try_emplace(key, std::move(masks));
 
-    SOP_ASSERT(inserted, "Effect mask should only be loaded once");
+    if (!inserted) {
+        return Err(std::string("Effect mask should only be loaded once"));
+    }
 
-    return it->second;
+    return Ok(std::cref(it->second));
 }
 
-std::vector<FrameEffectMask> AssetManager::BuildEffectMasks(
+Result<std::vector<FrameEffectMask>> AssetManager::BuildEffectMasks(
     SDL_Surface* surface,
     std::span<const SpriteSheetFrame> frames,
     const EffectMaskDefinition& definition) {
-    SOP_ASSERT(surface != nullptr, "Effect mask generation requires a valid surface");
-    SOP_ASSERT(definition.SampleStep > 0, "Effect mask sample step must be positive");
-    SOP_ASSERT(definition.PixelPredicate != nullptr, "Effect mask requires a pixel predicate");
+    if (surface == nullptr) {
+        return Err(std::string("Effect mask generation requires a valid surface"));
+    }
+    if (definition.SampleStep <= 0) {
+        return Err(std::string("Effect mask sample step must be positive"));
+    }
+    if (definition.PixelPredicate == nullptr) {
+        return Err(std::string("Effect mask requires a pixel predicate"));
+    }
 
     std::vector<FrameEffectMask> masks;
     masks.resize(frames.size());
 
     std::unique_ptr<SDL_Surface, SdlSurfaceDeleter> rgbaSurface{
         SDL_ConvertSurface(surface, SDL_PIXELFORMAT_RGBA32)};
-    SOP_SDL_ASSERT(rgbaSurface != nullptr, "SDL_ConvertSurface failed");
+    if (rgbaSurface == nullptr) {
+        return Err(std::format("SDL_ConvertSurface failed: {}", SDL_GetError()));
+    }
+
+    for (const SpriteSheetFrame& frame : frames) {
+        if (frame.x_right > static_cast<uint32_t>(rgbaSurface->w) ||
+            frame.y_bottom > static_cast<uint32_t>(rgbaSurface->h)) {
+            return Err(std::string("Effect mask frame is outside the sprite surface"));
+        }
+    }
 
     const bool mustLock = SDL_MUSTLOCK(rgbaSurface.get());
     if (mustLock) {
-        SOP_SDL_ASSERT(SDL_LockSurface(rgbaSurface.get()), "SDL_LockSurface failed");
+        if (!SDL_LockSurface(rgbaSurface.get())) {
+            return Err(std::format("SDL_LockSurface failed: {}", SDL_GetError()));
+        }
     }
 
     const auto* pixels = static_cast<const Uint8*>(rgbaSurface->pixels);
@@ -430,7 +501,7 @@ std::vector<FrameEffectMask> AssetManager::BuildEffectMasks(
         SDL_UnlockSurface(rgbaSurface.get());
     }
 
-    return masks;
+    return Ok(std::move(masks));
 }
 
 }  // namespace sop

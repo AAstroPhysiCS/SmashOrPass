@@ -9,11 +9,15 @@
 #include "smashorpass/rendering/ParticleSystem.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
 #include "smashorpass/state/StateManager.hpp"
+#include "smashorpass/util.hpp"
 
 namespace sop {
 
+using namespace sop_util;
+
 struct AppCtx final {
     AppCtx();
+    [[nodiscard]] Result<void> Initialize();
 
     Window m_Window;
     Renderer m_Renderer;

@@ -8,6 +8,8 @@
 
 namespace sop {
 
+using namespace sop_util;
+
 GameScreen::GameScreen(EventDispatcher& dispatcher) : UIScreen(dispatcher) {}
 
 void GameScreen::Build(UIBuilder& builder) {
