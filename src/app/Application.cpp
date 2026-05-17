@@ -160,7 +160,7 @@ void Application::RefreshDisplayMetrics() {
 
 void Application::OnEvent(const Event& event) {
     EventDispatcher::Dispatch<ApplicationQuitEvent>(
-        event, [&](const ApplicationQuitEvent& stateEvent) { 
+        event, [&](const ApplicationQuitEvent& stateEvent) {
         m_Running = false;
     });
 

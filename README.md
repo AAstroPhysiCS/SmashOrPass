@@ -3,17 +3,42 @@ SmashOrPass - The Game
 
 # Build
 
-Windows:
-- double-click bootstrap_build_windows.bat
-- it will try to install Git, CMake, and Visual Studio Build Tools via winget
-- then it clones/bootstraps vcpkg, configures CMake, and builds Debug
+Linux prerequisites:
+- git
+- cmake 3.25 or newer
+- ninja
+- a C++23 compiler
+- clang-format for formatting
 
-Linux (Ubuntu/Debian):
-- run: chmod +x bootstrap_build_linux.sh
-- then run: ./bootstrap_build_linux.sh
-- it will install build tools with apt, clone/bootstraps vcpkg, configure, and build
+Bootstrap vcpkg and configure Debug/Release:
 
-Limits:
-- Windows script assumes winget exists and that package installs are allowed.
-- Linux script currently targets apt-based distros.
-- Both scripts assume the project folder already contains the CMake project files.
+```sh
+./scripts_linux/bootstrap.sh
+```
+
+Build:
+
+```sh
+./scripts_linux/build.sh          # Debug
+./scripts_linux/build.sh release  # Release
+./scripts_linux/build.sh all      # Debug and Release
+```
+
+Run:
+
+```sh
+./scripts_linux/run.sh          # Debug
+./scripts_linux/run.sh release  # Release
+```
+
+Clean:
+
+```sh
+./scripts_linux/clean.sh
+```
+
+Format:
+
+```sh
+./scripts_linux/format.sh
+```

@@ -29,6 +29,7 @@ build.ninja
 # vcpkg
 # =========================
 /vcpkg/
+/.vcpkg/
 !/vcpkg.json
 !/vcpkg-configuration.json
 
