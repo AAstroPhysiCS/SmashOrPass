@@ -92,21 +92,21 @@ struct EnumClassHash {
 
 class AssetManager {
    public:
-    [[nodiscard]] static Result<std::unique_ptr<AssetManager>> Create(
-        std::filesystem::path assetRootDir, SDL_Renderer* renderer);
+    static Result<std::unique_ptr<AssetManager>> Create(std::filesystem::path assetRootDir,
+                                                        SDL_Renderer* renderer);
     AssetManager(const AssetManager&) = delete;
     AssetManager& operator=(const AssetManager&) = delete;
     AssetManager(AssetManager&&) = delete;
     AssetManager& operator=(AssetManager&&) = delete;
 
-    [[nodiscard]] Result<std::reference_wrapper<const SpriteSheet>> getSpriteSheet(
+    Result<std::reference_wrapper<const SpriteSheet>> getSpriteSheet(
         CharacterId character, CharacterAnimation animation);
-    [[nodiscard]] Result<SDL_Texture*> getArenaBackgroundTexture(ArenaId arena);
-    [[nodiscard]] Result<SDL_Texture*> getArenaForegroundTexture(ArenaId arena);
-    [[nodiscard]] Result<std::span<const SDL_FRect>> getArenaCollisionBoxes(ArenaId arena);
-    [[nodiscard]] Result<void> preloadCharacterSpriteSheets(CharacterId character);
+    Result<SDL_Texture*> getArenaBackgroundTexture(ArenaId arena);
+    Result<SDL_Texture*> getArenaForegroundTexture(ArenaId arena);
+    Result<std::span<const SDL_FRect>> getArenaCollisionBoxes(ArenaId arena);
+    Result<void> preloadCharacterSpriteSheets(CharacterId character);
 
-    [[nodiscard]] Result<std::span<const FrameEffectMask>> GetCharacterAnimationEffectMasks(
+    Result<std::span<const FrameEffectMask>> GetCharacterAnimationEffectMasks(
         CharacterId character, CharacterAnimation animation, EffectMaskKind kind);
 
    private:
@@ -136,19 +136,19 @@ class AssetManager {
         ArenaMetadata Metadata;
     };
 
-    [[nodiscard]] Result<std::reference_wrapper<const SpriteSheet>> loadSpriteSheet(
+    Result<std::reference_wrapper<const SpriteSheet>> loadSpriteSheet(
         CharacterId character, CharacterAnimation animation);
-    [[nodiscard]] Result<std::reference_wrapper<ArenaAsset>> getArenaAsset(ArenaId arena);
-    [[nodiscard]] Result<std::reference_wrapper<ArenaAsset>> loadArenaAsset(ArenaId arena);
+    Result<std::reference_wrapper<ArenaAsset>> getArenaAsset(ArenaId arena);
+    Result<std::reference_wrapper<ArenaAsset>> loadArenaAsset(ArenaId arena);
 
     Result<std::string_view> GetCharacterDirName(CharacterId character) const;
     Result<std::string_view> GetAnimationBaseName(CharacterAnimation animation) const;
 
-    [[nodiscard]] Result<std::reference_wrapper<const std::vector<FrameEffectMask>>>
+    Result<std::reference_wrapper<const std::vector<FrameEffectMask>>>
     LoadCharacterAnimationEffectMasks(CharacterId character,
                                       CharacterAnimation animation,
                                       EffectMaskKind kind);
-    [[nodiscard]] Result<std::vector<FrameEffectMask>> BuildEffectMasks(
+    Result<std::vector<FrameEffectMask>> BuildEffectMasks(
         SDL_Surface* surface,
         std::span<const SpriteSheetFrame> frames,
         const EffectMaskDefinition& definition);

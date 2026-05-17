@@ -29,7 +29,7 @@ struct SpriteSheetBytes {
     std::vector<uint8_t> Metadata;
 };
 
-[[nodiscard]] Result<std::vector<uint8_t>> ReadBytes(const std::filesystem::path& path) {
+Result<std::vector<uint8_t>> ReadBytes(const std::filesystem::path& path) {
     std::ifstream file(path, std::ios::binary);
     if (!file.is_open()) {
         return Err(std::format("Failed to open asset file: {}", path.string()));
@@ -85,7 +85,7 @@ void AppendPath(std::string& paths, const std::filesystem::path& path) {
     return bytes;
 }
 
-[[nodiscard]] Result<SpriteSheetBytes> ReadCharacterSpriteSheetBytes(
+Result<SpriteSheetBytes> ReadCharacterSpriteSheetBytes(
     const std::filesystem::path& assetRootDir,
     const std::filesystem::path& spritePath,
     const std::filesystem::path& hitboxPath,
@@ -128,7 +128,7 @@ void AppendPath(std::string& paths, const std::filesystem::path& path) {
     });
 }
 
-[[nodiscard]] Result<std::string_view> ArenaBaseName(ArenaId arenaId) {
+Result<std::string_view> ArenaBaseName(ArenaId arenaId) {
     switch (arenaId) {
         case ArenaId::Chains:
             return Ok(std::string_view{"chains"});

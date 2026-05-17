@@ -17,7 +17,7 @@ using namespace sop_util;
 
 struct AppCtx final {
     AppCtx();
-    [[nodiscard]] Result<void> Initialize();
+    Result<void> Initialize();
 
     Window m_Window;
     Renderer m_Renderer;

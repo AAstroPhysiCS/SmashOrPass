@@ -11,7 +11,7 @@ class DebugState : public State {
     explicit DebugState(AppCtx& ctx);
     ~DebugState() override;
 
-    [[nodiscard]] Result<void> Initialize(AppCtx& ctx);
+    Result<void> Initialize(AppCtx& ctx);
 
     [[nodiscard]] std::string_view DebugName() const final {
         return "Debug";

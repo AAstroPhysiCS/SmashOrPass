@@ -14,7 +14,7 @@ using namespace sop_util;
 
 class ArenaMetadata {
    public:
-    [[nodiscard]] static Result<ArenaMetadata> parse(std::span<const uint8_t> metadata);
+    static Result<ArenaMetadata> parse(std::span<const uint8_t> metadata);
 
     [[nodiscard]] std::span<const SDL_FRect> getCollisionBoxes() const {
         return m_CollisionBoxes;

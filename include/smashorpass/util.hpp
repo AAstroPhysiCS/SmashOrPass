@@ -19,10 +19,14 @@ namespace sop_util {
 //
 // TRY(name, expr) unwraps a Result or returns its error.
 // TRY_VOID(expr) does the same for Result<void>.
+//
+// Result is always [[nodiscard]].
 
 // Result, Ok() and Err()
 template <class T, class E = std::string>
-using Result = std::expected<T, E>;
+struct [[nodiscard("Result must be checked")]] Result : std::expected<T, E> {
+    using std::expected<T, E>::expected;
+};
 
 template <class E>
 constexpr auto Err(E&& error) {

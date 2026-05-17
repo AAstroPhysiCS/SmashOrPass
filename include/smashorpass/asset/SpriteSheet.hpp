@@ -32,16 +32,16 @@ struct SpriteSheetFrame {
 
 class SpriteSheet {
    public:
-    [[nodiscard]] static Result<SpriteSheet> parse(std::span<const uint8_t> spriteSheet,
-                                                   std::span<const uint8_t> hitboxSheet,
-                                                   std::span<const uint8_t> metadata);
+    static Result<SpriteSheet> parse(std::span<const uint8_t> spriteSheet,
+                                     std::span<const uint8_t> hitboxSheet,
+                                     std::span<const uint8_t> metadata);
 
     SpriteSheet() = default;
 
     SpriteSheet(const SpriteSheet&) = delete;
     SpriteSheet& operator=(const SpriteSheet&) = delete;
 
-    [[nodiscard]] Result<void> createSpriteTexture(SDL_Renderer* renderer);
+    Result<void> createSpriteTexture(SDL_Renderer* renderer);
 
     [[nodiscard]] SDL_Texture* getSpriteTexture() const {
         return m_SpriteTexture;

@@ -75,46 +75,46 @@ class Renderer final {
     Renderer(Renderer&&) = delete;
     Renderer& operator=(Renderer&&) = delete;
 
-    [[nodiscard]] Result<void> Initialize(Window& window, const char* driverName = nullptr);
+    Result<void> Initialize(Window& window, const char* driverName = nullptr);
 
     Result<void> BeginFrame(Color clear = Color{18, 18, 24, 255});
     Result<void> EndFrame();
     Result<void> Flush();
 
     Result<void> SetVSync(bool enabled);
-    [[nodiscard]] Result<bool> IsVSync() const;
+    Result<bool> IsVSync() const;
 
     Result<void> SetLogicalPresentation(int width,
                                         int height,
                                         SDL_RendererLogicalPresentation mode);
-    [[nodiscard]] Result<void> GetLogicalPresentation(int& width,
-                                                      int& height,
-                                                      SDL_RendererLogicalPresentation& mode) const;
-    [[nodiscard]] Result<SDL_FRect> GetLogicalPresentationRect() const;
+    Result<void> GetLogicalPresentation(int& width,
+                                        int& height,
+                                        SDL_RendererLogicalPresentation& mode) const;
+    Result<SDL_FRect> GetLogicalPresentationRect() const;
 
     Result<void> SetViewport(std::optional<SDL_Rect> rect);
-    [[nodiscard]] Result<std::optional<SDL_Rect>> GetViewport() const;
+    Result<std::optional<SDL_Rect>> GetViewport() const;
 
     Result<void> SetClipRect(std::optional<SDL_Rect> rect);
     Result<void> PushClipRect(std::optional<SDL_Rect> rect);
     Result<void> PopClipRect();
-    [[nodiscard]] Result<ScopedClip> Clip(std::optional<SDL_Rect> rect) {
+    Result<ScopedClip> Clip(std::optional<SDL_Rect> rect) {
         TRY_VOID(PushClipRect(rect));
         return Ok(ScopedClip(*this));
     }
 
     Result<void> SetScale(float x, float y);
     Result<void> ApplyDisplayScale(float displayScale);
-    [[nodiscard]] Result<SDL_FPoint> GetScale() const;
+    Result<SDL_FPoint> GetScale() const;
 
     Result<void> SetTarget(SDL_Texture* target);
     Result<void> ResetTarget();
     [[nodiscard]] SDL_Texture* GetTarget() const;
 
-    [[nodiscard]] Result<SDL_Point> GetOutputSize() const;
-    [[nodiscard]] Result<SDL_Point> GetCurrentOutputSize() const;
-    [[nodiscard]] Result<SDL_FPoint> GetLogicalOutputSize() const;
-    [[nodiscard]] Result<SDL_Rect> GetSafeArea() const;
+    Result<SDL_Point> GetOutputSize() const;
+    Result<SDL_Point> GetCurrentOutputSize() const;
+    Result<SDL_FPoint> GetLogicalOutputSize() const;
+    Result<SDL_Rect> GetSafeArea() const;
 
     Result<void> WindowToRender(float windowX, float windowY, float& renderX, float& renderY) const;
     Result<void> RenderToWindow(float renderX, float renderY, float& windowX, float& windowY) const;
@@ -122,9 +122,9 @@ class Renderer final {
 
     Result<void> Clear(Color color);
     Result<void> SetDrawColor(Color color);
-    [[nodiscard]] Result<Color> GetDrawColor() const;
+    Result<Color> GetDrawColor() const;
     Result<void> SetBlendMode(SDL_BlendMode blendMode);
-    [[nodiscard]] Result<SDL_BlendMode> GetBlendMode() const;
+    Result<SDL_BlendMode> GetBlendMode() const;
 
     Result<void> DrawPoint(float x, float y, Color color);
     Result<void> DrawLine(float x1, float y1, float x2, float y2, Color color);
@@ -147,7 +147,7 @@ class Renderer final {
     Result<void> DrawText(
         FontId id, float x, float y, std::string_view text, Color color = Color::White());
 
-    [[nodiscard]] Result<SDL_Surface*> ReadPixels(const SDL_Rect* rect = nullptr) const;
+    Result<SDL_Surface*> ReadPixels(const SDL_Rect* rect = nullptr) const;
 
     [[nodiscard]] inline SDL_Renderer* NativeHandle() const {
         return m_NativeHandle;
