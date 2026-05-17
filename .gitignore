@@ -129,3 +129,6 @@ coverage/
 # /assets/processed/
 # /screenshots/
 # /recordings/
+
+# ImGui
+imgui.ini

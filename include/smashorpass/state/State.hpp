@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string_view>
 #include <type_traits>
 
 #include "smashorpass/core/Event.hpp"
@@ -14,6 +15,8 @@ using namespace sop_util;
 class State {
    public:
     virtual ~State() = default;
+
+    [[nodiscard]] virtual std::string_view DebugName() const = 0;
 
     virtual Result<EventFlow> OnEvent(AppCtx&, const Event&) {
         return Ok(EventFlow::Passed);

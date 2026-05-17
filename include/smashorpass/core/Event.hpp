@@ -5,7 +5,6 @@
 
 #include <deque>
 
-#include "ApplicationState.hpp"
 #include "Base.hpp"
 #include "DisplayMetrics.hpp"
 
@@ -45,8 +44,15 @@ struct ControllerButtonEvent {
     bool Down = false;
 };
 
-struct ApplicationStateChangeEvent {
-    ApplicationState NextState = ApplicationState::MainMenu;
+enum class NavigationAction {
+    ShowMainMenu,
+    ShowCharacterSelect,
+    StartMatch,
+    ResumeMatch,
+};
+
+struct NavigationEvent {
+    NavigationAction Action;
 };
 
 struct ApplicationQuitEvent {};
@@ -77,7 +83,7 @@ using EventPayload = std::variant<KeyEvent,
                                   WindowResizeEvent,
                                   WindowMetricsChangedEvent,
                                   ControllerButtonEvent,
-                                  ApplicationStateChangeEvent,
+                                  NavigationEvent,
                                   ApplicationQuitEvent,
                                   PlayerParticleEffectEvent,
                                   NullEvent>;
@@ -109,8 +115,6 @@ class EventDispatcher final {
    private:
     EventDispatcher() = default;
 
-    // only application can administer the event queue, create event dispatcher etc... the ownership
-    // is application class only!
     std::deque<Event> m_EventQueue;
 
     friend struct AppCtx;

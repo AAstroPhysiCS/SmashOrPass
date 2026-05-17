@@ -41,14 +41,23 @@ const State* StateManager::TopState() const {
 Result<EventFlow> StateManager::DispatchEvent(AppCtx& ctx, const Event& event) {
     if (ctx.DebugOverlayVisible) {
         for (auto it = m_Overlays.rbegin(); it != m_Overlays.rend(); ++it) {
-            if ((*it)->OnEvent(ctx, event) == EventFlow::Consumed) {
+            auto result = (*it)->OnEvent(ctx, event);
+            if (!result) {
+                return result;
+            }
+            if (*result == EventFlow::Consumed) {
                 return Ok(EventFlow::Consumed);
             }
         }
     }
 
-    for (auto it = m_States.rbegin(); it != m_States.rend(); ++it) {
-        if ((*it)->OnEvent(ctx, event) == EventFlow::Consumed) {
+    State* state = TopState();
+    if (state != nullptr) {
+        auto result = state->OnEvent(ctx, event);
+        if (!result) {
+            return result;
+        }
+        if (*result == EventFlow::Consumed) {
             return Ok(EventFlow::Consumed);
         }
     }

@@ -7,7 +7,7 @@
 
 namespace sop {
 
-    CharacterSelectScreen::CharacterSelectScreen(EventDispatcher& dispatcher) : UIScreen(ApplicationState::CharacterSelect, dispatcher) {}
+    CharacterSelectScreen::CharacterSelectScreen(EventDispatcher& dispatcher) : UIScreen(dispatcher) {}
 
     void CharacterSelectScreen::Build(UIBuilder& builder) {
 
@@ -63,7 +63,7 @@ namespace sop {
                         .Align(Alignment::TopCenter)
                         .OnClick([](EventDispatcher& dispatcher, ButtonData& d) {
                             spdlog::info("Back clicked");
-                            dispatcher.Enqueue(ApplicationStateChangeEvent{ApplicationState::MainMenu});
+                            dispatcher.Enqueue(NavigationEvent{NavigationAction::ShowMainMenu});
                         }),
 
                     builder.Button("Start Match")
@@ -73,7 +73,7 @@ namespace sop {
                                          CharacterName(m_Player1Character),
                                          CharacterName(m_Player2Character));
 
-                            dispatcher.Enqueue(ApplicationStateChangeEvent{ApplicationState::Playing});
+                            dispatcher.Enqueue(NavigationEvent{NavigationAction::StartMatch});
                         }));
 
         auto menu = builder.Column().Spacing(22.0f).Add(

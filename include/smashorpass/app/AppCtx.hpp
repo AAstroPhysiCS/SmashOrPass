@@ -24,6 +24,7 @@ struct AppCtx final {
 
     DisplayMetrics m_DisplayMetrics;
 
+    bool RenderCollisionBoxes = false;
     bool DebugOverlayVisible = false;
     bool AppRunning = true;
 };

@@ -3,15 +3,15 @@
 #include <SDL3/SDL.h>
 #include <spdlog/spdlog.h>
 
-#include <chrono>
 #include <memory>
 #include <string>
 #include <variant>
 
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/core/Base.hpp"
-#include "smashorpass/state/GameState.hpp"
-#include "smashorpass/state/UIState.hpp"
+#include "smashorpass/state/overlays/DebugState.hpp"
+#include "smashorpass/state/states/InGameState.hpp"
+#include "smashorpass/state/states/MainMenuState.hpp"
 
 namespace sop {
 
@@ -25,6 +25,8 @@ Application::Application() {
 
     ctx.Assets =
         std::make_unique<AssetManager>(SOP_ASSET_ROOT_DIR, ctx.m_Renderer.NativeHandle());
+    ctx.m_StateManager.ResetToState<MainMenuState>(ctx);
+    ctx.m_StateManager.PushOverlay<DebugState>(ctx);
 }
 
 Application::~Application() = default;
@@ -112,9 +114,14 @@ Result<void> Application::Render() {
 }
 
 Result<void> Application::DispatchEvent(const Event& event) {
-    if (std::holds_alternative<ApplicationQuitEvent>(event.Payload) ||
-        std::holds_alternative<ApplicationStateChangeEvent>(event.Payload)) {
+    if (std::holds_alternative<ApplicationQuitEvent>(event.Payload)) {
         return OnEvent(event);
+    }
+
+    if (const auto* keyEvent = std::get_if<KeyEvent>(&event.Payload)) {
+        if (keyEvent->Down && !keyEvent->Repeat && keyEvent->Key == SDLK_F1) {
+            return OnEvent(event);
+        }
     }
 
     auto result = ctx.m_StateManager.DispatchEvent(ctx, event);
@@ -144,13 +151,29 @@ Result<void> Application::OnEvent(const Event& event) {
         return Ok();
     }
 
-    if (const auto* stateEvent = std::get_if<ApplicationStateChangeEvent>(&event.Payload)) {
-        return Err(std::string("Application state changes are not implemented yet (requested: ") +
-                   std::to_string(static_cast<int32_t>(stateEvent->NextState)) + ")");
+    if (const auto* navigation = std::get_if<NavigationEvent>(&event.Payload)) {
+        switch (navigation->Action) {
+            case NavigationAction::ShowMainMenu:
+                ctx.m_ParticleSystem.Clear();
+                ctx.m_StateManager.ResetToState<MainMenuState>(ctx);
+                return Ok();
+            case NavigationAction::StartMatch:
+                if (ctx.Assets != nullptr) {
+                    (void)ctx.Assets->getArenaBackgroundTexture(ArenaId::Chains);
+                    (void)ctx.Assets->getArenaForegroundTexture(ArenaId::Chains);
+                    ctx.Assets->preloadCharacterSpriteSheets(kDefaultCharacterId);
+                }
+                ctx.m_ParticleSystem.Clear();
+                ctx.m_StateManager.ResetToState<InGameState>(ctx);
+                return Ok();
+            case NavigationAction::ShowCharacterSelect:
+            case NavigationAction::ResumeMatch:
+                return Ok();
+        }
     }
 
     if (const auto* keyEvent = std::get_if<KeyEvent>(&event.Payload)) {
-        if (keyEvent->Down && keyEvent->Key == SDLK_F1) {
+        if (keyEvent->Down && !keyEvent->Repeat && keyEvent->Key == SDLK_F1) {
             return ToggleDebugOverlay();
         }
     }

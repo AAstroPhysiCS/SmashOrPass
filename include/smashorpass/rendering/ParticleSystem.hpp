@@ -57,6 +57,7 @@ class ParticleSystem {
 
     void EmitBurst(const ParticleBurstDesc& desc);
 
+    void Clear();
     void Update(float dt);
     void Render(Renderer& renderer);
    private:

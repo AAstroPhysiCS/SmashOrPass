@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <string>
 
-#include "ApplicationState.hpp"
 #include "Event.hpp"
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/core/Arena.hpp"
@@ -47,13 +46,11 @@ class Game final {
    public:
     void OnEvent(AppCtx& ctx, const Event& event);
     void SetDisplayMetrics(const DisplayMetrics& metrics);
-    void GameplayTick(ApplicationState state,
-                      double stepSeconds,
+    void GameplayTick(double stepSeconds,
                       AssetManager& assetManager,
                       ParticleSystem& particleSystem);
-    void AnimationTick(ApplicationState state, AssetManager& assetManager);
-    void Render(ApplicationState state,
-                Renderer& renderer,
+    void AnimationTick(AssetManager& assetManager);
+    void Render(Renderer& renderer,
                 EventDispatcher& dispatcher,
                 AssetManager& assetManager,
                 bool renderCollisionBoxes);

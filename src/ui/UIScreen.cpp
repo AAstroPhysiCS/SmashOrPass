@@ -7,8 +7,7 @@
 
 namespace sop {
 
-UIScreen::UIScreen(ApplicationState stateToRepresent, EventDispatcher& dispatcher)
-    : m_ApplicationStateToRepresent(stateToRepresent), m_EventDispatcher(dispatcher) {}
+UIScreen::UIScreen(EventDispatcher& dispatcher) : m_EventDispatcher(dispatcher) {}
 
 EventFlow UIScreen::OnEvent(const Event& event) {
     bool consumed = false;

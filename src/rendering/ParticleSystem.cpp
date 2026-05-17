@@ -59,6 +59,13 @@ void ParticleSystem::EmitBurst(const ParticleBurstDesc& desc) {
     }
 }
 
+void ParticleSystem::Clear() {
+    for (Particle& particle : m_Particles) {
+        particle.Active = false;
+    }
+    m_NextParticle = 0;
+}
+
 void ParticleSystem::Update(float dt) {
     for (Particle& p : m_Particles) {
         if (!p.Active)

@@ -1,4 +1,4 @@
-#include "smashorpass/state/DebugState.hpp"
+#include "smashorpass/state/overlays/DebugState.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
@@ -7,27 +7,6 @@
 #include "SDL3/SDL.h"
 #include "smashorpass/app/AppCtx.hpp"
 #include "smashorpass/core/Base.hpp"
-
-namespace {
-const char* ApplicationStateName(sop::ApplicationState state) {
-    switch (state) {
-        case sop::ApplicationState::None:
-            return "None";
-        case sop::ApplicationState::MainMenu:
-            return "MainMenu";
-        case sop::ApplicationState::Playing:
-            return "Playing";
-        case sop::ApplicationState::CharacterSelect:
-            return "CharacterSelect";
-        case sop::ApplicationState::Paused:
-            return "Paused";
-        case sop::ApplicationState::GameOver:
-            return "GameOver";
-    }
-
-    return "Unknown";
-}
-}  // namespace
 
 namespace sop {
 
@@ -63,30 +42,35 @@ void DebugState::BeginFrame() {
 
 void DebugState::Draw(AppCtx& ctx) {
     const ImGuiIO& io = ImGui::GetIO();
-    const SDL_FPoint logicalSize = ctx.Display.LogicalSize();
+    const SDL_FPoint logicalSize = ctx.m_DisplayMetrics.LogicalSize();
     const double frameMilliseconds = static_cast<double>(io.DeltaTime) * 1000.0;
     const double framesPerSecond = static_cast<double>(io.Framerate);
+    const State* topState = ctx.m_StateManager.TopState();
+    const std::string_view stateName =
+        topState != nullptr ? topState->DebugName() : std::string_view{"None"};
 
     ImGui::SetNextWindowPos(ImVec2{16.0f, 16.0f}, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2{360.0f, 0.0f}, ImGuiCond_FirstUseEver);
 
     ImGui::Begin("Smash Or Pass Debug");
-    ImGui::Text("State: %s", ApplicationStateName(ctx.CurrentState));
+    ImGui::Text("State: %.*s", static_cast<int>(stateName.size()), stateName.data());
     ImGui::Text("Frame: %.3f ms", frameMilliseconds);
     ImGui::Text("FPS: %.1f", framesPerSecond);
 
     ImGui::Separator();
-    ImGui::Text("Window: %d x %d", ctx.Display.WindowSize.x, ctx.Display.WindowSize.y);
-    ImGui::Text("Pixels: %d x %d", ctx.Display.PixelSize.x, ctx.Display.PixelSize.y);
+    ImGui::Text("Window: %d x %d",
+                ctx.m_DisplayMetrics.WindowSize.x,
+                ctx.m_DisplayMetrics.WindowSize.y);
+    ImGui::Text("Pixels: %d x %d",
+                ctx.m_DisplayMetrics.PixelSize.x,
+                ctx.m_DisplayMetrics.PixelSize.y);
     ImGui::Text("Logical: %.1f x %.1f",
                 static_cast<double>(logicalSize.x),
                 static_cast<double>(logicalSize.y));
-    ImGui::Text("Display scale: %.2f", static_cast<double>(ctx.Display.DisplayScale));
-    ImGui::Text("Pixel density: %.2f", static_cast<double>(ctx.Display.PixelDensity));
-
-    ImGui::Separator();
-    ImGui::Text("Gameplay ticks: %llu", static_cast<unsigned long long>(ctx.GameplayTickCount));
-    ImGui::Text("Animation ticks: %llu", static_cast<unsigned long long>(ctx.AnimationTickCount));
+    ImGui::Text("Display scale: %.2f",
+                static_cast<double>(ctx.m_DisplayMetrics.DisplayScale));
+    ImGui::Text("Pixel density: %.2f",
+                static_cast<double>(ctx.m_DisplayMetrics.PixelDensity));
 
     ImGui::Separator();
     ImGui::Checkbox("Render collision boxes", &ctx.RenderCollisionBoxes);

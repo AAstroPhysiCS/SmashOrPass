@@ -8,7 +8,7 @@
 
 namespace sop {
 
-GameScreen::GameScreen(EventDispatcher& dispatcher) : UIScreen(ApplicationState::Playing, dispatcher) {}
+GameScreen::GameScreen(EventDispatcher& dispatcher) : UIScreen(dispatcher) {}
 
 void GameScreen::Build(UIBuilder& builder) {
     auto p1Label = builder.Label("P1").Font(FontId::Small).TextColor(Color{ 255, 0, 0, 255 });

@@ -13,11 +13,6 @@ class Application {
     Application();
     ~Application();
 
-    template <typename TOverlay, typename... TArgs>
-    inline TOverlay& PushOverlay(TArgs&&... args) {
-        return ctx.m_StateManager.PushOverlay<TOverlay>(ctx, std::forward<TArgs>(args)...);
-    }
-
     Result<void> Run();
 
    private:

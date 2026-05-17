@@ -55,69 +55,37 @@ void Game::SetDisplayMetrics(const DisplayMetrics& metrics) {
     UpdateArena(metrics.LogicalSize());
 }
 
-void Game::GameplayTick(ApplicationState state,
-                        double stepSeconds,
+void Game::GameplayTick(double stepSeconds,
                         AssetManager& assetManager,
                         ParticleSystem& particleSystem) {
-    switch (state) {
-        case ApplicationState::MainMenu:
-            // spdlog::info("In main menu");
-            //  TODO: main menu, handle menu input, etc.
-            break;
-        case ApplicationState::CharacterSelect:
-            // spdlog::info("In character select");
-            //  TODO: character select, handle character select input, etc.
-            break;
-        case ApplicationState::Playing: {
-            // spdlog::info("Playing");
-            EnsurePlayerCollisionProfile(assetManager);
-            ApplyPlayerViewport(m_Player1.Control, m_Player1.Character, m_ArenaRect);
-            ApplyPlayerViewport(m_Player2.Control, m_Player2.Character, m_ArenaRect);
-            std::span<const SDL_FRect> arenaCollisions =
-                assetManager.getArenaCollisionBoxes(m_Arena);
-            TickPlayer(m_Player1.Character,
-                       m_Player1.Input,
-                       stepSeconds,
-                       m_Player1.Control,
-                       arenaCollisions,
-                       particleSystem);
-            TickPlayer(m_Player2.Character,
-                       m_Player2.Input,
-                       stepSeconds,
-                       m_Player2.Control,
-                       arenaCollisions,
-                       particleSystem);
-            break;
-        }
-        case ApplicationState::Paused:
-            // spdlog::info("Paused");
-            //  TODO: pause menu, handle pause menu input, etc.
-            break;
-        case ApplicationState::GameOver:
-            // spdlog::info("Game over");
-            //  TODO: game over screen, handle game over screen input, etc.
-            break;
-    }
-
+    EnsurePlayerCollisionProfile(assetManager);
+    ApplyPlayerViewport(m_Player1.Control, m_Player1.Character, m_ArenaRect);
+    ApplyPlayerViewport(m_Player2.Control, m_Player2.Character, m_ArenaRect);
+    std::span<const SDL_FRect> arenaCollisions = assetManager.getArenaCollisionBoxes(m_Arena);
+    TickPlayer(m_Player1.Character,
+               m_Player1.Input,
+               stepSeconds,
+               m_Player1.Control,
+               arenaCollisions,
+               particleSystem);
+    TickPlayer(m_Player2.Character,
+               m_Player2.Input,
+               stepSeconds,
+               m_Player2.Control,
+               arenaCollisions,
+               particleSystem);
 }
 
-void Game::AnimationTick(ApplicationState state, AssetManager& assetManager) {
-    if (state != ApplicationState::Playing) {
-        return;
-    }
-
+void Game::AnimationTick(AssetManager& assetManager) {
     AdvancePlayerAnimation(m_Player1.Character, assetManager);
     AdvancePlayerAnimation(m_Player2.Character, assetManager);
 }
 
-void Game::Render(ApplicationState state,
-                  Renderer& renderer,
+void Game::Render(Renderer& renderer,
                   EventDispatcher& dispatcher,
                   AssetManager& assetManager,
                   bool renderCollisionBoxes) {
-    if (state == ApplicationState::Playing) {
-        RenderWorld(renderer, dispatcher, assetManager, renderCollisionBoxes);
-    }
+    RenderWorld(renderer, dispatcher, assetManager, renderCollisionBoxes);
 }
 
 void Game::EnsurePlayerCollisionProfile(AssetManager& assetManager) {

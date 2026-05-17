@@ -11,7 +11,7 @@ class UIBuilder;
 
 class UIScreen {
    public:
-    UIScreen(ApplicationState stateToRepresent, EventDispatcher& dispatcher);
+    explicit UIScreen(EventDispatcher& dispatcher);
     virtual ~UIScreen() = default;
 
     inline UIWidget& GetWidgetById(UIWidgetId id) {
@@ -35,10 +35,6 @@ class UIScreen {
     virtual void OnRender(Renderer& renderer);
 
     void RebuildUI();
-
-    inline ApplicationState GetApplicationState() const {
-        return m_ApplicationStateToRepresent;
-    }
 
    protected:
     inline EventDispatcher& GetEventDispatcher() {
@@ -80,8 +76,6 @@ class UIScreen {
     EventDispatcher& m_EventDispatcher;
     std::vector<UIWidget> m_Widgets;
     UIWidgetId m_Root = g_InvalidWidgetId;
-
-    ApplicationState m_ApplicationStateToRepresent;
 
     friend class UIBuilder;
 

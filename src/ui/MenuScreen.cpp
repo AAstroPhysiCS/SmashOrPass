@@ -6,7 +6,7 @@
 
 namespace sop {
 
-MainMenuScreen::MainMenuScreen(EventDispatcher& dispatcher) : UIScreen(ApplicationState::MainMenu, dispatcher) {}
+MainMenuScreen::MainMenuScreen(EventDispatcher& dispatcher) : UIScreen(dispatcher) {}
 
 void MainMenuScreen::Build(UIBuilder& builder) {
     auto menu = builder.Column().Spacing(14.0f).Add(
@@ -14,7 +14,7 @@ void MainMenuScreen::Build(UIBuilder& builder) {
         builder.Button("Start Game")
             .Align(Alignment::TopCenter)
             .OnClick([](EventDispatcher& dispatcher, ButtonData& d) {
-                dispatcher.Enqueue(ApplicationStateChangeEvent{ApplicationState::CharacterSelect});
+                dispatcher.Enqueue(NavigationEvent{NavigationAction::ShowCharacterSelect});
             }),
         builder.Button("Options")
             .Align(Alignment::TopCenter)

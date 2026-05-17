@@ -39,6 +39,20 @@ class StateManager {
         return ref;
     }
 
+    template <typename TState, typename... TArgs>
+        requires IsState<TState>
+    TState& ReplaceTopState(AppCtx& ctx, TArgs&&... args) {
+        PopState();
+        return PushState<TState>(ctx, std::forward<TArgs>(args)...);
+    }
+
+    template <typename TState, typename... TArgs>
+        requires IsState<TState>
+    TState& ResetToState(AppCtx& ctx, TArgs&&... args) {
+        ClearStates();
+        return PushState<TState>(ctx, std::forward<TArgs>(args)...);
+    }
+
     void PopState();
     void ClearStates();
     void ClearOverlays();
@@ -51,6 +65,12 @@ class StateManager {
         requires IsState<TState>
     [[nodiscard]] TState* TopStateAs() {
         return dynamic_cast<TState*>(TopState());
+    }
+
+    template <typename TState>
+        requires IsState<TState>
+    [[nodiscard]] const TState* TopStateAs() const {
+        return dynamic_cast<const TState*>(TopState());
     }
 
     Result<EventFlow> DispatchEvent(AppCtx& ctx, const Event& event);

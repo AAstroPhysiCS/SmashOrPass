@@ -6,8 +6,7 @@
 
 namespace sop {
 
-PauseScreen::PauseScreen(EventDispatcher& dispatcher)
-    : UIScreen(ApplicationState::Paused, dispatcher) {}
+PauseScreen::PauseScreen(EventDispatcher& dispatcher) : UIScreen(dispatcher) {}
 
 void PauseScreen::Build(UIBuilder& builder) {
     auto actions =
@@ -19,25 +18,20 @@ void PauseScreen::Build(UIBuilder& builder) {
                     .Align(Alignment::TopCenter)
                     .OnClick([](EventDispatcher& dispatcher, ButtonData&) {
                         spdlog::info("Resume clicked");
-                        dispatcher.Enqueue(ApplicationStateChangeEvent{ApplicationState::Playing});
+                        dispatcher.Enqueue(NavigationEvent{NavigationAction::ResumeMatch});
                     }),
 
                 builder.Button("Options")
                     .Align(Alignment::TopCenter)
                     .OnClick([](EventDispatcher& dispatcher, ButtonData&) {
                     spdlog::info("Options clicked from pause menu");
-
-                    // TODO: Later:
-                    // dispatcher.Enqueue(ApplicationStateChangeEvent{
-                    //     ApplicationState::Options
-                    // });
                 }),
 
                 builder.Button("Main Menu")
                     .Align(Alignment::TopCenter)
                     .OnClick([](EventDispatcher& dispatcher, ButtonData&) {
                         spdlog::info("Main menu clicked from pause menu");
-                        dispatcher.Enqueue(ApplicationStateChangeEvent{ApplicationState::MainMenu});
+                        dispatcher.Enqueue(NavigationEvent{NavigationAction::ShowMainMenu});
                     }),
 
                 builder.Button("Exit")

@@ -9,6 +9,10 @@ class DebugState : public State {
     explicit DebugState(AppCtx& ctx);
     ~DebugState() override;
 
+    [[nodiscard]] std::string_view DebugName() const final {
+        return "Debug";
+    }
+
     void BeginFrame();
     void Draw(AppCtx& ctx);
     void EndFrame(AppCtx& ctx);
