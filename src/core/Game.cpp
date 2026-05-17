@@ -10,7 +10,6 @@
 #include "smashorpass/core/Event.hpp"
 #include "smashorpass/core/PlayerController.hpp"
 #include "smashorpass/core/PlayerSpritePlacement.hpp"
-#include "spdlog/spdlog.h"
 
 namespace sop {
 namespace {
@@ -47,7 +46,7 @@ void Game::OnEvent(AppCtx& ctx, const Event& event) {
 
     EventDispatcher::Dispatch<PlayerParticleEffectEvent>(
         event, [&](const PlayerParticleEffectEvent& particleEvent) {
-            EmitPlayerParticleEffect(ctx.m_ParticleSystem, particleEvent);
+            EmitPlayerParticleEffect(ctx, particleEvent);
         });
 }
 
@@ -55,10 +54,13 @@ void Game::SetDisplayMetrics(const DisplayMetrics& metrics) {
     UpdateArena(metrics.LogicalSize());
 }
 
-void Game::GameplayTick(double stepSeconds,
-                        AssetManager& assetManager,
-                        ParticleSystem& particleSystem) {
-    EnsurePlayerCollisionProfile(assetManager);
+void Game::GameplayTick(AppCtx& ctx, std::chrono::steady_clock::duration step) {
+    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+
+    AssetManager& assetManager = *ctx.Assets;
+    const double stepSeconds = std::chrono::duration<double>(step).count();
+
+    EnsurePlayerCollisionProfile(ctx);
     ApplyPlayerViewport(m_Player1.Control, m_Player1.Character, m_ArenaRect);
     ApplyPlayerViewport(m_Player2.Control, m_Player2.Character, m_ArenaRect);
     std::span<const SDL_FRect> arenaCollisions = assetManager.getArenaCollisionBoxes(m_Arena);
@@ -67,32 +69,32 @@ void Game::GameplayTick(double stepSeconds,
                stepSeconds,
                m_Player1.Control,
                arenaCollisions,
-               particleSystem);
+               ctx.m_ParticleSystem);
     TickPlayer(m_Player2.Character,
                m_Player2.Input,
                stepSeconds,
                m_Player2.Control,
                arenaCollisions,
-               particleSystem);
+               ctx.m_ParticleSystem);
 }
 
-void Game::AnimationTick(AssetManager& assetManager) {
-    AdvancePlayerAnimation(m_Player1.Character, assetManager);
-    AdvancePlayerAnimation(m_Player2.Character, assetManager);
+void Game::AnimationTick(AppCtx& ctx) {
+    AdvancePlayerAnimation(ctx, m_Player1.Character);
+    AdvancePlayerAnimation(ctx, m_Player2.Character);
 }
 
-void Game::Render(Renderer& renderer,
-                  EventDispatcher& dispatcher,
-                  AssetManager& assetManager,
-                  bool renderCollisionBoxes) {
-    RenderWorld(renderer, dispatcher, assetManager, renderCollisionBoxes);
+void Game::Render(AppCtx& ctx) {
+    RenderWorld(ctx);
 }
 
-void Game::EnsurePlayerCollisionProfile(AssetManager& assetManager) {
+void Game::EnsurePlayerCollisionProfile(AppCtx& ctx) {
     if (m_Player1.Character.CollisionProfileInitialized &&
         m_Player2.Character.CollisionProfileInitialized) {
         return;
     }
+
+    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+    AssetManager& assetManager = *ctx.Assets;
 
     const SpriteSheet& spriteSheet1 =
         assetManager.getSpriteSheet(m_Player1.Character.Character, CharacterAnimation::Idle);
@@ -112,7 +114,10 @@ void Game::EnsurePlayerCollisionProfile(AssetManager& assetManager) {
     ApplyPlayerViewport(m_Player2.Control, m_Player2.Character, m_ArenaRect);
 }
 
-void Game::AdvancePlayerAnimation(PlayerCharacterState& player, AssetManager& assetManager) {
+void Game::AdvancePlayerAnimation(AppCtx& ctx, PlayerCharacterState& player) {
+    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+    AssetManager& assetManager = *ctx.Assets;
+
     const SpriteSheet& spriteSheet =
         assetManager.getSpriteSheet(player.Character, player.Animation.GetAnimation());
     const std::span<const SpriteSheetFrame> frames = spriteSheet.getFrames();
@@ -121,15 +126,15 @@ void Game::AdvancePlayerAnimation(PlayerCharacterState& player, AssetManager& as
     player.Animation.Advance(frames.size());
 }
 
-void Game::RenderWorld(Renderer& renderer, EventDispatcher& dispatcher, AssetManager& assetManager, bool renderCollisionBoxes) {
-    EnsurePlayerCollisionProfile(assetManager);
-    UpdateArena(renderer.GetLogicalOutputSize());
-    RenderStage(renderer, assetManager);
-    RenderPlayers(renderer, assetManager, dispatcher);
-    RenderEffects(renderer);
-    RenderStageForeground(renderer, assetManager);
-    if (renderCollisionBoxes) {
-        RenderCollisionBoxes(renderer, assetManager);
+void Game::RenderWorld(AppCtx& ctx) {
+    EnsurePlayerCollisionProfile(ctx);
+    UpdateArena(ctx.m_Renderer.GetLogicalOutputSize());
+    RenderStage(ctx);
+    RenderPlayers(ctx);
+    RenderEffects(ctx);
+    RenderStageForeground(ctx);
+    if (ctx.RenderCollisionBoxes) {
+        RenderCollisionBoxes(ctx);
     }
 }
 
@@ -139,7 +144,11 @@ void Game::UpdateArena(SDL_FPoint logicalSize) {
     ApplyPlayerViewport(m_Player2.Control, m_Player2.Character, m_ArenaRect);
 }
 
-void Game::RenderStage(Renderer& renderer, AssetManager& assetManager) {
+void Game::RenderStage(AppCtx& ctx) {
+    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+
+    Renderer& renderer = ctx.m_Renderer;
+    AssetManager& assetManager = *ctx.Assets;
     const SDL_FPoint size = renderer.GetLogicalOutputSize();
 
     renderer.FillRect(SDL_FRect{0.0f, 0.0f, size.x, size.y}, Color{18, 18, 24, 255});
@@ -149,13 +158,24 @@ void Game::RenderStage(Renderer& renderer, AssetManager& assetManager) {
     SOP_VERIFY(arenaDrawn, "Failed to draw arena background");
 }
 
-void Game::RenderStageForeground(Renderer& renderer, AssetManager& assetManager) {
+void Game::RenderStageForeground(AppCtx& ctx) {
+    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+
+    Renderer& renderer = ctx.m_Renderer;
+    AssetManager& assetManager = *ctx.Assets;
+
     const bool arenaDrawn =
         renderer.DrawTexture(assetManager.getArenaForegroundTexture(m_Arena), m_ArenaRect);
     SOP_VERIFY(arenaDrawn, "Failed to draw arena foreground");
 }
 
-void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager, EventDispatcher& dispatcher) {
+void Game::RenderPlayers(AppCtx& ctx) {
+    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+
+    Renderer& renderer = ctx.m_Renderer;
+    AssetManager& assetManager = *ctx.Assets;
+    EventDispatcher& dispatcher = ctx.m_EventDispatcher;
+
     const auto DrawPlayer = [&](PlayerCharacterState& player,
                                 const PlayerControlConfig& control) {
         const SpriteSheet& spriteSheet =
@@ -190,7 +210,12 @@ void Game::RenderPlayers(Renderer& renderer, AssetManager& assetManager, EventDi
     SOP_VERIFY(playerDrawn2, "Failed to draw player 2 sprite");
 }
 
-void Game::RenderCollisionBoxes(Renderer& renderer, AssetManager& assetManager) {
+void Game::RenderCollisionBoxes(AppCtx& ctx) {
+    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
+
+    Renderer& renderer = ctx.m_Renderer;
+    AssetManager& assetManager = *ctx.Assets;
+
     constexpr Color kArenaCollisionBoxColor{0, 255, 0, 255};
     constexpr Color kPlayerCollisionBoxColor{255, 230, 0, 255};
 
@@ -210,27 +235,27 @@ void Game::RenderCollisionBoxes(Renderer& renderer, AssetManager& assetManager) 
     SOP_VERIFY(playerBoxDrawn2, "Failed to draw player 2 collision box");
 }
 
-void Game::RenderEffects(Renderer&) {
+void Game::RenderEffects(AppCtx&) {
     // TODO:
     // attack trails
     // hit sparks
     // dust
     // particles
 }
-void Game::EmitPlayerParticleEffect(ParticleSystem& particleSystem,
-                                    const PlayerParticleEffectEvent& event) {
+
+void Game::EmitPlayerParticleEffect(AppCtx& ctx, const PlayerParticleEffectEvent& event) {
     switch (event.Type) {
         case PlayerParticleEffectType::SwordFire:
-            EmitSwordFireParticleEffect(particleSystem, event);
+            EmitSwordFireParticleEffect(ctx, event);
             break;
 
         case PlayerParticleEffectType::DashBlue:
-            EmitDashParticleEffect(particleSystem, event);
+            EmitDashParticleEffect(ctx, event);
             break;
     }
 }
-void Game::EmitSwordFireParticleEffect(ParticleSystem& particleSystem,
-                                       const PlayerParticleEffectEvent& event) {
+
+void Game::EmitSwordFireParticleEffect(AppCtx& ctx, const PlayerParticleEffectEvent& event) {
     ParticleBurstDesc desc{};
     desc.Position = Vec2{event.Position.x, event.Position.y};
     desc.InitialVelocity = Vec2{
@@ -254,10 +279,10 @@ void Game::EmitSwordFireParticleEffect(ParticleSystem& particleSystem,
         -220.0f,
     };
 
-    particleSystem.EmitBurst(desc);
+    ctx.m_ParticleSystem.EmitBurst(desc);
 }
-void Game::EmitDashParticleEffect(ParticleSystem& particleSystem,
-                                  const PlayerParticleEffectEvent& event) {
+
+void Game::EmitDashParticleEffect(AppCtx& ctx, const PlayerParticleEffectEvent& event) {
     ParticleBurstDesc desc{};
     desc.Position = Vec2{event.Position.x, event.Position.y};
 
@@ -279,6 +304,6 @@ void Game::EmitDashParticleEffect(ParticleSystem& particleSystem,
 
     desc.Acceleration = Vec2{0.0f, 0.0f};
 
-    particleSystem.EmitBurst(desc);
+    ctx.m_ParticleSystem.EmitBurst(desc);
 }
 }  // namespace sop

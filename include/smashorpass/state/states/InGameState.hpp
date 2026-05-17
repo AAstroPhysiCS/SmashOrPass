@@ -1,7 +1,6 @@
 #pragma once
 
 #include <chrono>
-
 #include "smashorpass/core/Game.hpp"
 #include "smashorpass/state/State.hpp"
 #include "smashorpass/ui/GameScreen.hpp"
@@ -23,19 +22,17 @@ class InGameState final : public State {
     Result<void> OnRender(AppCtx& ctx) final;
 
    private:
-    using Clock = std::chrono::steady_clock;
-
     void ResetFrameTimer();
     void TogglePause();
-    Result<void> TickGame(AppCtx& ctx, double elapsedSeconds);
 
     Game m_Game;
     GameScreen m_GameScreen;
     PauseScreen m_PauseScreen;
 
+    using Clock = std::chrono::steady_clock;
     Clock::time_point m_PreviousUpdateTime;
-    double m_GameplayAccumulatorSeconds = 0.0;
-    double m_AnimationAccumulatorSeconds = 0.0;
+    Clock::time_point m_PreviousGameLogicTick;
+    Clock::time_point m_PreviousAnimationTick;
     bool m_Paused = false;
 };
 

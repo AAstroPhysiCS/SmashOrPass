@@ -1,17 +1,15 @@
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 #include <string>
 
 #include "Event.hpp"
-#include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/core/Arena.hpp"
 #include "smashorpass/core/InputBindings.hpp"
+#include "smashorpass/core/PlayerEffectEmitter.hpp"
 #include "smashorpass/core/PlayerController.hpp"
 #include "smashorpass/core/SpriteAnimationPlayer.hpp"
-#include "smashorpass/core/PlayerEffectEmitter.hpp"
-
-#include "smashorpass/rendering/ParticleSystem.hpp"
 
 namespace sop {
 
@@ -46,34 +44,26 @@ class Game final {
    public:
     void OnEvent(AppCtx& ctx, const Event& event);
     void SetDisplayMetrics(const DisplayMetrics& metrics);
-    void GameplayTick(double stepSeconds,
-                      AssetManager& assetManager,
-                      ParticleSystem& particleSystem);
-    void AnimationTick(AssetManager& assetManager);
-    void Render(Renderer& renderer,
-                EventDispatcher& dispatcher,
-                AssetManager& assetManager,
-                bool renderCollisionBoxes);
+    void GameplayTick(AppCtx& ctx, std::chrono::steady_clock::duration step);
+    void AnimationTick(AppCtx& ctx);
+    void Render(AppCtx& ctx);
 
    private:
-    void EnsurePlayerCollisionProfile(AssetManager& assetManager);
+    void EnsurePlayerCollisionProfile(AppCtx& ctx);
     void UpdateArena(SDL_FPoint logicalSize);
-    void AdvancePlayerAnimation(PlayerCharacterState& player, AssetManager& assetManager);
-    void RenderWorld(Renderer& renderer,
-                     EventDispatcher& dispatcher,
-                     AssetManager& assetManager,
-                     bool renderCollisionBoxes);
-    void RenderStage(Renderer& renderer, AssetManager& assetManager);
-    void RenderStageForeground(Renderer& renderer, AssetManager& assetManager);
-    void RenderPlayers(Renderer& renderer, AssetManager& assetManager, EventDispatcher& dispatcher);
-    void RenderCollisionBoxes(Renderer& renderer, AssetManager& assetManager);
-    void RenderEffects(Renderer& renderer);
+    void AdvancePlayerAnimation(AppCtx& ctx, PlayerCharacterState& player);
+    void RenderWorld(AppCtx& ctx);
+    void RenderStage(AppCtx& ctx);
+    void RenderStageForeground(AppCtx& ctx);
+    void RenderPlayers(AppCtx& ctx);
+    void RenderCollisionBoxes(AppCtx& ctx);
+    void RenderEffects(AppCtx& ctx);
 
-    void EmitPlayerParticleEffect(ParticleSystem& particleSystem,
+    void EmitPlayerParticleEffect(AppCtx& ctx,
                                   const PlayerParticleEffectEvent& event);
-    void EmitSwordFireParticleEffect(ParticleSystem& particleSystem,
+    void EmitSwordFireParticleEffect(AppCtx& ctx,
                                      const PlayerParticleEffectEvent& event);
-    void EmitDashParticleEffect(ParticleSystem& particleSystem,
+    void EmitDashParticleEffect(AppCtx& ctx,
                                 const PlayerParticleEffectEvent& event);
 
     PlayerState m_Player1{.Bindings{.MoveLeft = SDLK_A,

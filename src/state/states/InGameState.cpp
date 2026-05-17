@@ -1,19 +1,28 @@
 #include "smashorpass/state/states/InGameState.hpp"
 
-#include <algorithm>
+#include <chrono>
 
 #include "smashorpass/app/AppCtx.hpp"
 #include "smashorpass/core/Base.hpp"
 #include "smashorpass/ui/UIBuilder.hpp"
 
+using Clock = std::chrono::steady_clock;
+
 namespace sop {
-namespace {
 
-constexpr double kGameplayStepSeconds = 1.0 / 120.0;
-constexpr double kAnimationStepSeconds = 1.0 / 60.0;
-constexpr double kMaxFrameDeltaSeconds = 0.25;
+constexpr int kGameLogicTicksPerSecond = 120;
+constexpr int kGameLogicMaxCatchUpTicks = 10;
+constexpr int kAnimationTicksPerSecond = 60;
+constexpr int kAnimationMaxCatchUpTicks = 10;
+// Derived from above
+constexpr Clock::duration kGameLogicTickDuration =
+    duration_cast<Clock::duration>(
+        std::chrono::duration<double>(1.0 / kGameLogicTicksPerSecond));
+constexpr Clock::duration kAnimationTickDuration =
+    duration_cast<Clock::duration>(
+        std::chrono::duration<double>(1.0 / kAnimationTicksPerSecond));
 
-}  // namespace
+
 
 InGameState::InGameState(AppCtx& ctx)
     : m_GameScreen(ctx.m_EventDispatcher),
@@ -35,7 +44,6 @@ Result<EventFlow> InGameState::OnEvent(AppCtx& ctx, const Event& event) {
             ResetFrameTimer();
             return Ok(EventFlow::Consumed);
         }
-
         return Ok(EventFlow::Passed);
     }
 
@@ -51,8 +59,6 @@ Result<EventFlow> InGameState::OnEvent(AppCtx& ctx, const Event& event) {
         if (pauseUiFlow == EventFlow::Consumed) {
             return Ok(EventFlow::Consumed);
         }
-
-        m_Game.OnEvent(ctx, event);
         return Ok(EventFlow::Passed);
     }
 
@@ -66,25 +72,46 @@ Result<EventFlow> InGameState::OnEvent(AppCtx& ctx, const Event& event) {
 }
 
 Result<void> InGameState::OnUpdate(AppCtx& ctx) {
-    const Clock::time_point currentTime = Clock::now();
-    const double elapsedSeconds =
-        std::chrono::duration<double>(currentTime - m_PreviousUpdateTime).count();
-    m_PreviousUpdateTime = currentTime;
+    const Clock::time_point now = Clock::now();
+    const Clock::duration elapsed = now - m_PreviousUpdateTime;
+    m_PreviousUpdateTime = now;
+    const float dt = std::chrono::duration<float>(elapsed).count();
 
     if (m_Paused) {
         m_PauseScreen.OnUpdate();
         return Ok();
     }
 
-    const double clampedElapsedSeconds =
-        std::clamp(elapsedSeconds, 0.0, kMaxFrameDeltaSeconds);
-    auto result = TickGame(ctx, clampedElapsedSeconds);
-    if (!result) {
-        return result;
+    // ---- Update Ticks
+    // Game Logic
+    int gameLogicTicks = 0;
+    while (now - m_PreviousGameLogicTick >= kGameLogicTickDuration &&
+           gameLogicTicks < kGameLogicMaxCatchUpTicks) {
+        m_Game.GameplayTick(ctx, kGameLogicTickDuration);
+        m_PreviousGameLogicTick += kGameLogicTickDuration;
+        ++gameLogicTicks;
+    }
+    if (gameLogicTicks == kGameLogicMaxCatchUpTicks) {
+        // We are too far behind, drop backlog.
+        m_PreviousGameLogicTick = now;
+    }
+
+    // Animations
+    int animationTicks = 0;
+    while (now - m_PreviousAnimationTick >= kAnimationTickDuration &&
+           animationTicks < kAnimationMaxCatchUpTicks) {
+        m_Game.AnimationTick(ctx);
+        m_PreviousAnimationTick += kAnimationTickDuration;
+        ++animationTicks;
+    }
+    if (animationTicks == kAnimationMaxCatchUpTicks) {
+        // We are too far behind, drop backlog.
+        m_PreviousAnimationTick = now;
     }
 
     m_GameScreen.OnUpdate();
-    ctx.m_ParticleSystem.Update(static_cast<float>(clampedElapsedSeconds));
+    ctx.m_ParticleSystem.Update(dt);
+
     return Ok();
 }
 
@@ -92,7 +119,7 @@ Result<void> InGameState::OnRender(AppCtx& ctx) {
     SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
 
     m_Game.SetDisplayMetrics(ctx.m_DisplayMetrics);
-    m_Game.Render(ctx.m_Renderer, ctx.m_EventDispatcher, *ctx.Assets, ctx.RenderCollisionBoxes);
+    m_Game.Render(ctx);
     ctx.m_ParticleSystem.Render(ctx.m_Renderer);
     m_GameScreen.OnRender(ctx.m_Renderer);
 
@@ -104,30 +131,15 @@ Result<void> InGameState::OnRender(AppCtx& ctx) {
 }
 
 void InGameState::ResetFrameTimer() {
-    m_PreviousUpdateTime = Clock::now();
+    const Clock::time_point now = Clock::now();
+    m_PreviousUpdateTime = now;
+    m_PreviousGameLogicTick = now;
+    m_PreviousAnimationTick = now;
 }
 
 void InGameState::TogglePause() {
     m_Paused = !m_Paused;
     ResetFrameTimer();
-}
-
-Result<void> InGameState::TickGame(AppCtx& ctx, double elapsedSeconds) {
-    SOP_ASSERT(ctx.Assets != nullptr, "Application context missing asset manager");
-
-    m_GameplayAccumulatorSeconds += elapsedSeconds;
-    while (m_GameplayAccumulatorSeconds >= kGameplayStepSeconds) {
-        m_GameplayAccumulatorSeconds -= kGameplayStepSeconds;
-        m_Game.GameplayTick(kGameplayStepSeconds, *ctx.Assets, ctx.m_ParticleSystem);
-    }
-
-    m_AnimationAccumulatorSeconds += elapsedSeconds;
-    while (m_AnimationAccumulatorSeconds >= kAnimationStepSeconds) {
-        m_AnimationAccumulatorSeconds -= kAnimationStepSeconds;
-        m_Game.AnimationTick(*ctx.Assets);
-    }
-
-    return Ok();
 }
 
 }  // namespace sop
