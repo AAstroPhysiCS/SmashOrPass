@@ -12,6 +12,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+if(MSVC)
+    set(CMAKE_CXX23_STANDARD_COMPILE_OPTION "/std:c++23preview")
+    set(CMAKE_CXX23_EXTENSION_COMPILE_OPTION "/std:c++23preview")
+endif()
+
 find_package(SDL3 CONFIG REQUIRED)
 find_package(SDL3_image CONFIG REQUIRED)
 find_package(SDL3_ttf CONFIG REQUIRED)
@@ -41,6 +46,21 @@ target_include_directories(smashorpass PRIVATE
 target_compile_definitions(smashorpass PRIVATE
     SOP_ASSET_ROOT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/assets\"
 )
+
+if(MSVC)
+    target_compile_options(smashorpass PRIVATE
+        /permissive-
+        /Zc:__cplusplus
+        /W4
+        /EHsc
+    )
+else()
+    target_compile_options(smashorpass PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+    )
+endif()
 
 target_link_libraries(smashorpass PRIVATE
     SDL3::SDL3
