@@ -41,11 +41,8 @@ const State* StateManager::TopState() const {
 Result<EventFlow> StateManager::DispatchEvent(AppCtx& ctx, const Event& event) {
     if (ctx.DebugOverlayVisible) {
         for (auto it = m_Overlays.rbegin(); it != m_Overlays.rend(); ++it) {
-            auto result = (*it)->OnEvent(ctx, event);
-            if (!result) {
-                return result;
-            }
-            if (*result == EventFlow::Consumed) {
+            TRY(eventFlow, (*it)->OnEvent(ctx, event));
+            if (eventFlow == EventFlow::Consumed) {
                 return Ok(EventFlow::Consumed);
             }
         }
@@ -53,11 +50,8 @@ Result<EventFlow> StateManager::DispatchEvent(AppCtx& ctx, const Event& event) {
 
     State* state = TopState();
     if (state != nullptr) {
-        auto result = state->OnEvent(ctx, event);
-        if (!result) {
-            return result;
-        }
-        if (*result == EventFlow::Consumed) {
+        TRY(eventFlow, state->OnEvent(ctx, event));
+        if (eventFlow == EventFlow::Consumed) {
             return Ok(EventFlow::Consumed);
         }
     }
@@ -68,18 +62,12 @@ Result<EventFlow> StateManager::DispatchEvent(AppCtx& ctx, const Event& event) {
 Result<void> StateManager::Update(AppCtx& ctx) {
     State* state = TopState();
     if (state != nullptr) {
-        auto result = state->OnUpdate(ctx);
-        if (!result) {
-            return result;
-        }
+        TRY_VOID(state->OnUpdate(ctx));
     }
 
     if (ctx.DebugOverlayVisible) {
         for (const auto& overlay : m_Overlays) {
-            auto result = overlay->OnUpdate(ctx);
-            if (!result) {
-                return result;
-            }
+            TRY_VOID(overlay->OnUpdate(ctx));
         }
     }
 
@@ -88,18 +76,12 @@ Result<void> StateManager::Update(AppCtx& ctx) {
 
 Result<void> StateManager::Render(AppCtx& ctx) {
     for (const auto& state : m_States) {
-        auto result = state->OnRender(ctx);
-        if (!result) {
-            return result;
-        }
+        TRY_VOID(state->OnRender(ctx));
     }
 
     if (ctx.DebugOverlayVisible) {
         for (const auto& overlay : m_Overlays) {
-            auto result = overlay->OnRender(ctx);
-            if (!result) {
-                return result;
-            }
+            TRY_VOID(overlay->OnRender(ctx));
         }
     }
 

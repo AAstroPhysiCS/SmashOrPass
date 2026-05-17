@@ -34,18 +34,9 @@ Result<void> Application::Run() {
     spdlog::info("Starting the game");
 
     while (ctx.AppRunning) {
-        auto result = ProcessEvents();
-        if (!result) {
-            return result;
-        }
-        result = Update();
-        if (!result) {
-            return result;
-        }
-        result = Render();
-        if (!result) {
-            return result;
-        }
+        TRY_VOID(ProcessEvents());
+        TRY_VOID(Update());
+        TRY_VOID(Render());
     }
 
     spdlog::info("Shutting down the game");
@@ -56,18 +47,12 @@ Result<void> Application::ProcessEvents() {
     SDL_Event event{};
     while (SDL_PollEvent(&event) != 0) {
         if (IsWindowMetricsEventType(event.type)) {
-            auto result = RefreshDisplayMetrics();
-            if (!result) {
-                return result;
-            }
+            TRY_VOID(RefreshDisplayMetrics());
 
-            result = DispatchEvent(Event{
+            TRY_VOID(DispatchEvent(Event{
                 .Payload = WindowMetricsChangedEvent{.Metrics = ctx.m_DisplayMetrics},
                 .RawEvent = nullptr,
-            });
-            if (!result) {
-                return result;
-            }
+            }));
         }
 
         SDL_Event translatedSource = event;
@@ -79,10 +64,7 @@ Result<void> Application::ProcessEvents() {
         }
 
         const Event translatedEvent = TranslateSDLEvent(translatedSource, &event);
-        auto result = DispatchEvent(translatedEvent);
-        if (!result) {
-            return result;
-        }
+        TRY_VOID(DispatchEvent(translatedEvent));
 
         if (event.type == SDL_EVENT_QUIT) {
             ctx.AppRunning = false;
@@ -92,10 +74,7 @@ Result<void> Application::ProcessEvents() {
     while (!ctx.m_EventDispatcher.m_EventQueue.empty()) {
         Event customEvent = std::move(ctx.m_EventDispatcher.m_EventQueue.front());
         ctx.m_EventDispatcher.m_EventQueue.pop_front();
-        auto result = DispatchEvent(customEvent);
-        if (!result) {
-            return result;
-        }
+        TRY_VOID(DispatchEvent(customEvent));
     }
 
     return Ok();
@@ -123,12 +102,8 @@ Result<void> Application::DispatchEvent(const Event& event) {
         }
     }
 
-    auto result = ctx.m_StateManager.DispatchEvent(ctx, event);
-    if (!result) {
-        return Err(result.error());
-    }
-
-    if (*result == EventFlow::Passed) {
+    TRY(eventFlow, ctx.m_StateManager.DispatchEvent(ctx, event));
+    if (eventFlow == EventFlow::Passed) {
         return OnEvent(event);
     }
     return Ok();
