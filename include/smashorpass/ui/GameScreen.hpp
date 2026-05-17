@@ -11,7 +11,7 @@ class GameScreen : public UIScreen {
     virtual ~GameScreen() = default;
 
     void Build(UIBuilder& builder) final override;
-    void OnEvent(const Event& event) final override;
+    EventFlow OnEvent(const Event& event) final override;
     void OnUpdate() final override;
     void OnRender(Renderer& renderer) final override;
 

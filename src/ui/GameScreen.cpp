@@ -37,16 +37,8 @@ void GameScreen::Build(UIBuilder& builder) {
     UpdateHudText();
 }
 
-void GameScreen::OnEvent(const Event& event) {
-    UIScreen::OnEvent(event);
-
-    EventDispatcher::Dispatch<KeyEvent>(event, [this](const KeyEvent& e) {
-        if (!e.Down)
-            return;
-        if (e.Key == SDLK_ESCAPE) {
-            m_Paused = !m_Paused;
-        }
-    });
+EventFlow GameScreen::OnEvent(const Event& event) {
+    return UIScreen::OnEvent(event);
 }
 
 void GameScreen::OnUpdate() {

@@ -6,10 +6,10 @@
 #include <span>
 
 #include "smashorpass/asset/AssetManager.hpp"
+#include "smashorpass/app/AppCtx.hpp"
 #include "smashorpass/core/Event.hpp"
 #include "smashorpass/core/PlayerController.hpp"
 #include "smashorpass/core/PlayerSpritePlacement.hpp"
-#include "smashorpass/core/ApplicationContext.hpp"
 #include "spdlog/spdlog.h"
 
 namespace sop {
@@ -36,7 +36,7 @@ namespace {
 
 }  // namespace
 
-void Game::OnEvent(const Event& event, ApplicationContext& ctx) {
+void Game::OnEvent(AppCtx& ctx, const Event& event) {
     EventDispatcher::Dispatch<KeyEvent>(event, [this](const KeyEvent& keyEvent) {
         ApplyBindings(m_Player1.Input, keyEvent, m_Player1.Bindings);
         ApplyBindings(m_Player2.Input, keyEvent, m_Player2.Bindings);
@@ -47,7 +47,7 @@ void Game::OnEvent(const Event& event, ApplicationContext& ctx) {
 
     EventDispatcher::Dispatch<PlayerParticleEffectEvent>(
         event, [&](const PlayerParticleEffectEvent& particleEvent) {
-            EmitPlayerParticleEffect(ctx.Particles, particleEvent);
+            EmitPlayerParticleEffect(ctx.m_ParticleSystem, particleEvent);
         });
 }
 
@@ -98,7 +98,7 @@ void Game::GameplayTick(ApplicationState state,
             //  TODO: game over screen, handle game over screen input, etc.
             break;
     }
-    
+
 }
 
 void Game::AnimationTick(ApplicationState state, AssetManager& assetManager) {
@@ -255,7 +255,7 @@ void Game::EmitPlayerParticleEffect(ParticleSystem& particleSystem,
         case PlayerParticleEffectType::SwordFire:
             EmitSwordFireParticleEffect(particleSystem, event);
             break;
-        
+
         case PlayerParticleEffectType::DashBlue:
             EmitDashParticleEffect(particleSystem, event);
             break;

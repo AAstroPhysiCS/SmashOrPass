@@ -66,6 +66,11 @@ struct PlayerParticleEffectEvent {
 
 struct NullEvent {};
 
+enum class EventFlow {
+    Passed,
+    Consumed,
+};
+
 using EventPayload = std::variant<KeyEvent,
                                   MouseButtonEvent,
                                   MouseMovedEvent,
@@ -108,6 +113,7 @@ class EventDispatcher final {
     // is application class only!
     std::deque<Event> m_EventQueue;
 
+    friend struct AppCtx;
     friend class Application;
 };
 

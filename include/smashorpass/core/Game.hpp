@@ -17,8 +17,7 @@
 namespace sop {
 
 class Renderer;
-
-struct ApplicationContext;
+struct AppCtx;
 
 struct GameConfig {};
 
@@ -46,7 +45,7 @@ inline static GameConfig loadDefault() {
 
 class Game final {
    public:
-    void OnEvent(const Event& event, ApplicationContext& ctx);
+    void OnEvent(AppCtx& ctx, const Event& event);
     void SetDisplayMetrics(const DisplayMetrics& metrics);
     void GameplayTick(ApplicationState state,
                       double stepSeconds,

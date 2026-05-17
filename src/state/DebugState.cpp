@@ -1,17 +1,18 @@
-#include "smashorpass/layer/DebugLayer.hpp"
+#include "smashorpass/state/DebugState.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlrenderer3.h>
 
 #include "SDL3/SDL.h"
+#include "smashorpass/app/AppCtx.hpp"
 #include "smashorpass/core/Base.hpp"
-#include "smashorpass/platform/Window.hpp"
-#include "smashorpass/rendering/Renderer.hpp"
 
 namespace {
 const char* ApplicationStateName(sop::ApplicationState state) {
     switch (state) {
+        case sop::ApplicationState::None:
+            return "None";
         case sop::ApplicationState::MainMenu:
             return "MainMenu";
         case sop::ApplicationState::Playing:
@@ -30,8 +31,7 @@ const char* ApplicationStateName(sop::ApplicationState state) {
 
 namespace sop {
 
-DebugLayer::DebugLayer(Renderer& renderer, const Window& window, EventDispatcher& eventDispatcher)
-    : Layer(renderer, window, eventDispatcher) {
+DebugState::DebugState(AppCtx& ctx) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
@@ -42,26 +42,26 @@ DebugLayer::DebugLayer(Renderer& renderer, const Window& window, EventDispatcher
     ImGui::StyleColorsDark();
 
     const bool sdl3Initialized =
-        ImGui_ImplSDL3_InitForSDLRenderer(window.NativeHandle(), renderer.NativeHandle());
+        ImGui_ImplSDL3_InitForSDLRenderer(ctx.m_Window.NativeHandle(), ctx.m_Renderer.NativeHandle());
     SOP_VERIFY(sdl3Initialized, "Failed to initialize ImGui SDL3 backend");
 
-    const bool rendererInitialized = ImGui_ImplSDLRenderer3_Init(renderer.NativeHandle());
+    const bool rendererInitialized = ImGui_ImplSDLRenderer3_Init(ctx.m_Renderer.NativeHandle());
     SOP_VERIFY(rendererInitialized, "Failed to initialize ImGui SDLRenderer3 backend");
 }
 
-DebugLayer::~DebugLayer() {
+DebugState::~DebugState() {
     ImGui_ImplSDLRenderer3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
 }
 
-void DebugLayer::BeginFrame() {
+void DebugState::BeginFrame() {
     ImGui_ImplSDLRenderer3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 }
 
-void DebugLayer::Draw(ApplicationContext& ctx) {
+void DebugState::Draw(AppCtx& ctx) {
     const ImGuiIO& io = ImGui::GetIO();
     const SDL_FPoint logicalSize = ctx.Display.LogicalSize();
     const double frameMilliseconds = static_cast<double>(io.DeltaTime) * 1000.0;
@@ -93,24 +93,38 @@ void DebugLayer::Draw(ApplicationContext& ctx) {
     ImGui::End();
 }
 
-void DebugLayer::EndFrame() {
-    const auto& renderer = GetRenderer();
-
+void DebugState::EndFrame(AppCtx& ctx) {
     ImGui::Render();
-    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer.NativeHandle());
+    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), ctx.m_Renderer.NativeHandle());
 }
 
-void DebugLayer::OnEvent(const Event& event, ApplicationContext& ctx) {
-    if (event.RawEvent == nullptr)
-        return;
+Result<EventFlow> DebugState::OnEvent(AppCtx&, const Event& event) {
+    if (event.RawEvent == nullptr) {
+        return Ok(EventFlow::Passed);
+    }
+
     ImGui_ImplSDL3_ProcessEvent(event.RawEvent);
+
+    const ImGuiIO& io = ImGui::GetIO();
+    if (IsPointerEventType(event.RawEvent->type) && io.WantCaptureMouse) {
+        return Ok(EventFlow::Consumed);
+    }
+
+    switch (event.RawEvent->type) {
+        case SDL_EVENT_KEY_DOWN:
+        case SDL_EVENT_KEY_UP:
+        case SDL_EVENT_TEXT_INPUT:
+            return Ok(io.WantCaptureKeyboard ? EventFlow::Consumed : EventFlow::Passed);
+        default:
+            return Ok(EventFlow::Passed);
+    }
 }
 
-void DebugLayer::OnUpdate(ApplicationContext&) {}
-
-void DebugLayer::OnRender(ApplicationContext& ctx) {
+Result<void> DebugState::OnRender(AppCtx& ctx) {
     BeginFrame();
     Draw(ctx);
-    EndFrame();
+    EndFrame(ctx);
+    return Ok();
 }
+
 }  // namespace sop

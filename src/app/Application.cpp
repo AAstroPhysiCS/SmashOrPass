@@ -4,234 +4,164 @@
 #include <spdlog/spdlog.h>
 
 #include <chrono>
+#include <memory>
+#include <string>
+#include <variant>
 
 #include "smashorpass/asset/AssetManager.hpp"
-#include "smashorpass/layer/DebugLayer.hpp"
-#include "smashorpass/layer/GameLayer.hpp"
-#include "smashorpass/layer/UILayer.hpp"
+#include "smashorpass/core/Base.hpp"
+#include "smashorpass/state/GameState.hpp"
+#include "smashorpass/state/UIState.hpp"
 
 namespace sop {
 
-Application::Application()
-    : m_Window(
-          WindowCreateInfo{.Width = 1920, .Height = 1080, .Title = "Smash Or Pass - The Game"}),
-      m_Renderer(m_Window) {
-    SOP_VERIFY(m_Renderer.SetVSync(true), "SDL_SetRenderVSync");
+Application::Application() {
+    SOP_VERIFY(ctx.m_Renderer.SetVSync(true), "SDL_SetRenderVSync");
 
-    RefreshDisplayMetrics();
-    m_Context.Assets =
-        std::make_unique<AssetManager>(SOP_ASSET_ROOT_DIR, m_Renderer.NativeHandle());
-    ChangeState(ApplicationState::MainMenu);
-}
-
-Application::~Application() {
-    while (!m_Overlays.empty()) {
-        m_Overlays.pop_back();
+    auto displayMetricsResult = RefreshDisplayMetrics();
+    if (!displayMetricsResult) {
+        SOP_VERIFY(false, displayMetricsResult.error().c_str());
     }
+
+    ctx.Assets =
+        std::make_unique<AssetManager>(SOP_ASSET_ROOT_DIR, ctx.m_Renderer.NativeHandle());
 }
 
-int Application::Run() {
-    using Clock = std::chrono::steady_clock;
+Application::~Application() = default;
 
-    Clock::time_point previousFrameTime = Clock::now();
+Result<void> Application::Run() {
     spdlog::info("Starting the game");
 
-    while (m_Running) {
-        ProcessEvents(m_Running);
-        const Clock::time_point currentFrameTime = Clock::now();
-        const auto elapsed = std::chrono::duration_cast<FixedStepScheduler::Duration>(
-            currentFrameTime - previousFrameTime);
-        previousFrameTime = currentFrameTime;
-
-        if (m_Context.CurrentState == ApplicationState::Playing) {
-            TickGameplay(elapsed);
-            TickAnimation(elapsed);
-
-            float dt = std::chrono::duration<float>(elapsed).count();
-            m_ParticleSystem.Update(dt);
+    while (ctx.AppRunning) {
+        auto result = ProcessEvents();
+        if (!result) {
+            return result;
         }
-
-        Update();
-        Render();
+        result = Update();
+        if (!result) {
+            return result;
+        }
+        result = Render();
+        if (!result) {
+            return result;
+        }
     }
 
     spdlog::info("Shutting down the game");
-    return 0;
+    return Ok();
 }
 
-void Application::ProcessEvents(bool& running) {
-    // SDL events
+Result<void> Application::ProcessEvents() {
     SDL_Event event{};
     while (SDL_PollEvent(&event) != 0) {
         if (IsWindowMetricsEventType(event.type)) {
-            RefreshDisplayMetrics();
-            DispatchEvent(Event{
-                .Payload = WindowMetricsChangedEvent{.Metrics = m_Context.Display},
+            auto result = RefreshDisplayMetrics();
+            if (!result) {
+                return result;
+            }
+
+            result = DispatchEvent(Event{
+                .Payload = WindowMetricsChangedEvent{.Metrics = ctx.m_DisplayMetrics},
                 .RawEvent = nullptr,
             });
+            if (!result) {
+                return result;
+            }
         }
 
         SDL_Event translatedSource = event;
         if (IsPointerEventType(event.type)) {
-            (void)m_Renderer.ConvertEventToRenderCoordinates(translatedSource);
+            if (!ctx.m_Renderer.ConvertEventToRenderCoordinates(translatedSource)) {
+                return Err(std::string("SDL_ConvertEventToRenderCoordinates failed: ") +
+                           SDL_GetError());
+            }
         }
 
         const Event translatedEvent = TranslateSDLEvent(translatedSource, &event);
-        DispatchEvent(translatedEvent);
+        auto result = DispatchEvent(translatedEvent);
+        if (!result) {
+            return result;
+        }
 
         if (event.type == SDL_EVENT_QUIT) {
-            running = false;
+            ctx.AppRunning = false;
         }
     }
 
-    // Custom events
-    while (!m_EventDispatcher.m_EventQueue.empty()) {
-        Event customEvent = std::move(m_EventDispatcher.m_EventQueue.front());
-        m_EventDispatcher.m_EventQueue.pop_front();
-        DispatchEvent(customEvent);
-    }
-}
-
-void Application::TickGameplay(FixedStepScheduler::Duration elapsed) {
-    const uint32_t ticksDue = m_GameplayScheduler.Advance(elapsed);
-    const uint64_t tickBase = m_GameplayScheduler.GetTotalTicks() - static_cast<uint64_t>(ticksDue);
-
-    for (uint32_t tickIndex = 0; tickIndex < ticksDue; ++tickIndex) {
-        m_Context.GameplayTickCount = tickBase + static_cast<uint64_t>(tickIndex) + 1ULL;
-        m_CurrentLayer->OnGameplayTick(m_Context);
-    }
-}
-
-void Application::TickAnimation(FixedStepScheduler::Duration elapsed) {
-    const uint32_t ticksDue = m_AnimationScheduler.Advance(elapsed);
-    const uint64_t tickBase =
-        m_AnimationScheduler.GetTotalTicks() - static_cast<uint64_t>(ticksDue);
-
-    for (uint32_t tickIndex = 0; tickIndex < ticksDue; ++tickIndex) {
-        m_Context.AnimationTickCount = tickBase + static_cast<uint64_t>(tickIndex) + 1ULL;
-        m_CurrentLayer->OnAnimationTick(m_Context);
-    }
-}
-
-void Application::Update() {
-    m_CurrentLayer->OnUpdate(m_Context);
-}
-
-void Application::Render() {
-    m_Renderer.BeginFrame();
-
-    if (m_CurrentLayer != nullptr) {
-        m_CurrentLayer->OnRender(m_Context);
-    }
-
-    if (m_DebugOverlayVisible) {
-        for (const auto& overlay : m_Overlays) {
-            overlay->OnRender(m_Context);
+    while (!ctx.m_EventDispatcher.m_EventQueue.empty()) {
+        Event customEvent = std::move(ctx.m_EventDispatcher.m_EventQueue.front());
+        ctx.m_EventDispatcher.m_EventQueue.pop_front();
+        auto result = DispatchEvent(customEvent);
+        if (!result) {
+            return result;
         }
     }
 
-    m_ParticleSystem.Render(m_Renderer);
-
-    m_Renderer.EndFrame();
+    return Ok();
 }
 
-void Application::DispatchEvent(const Event& event) {
-    OnEvent(event);
-
-    if (m_CurrentLayer != nullptr) {
-        m_CurrentLayer->OnEvent(event, m_Context);
-    }
-
-    if (m_DebugOverlayVisible) {
-        for (const auto& overlay : m_Overlays) {
-            overlay->OnEvent(event, m_Context);
-        }
-    }
+Result<void> Application::Update() {
+    return ctx.m_StateManager.Update(ctx);
 }
 
-void Application::RefreshDisplayMetrics() {
-    m_Context.Display = m_Window.GetDisplayMetrics();
+Result<void> Application::Render() {
+    ctx.m_Renderer.BeginFrame();
+    auto result = ctx.m_StateManager.Render(ctx);
+    ctx.m_Renderer.EndFrame();
+    return result;
+}
 
-    const bool scaleApplied = m_Renderer.ApplyDisplayScale(m_Context.Display.DisplayScale);
+Result<void> Application::DispatchEvent(const Event& event) {
+    if (std::holds_alternative<ApplicationQuitEvent>(event.Payload) ||
+        std::holds_alternative<ApplicationStateChangeEvent>(event.Payload)) {
+        return OnEvent(event);
+    }
+
+    auto result = ctx.m_StateManager.DispatchEvent(ctx, event);
+    if (!result) {
+        return Err(result.error());
+    }
+
+    if (*result == EventFlow::Passed) {
+        return OnEvent(event);
+    }
+    return Ok();
+}
+
+Result<void> Application::RefreshDisplayMetrics() {
+    ctx.m_DisplayMetrics = ctx.m_Window.GetDisplayMetrics();
+
+    const bool scaleApplied = ctx.m_Renderer.ApplyDisplayScale(ctx.m_DisplayMetrics.DisplayScale);
     if (!scaleApplied) {
-        SOP_ASSERT(false, "SDL_SetRenderScale");
+        return Err(std::string("SDL_SetRenderScale failed: ") + SDL_GetError());
     }
+    return Ok();
 }
 
-void Application::OnEvent(const Event& event) {
-    EventDispatcher::Dispatch<ApplicationQuitEvent>(
-        event, [&](const ApplicationQuitEvent& stateEvent) {
-        m_Running = false;
-    });
-
-    EventDispatcher::Dispatch<ApplicationStateChangeEvent>(
-        event, [&](const ApplicationStateChangeEvent& stateEvent) mutable {
-            ChangeState(stateEvent.NextState);
-        });
-
-    EventDispatcher::Dispatch<KeyEvent>(event, [&](const KeyEvent& keyEvent) {
-        if (!keyEvent.Down)
-            return;
-        if (keyEvent.Key == SDLK_F1) {
-            ToggleDebugOverlay();
-            return;
-        }
-        if (keyEvent.Key == SDLK_ESCAPE) {
-            if (m_Context.CurrentState == ApplicationState::Playing) {
-                ChangeState(ApplicationState::Paused);
-            } else if (m_Context.CurrentState == ApplicationState::Paused) {
-                ChangeState(ApplicationState::Playing);
-            }
-        }
-    });
-}
-
-void Application::OnApplicationStageChangeEvent() {
-    const auto CreateLayerForState = [this](ApplicationState state) -> std::unique_ptr<Layer> {
-        switch (state) {
-            case ApplicationState::MainMenu:
-            case ApplicationState::CharacterSelect:
-            case ApplicationState::Paused:
-            case ApplicationState::GameOver: {
-                if (m_CurrentLayer != nullptr &&
-                    dynamic_cast<UILayer*>(m_CurrentLayer.get()) != nullptr) {
-                    return std::move(m_CurrentLayer);
-                }
-                return std::make_unique<UILayer>(m_Renderer, m_Window, m_EventDispatcher);
-            }
-            case ApplicationState::Playing: {
-                // If we're already in a game layer, just reuse it and update the state. This
-                // allows us to keep the game world loaded while pausing, showing game over
-                // screen, etc.
-                if (m_CurrentLayer != nullptr &&
-                    dynamic_cast<GameLayer*>(m_CurrentLayer.get()) != nullptr) {
-                    return std::move(m_CurrentLayer);
-                }
-                return std::make_unique<GameLayer>(m_Renderer, m_Window, m_EventDispatcher);
-            }
-            default:
-                SOP_ASSERT(false, "Unhandled application state");
-                return nullptr;
-        }
-    };
-    spdlog::info("Current state: {}", static_cast<int32_t>(m_Context.CurrentState));
-
-    m_CurrentLayer = CreateLayerForState(m_Context.CurrentState);
-}
-
-void Application::ChangeState(ApplicationState newState) {
-    if (newState == ApplicationState::Playing && m_Context.Assets != nullptr) {
-        (void)m_Context.Assets->getArenaBackgroundTexture(ArenaId::Chains);
-        (void)m_Context.Assets->getArenaForegroundTexture(ArenaId::Chains);
-        m_Context.Assets->preloadCharacterSpriteSheets(kDefaultCharacterId);
+Result<void> Application::OnEvent(const Event& event) {
+    if (std::get_if<ApplicationQuitEvent>(&event.Payload) != nullptr) {
+        ctx.AppRunning = false;
+        return Ok();
     }
 
-    m_Context.CurrentState = newState;
-    OnApplicationStageChangeEvent();
+    if (const auto* stateEvent = std::get_if<ApplicationStateChangeEvent>(&event.Payload)) {
+        return Err(std::string("Application state changes are not implemented yet (requested: ") +
+                   std::to_string(static_cast<int32_t>(stateEvent->NextState)) + ")");
+    }
+
+    if (const auto* keyEvent = std::get_if<KeyEvent>(&event.Payload)) {
+        if (keyEvent->Down && keyEvent->Key == SDLK_F1) {
+            return ToggleDebugOverlay();
+        }
+    }
+
+    return Ok();
 }
 
-void Application::ToggleDebugOverlay() {
-    m_DebugOverlayVisible = !m_DebugOverlayVisible;
-    spdlog::info("Debug overlay {}", m_DebugOverlayVisible ? "enabled" : "disabled");
+Result<void> Application::ToggleDebugOverlay() {
+    ctx.DebugOverlayVisible = !ctx.DebugOverlayVisible;
+    spdlog::info("Debug overlay {}", ctx.DebugOverlayVisible ? "enabled" : "disabled");
+    return Ok();
 }
+
 }  // namespace sop

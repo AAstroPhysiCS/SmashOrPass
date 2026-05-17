@@ -10,8 +10,10 @@ namespace sop {
 UIScreen::UIScreen(ApplicationState stateToRepresent, EventDispatcher& dispatcher)
     : m_ApplicationStateToRepresent(stateToRepresent), m_EventDispatcher(dispatcher) {}
 
-void UIScreen::OnEvent(const Event& event) {
-    EventDispatcher::Dispatch<MouseButtonEvent>(event, [this](const MouseButtonEvent& e) {
+EventFlow UIScreen::OnEvent(const Event& event) {
+    bool consumed = false;
+
+    EventDispatcher::Dispatch<MouseButtonEvent>(event, [this, &consumed](const MouseButtonEvent& e) {
         if (!e.Down)
             return;
         Vec2 mousePos{e.X, e.Y};
@@ -26,10 +28,12 @@ void UIScreen::OnEvent(const Event& event) {
             auto& d = std::get<ButtonData>(w.Data);
             if (d.OnClick)
                 d.OnClick(m_EventDispatcher, d);
+            consumed = true;
+            return;
         }
     });
 
-    EventDispatcher::Dispatch<MouseMovedEvent>(event, [this](const MouseMovedEvent& e) {
+    EventDispatcher::Dispatch<MouseMovedEvent>(event, [this, &consumed](const MouseMovedEvent& e) {
         Vec2 mousePos{e.X, e.Y};
 
         for (UIWidget& w : m_Widgets) {
@@ -38,10 +42,15 @@ void UIScreen::OnEvent(const Event& event) {
 
             const bool hover = PointInRect(mousePos, w.LayoutRect);
             auto& d = std::get<ButtonData>(w.Data);
-            if (hover && d.OnHover)
-                d.OnHover(m_EventDispatcher, d);
+            if (hover) {
+                if (d.OnHover)
+                    d.OnHover(m_EventDispatcher, d);
+                consumed = true;
+            }
         }
     });
+
+    return consumed ? EventFlow::Consumed : EventFlow::Passed;
 }
 
 void UIScreen::OnUpdate() {}

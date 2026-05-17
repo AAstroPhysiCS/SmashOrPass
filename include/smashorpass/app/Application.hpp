@@ -1,16 +1,10 @@
 #pragma once
 
-#include <chrono>
-#include <memory>
+#include <string_view>
 #include <utility>
-#include <vector>
 
-#include "smashorpass/core/ApplicationContext.hpp"
-#include "smashorpass/core/FixedStepScheduler.hpp"
-#include "smashorpass/layer/Layer.hpp"
-#include "smashorpass/platform/Window.hpp"
-#include "smashorpass/rendering/Renderer.hpp"
-#include "smashorpass/rendering/ParticleSystem.hpp"
+#include "smashorpass/app/AppCtx.hpp"
+using namespace sop_util;
 
 namespace sop {
 
@@ -20,40 +14,22 @@ class Application {
     ~Application();
 
     template <typename TOverlay, typename... TArgs>
-    inline void PushOverlay(TArgs&&... args) {
-        m_Overlays.push_back(std::make_unique<TOverlay>(
-            m_Renderer, m_Window, m_EventDispatcher, std::forward<TArgs>(args)...));
+    inline TOverlay& PushOverlay(TArgs&&... args) {
+        return ctx.m_StateManager.PushOverlay<TOverlay>(ctx, std::forward<TArgs>(args)...);
     }
 
-    int Run();
+    Result<void> Run();
 
    private:
-    void ProcessEvents(bool& running);
-    void TickGameplay(FixedStepScheduler::Duration elapsed);
-    void TickAnimation(FixedStepScheduler::Duration elapsed);
-    void Update();
-    void Render();
+    Result<void> ProcessEvents();
+    Result<void> Update();
+    Result<void> Render();
 
-    void DispatchEvent(const Event& event);
-    void RefreshDisplayMetrics();
-    void OnEvent(const Event& event);
-    void OnApplicationStageChangeEvent();
-    void ChangeState(ApplicationState newState);
-    void ToggleDebugOverlay();
+    Result<void> DispatchEvent(const Event& event);
+    Result<void> RefreshDisplayMetrics();
+    Result<void> OnEvent(const Event& event);
+    Result<void> ToggleDebugOverlay();
 
-    /* The order is important! */
-    Window m_Window;
-    Renderer m_Renderer;
-    EventDispatcher m_EventDispatcher;
-
-    ParticleSystem m_ParticleSystem{m_Renderer};
-    ApplicationContext m_Context{ .Particles = m_ParticleSystem };
-    FixedStepScheduler m_GameplayScheduler{120};
-    FixedStepScheduler m_AnimationScheduler{60};
-
-    std::vector<std::unique_ptr<Layer>> m_Overlays;
-    std::unique_ptr<Layer> m_CurrentLayer;
-    bool m_DebugOverlayVisible = false;
-    bool m_Running = true;
+    AppCtx ctx;
 };
 }  // namespace sop

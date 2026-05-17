@@ -30,7 +30,7 @@ class UIScreen {
 
     virtual void Build(UIBuilder& builder) = 0;
 
-    virtual void OnEvent(const Event& event);
+    virtual EventFlow OnEvent(const Event& event);
     virtual void OnUpdate();
     virtual void OnRender(Renderer& renderer);
 

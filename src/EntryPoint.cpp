@@ -1,8 +1,14 @@
+#include <print>
 #include "smashorpass/app/Application.hpp"
-#include "smashorpass/layer/DebugLayer.hpp"
+#include "smashorpass/state/DebugState.hpp"
 
 int main() {
     sop::Application application;
-    application.PushOverlay<sop::DebugLayer>();
-    return application.Run();
+    application.PushOverlay<sop::DebugState>();
+    auto result = application.Run();
+    if (!result) {
+        std::println(stderr, "Application error: {}", result.error());
+        return 1;
+    }
+    return 0;
 }
