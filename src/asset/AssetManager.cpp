@@ -85,11 +85,10 @@ void AppendPath(std::string& paths, const std::filesystem::path& path) {
     return bytes;
 }
 
-Result<SpriteSheetBytes> ReadCharacterSpriteSheetBytes(
-    const std::filesystem::path& assetRootDir,
-    const std::filesystem::path& spritePath,
-    const std::filesystem::path& hitboxPath,
-    const std::filesystem::path& metadataPath) {
+Result<SpriteSheetBytes> ReadCharacterSpriteSheetBytes(const std::filesystem::path& assetRootDir,
+                                                       const std::filesystem::path& spritePath,
+                                                       const std::filesystem::path& hitboxPath,
+                                                       const std::filesystem::path& metadataPath) {
     Result<std::vector<uint8_t>> spriteBytes = ReadBytes(spritePath);
     Result<std::vector<uint8_t>> hitboxBytes = ReadBytes(hitboxPath);
     Result<std::vector<uint8_t>> metadataBytes = ReadBytes(metadataPath);

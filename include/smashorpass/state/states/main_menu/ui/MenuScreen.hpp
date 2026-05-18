@@ -6,7 +6,7 @@ namespace sop {
 
 class MainMenuScreen : public UIScreen {
    public:
-    MainMenuScreen(EventDispatcher& dispatcher);
+    MainMenuScreen(AppCtx& ctx);
     virtual ~MainMenuScreen() = default;
 
     void Build(UIBuilder& builder) final override;

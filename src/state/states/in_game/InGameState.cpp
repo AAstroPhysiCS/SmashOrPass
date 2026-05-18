@@ -23,8 +23,7 @@ constexpr Clock::duration kGameLogicTickDuration =
 constexpr Clock::duration kAnimationTickDuration =
     duration_cast<Clock::duration>(std::chrono::duration<double>(1.0 / kAnimationTicksPerSecond));
 
-InGameState::InGameState(AppCtx& ctx)
-    : m_GameScreen(ctx.m_EventDispatcher), m_PauseScreen(ctx.m_EventDispatcher) {
+InGameState::InGameState(AppCtx& ctx) : m_GameScreen(ctx), m_PauseScreen(ctx) {
     UIBuilder gameScreenBuilder(m_GameScreen);
     m_GameScreen.Build(gameScreenBuilder);
 
@@ -53,14 +52,14 @@ Result<EventFlow> InGameState::OnEvent(AppCtx& ctx, const Event& event) {
     }
 
     if (m_Paused) {
-        const EventFlow pauseUiFlow = m_PauseScreen.OnEvent(event);
+        const EventFlow pauseUiFlow = m_PauseScreen.OnEvent(ctx, event);
         if (pauseUiFlow == EventFlow::Consumed) {
             return Ok(EventFlow::Consumed);
         }
         return Ok(EventFlow::Passed);
     }
 
-    const EventFlow gameUiFlow = m_GameScreen.OnEvent(event);
+    const EventFlow gameUiFlow = m_GameScreen.OnEvent(ctx, event);
     if (gameUiFlow == EventFlow::Consumed) {
         return Ok(EventFlow::Consumed);
     }
@@ -76,7 +75,7 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
     const float dt = std::chrono::duration<float>(elapsed).count();
 
     if (m_Paused) {
-        m_PauseScreen.OnUpdate();
+        m_PauseScreen.OnUpdate(ctx);
         return Ok();
     }
 
@@ -107,7 +106,7 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
         m_PreviousAnimationTick = now;
     }
 
-    m_GameScreen.OnUpdate();
+    m_GameScreen.OnUpdate(ctx);
     ctx.m_ParticleSystem.Update(dt);
 
     return Ok();
@@ -120,11 +119,11 @@ Result<void> InGameState::OnRender(AppCtx& ctx) {
 
     m_Game.SetDisplayMetrics(ctx.m_DisplayMetrics);
     TRY_VOID(m_Game.Render(ctx));
-    TRY_VOID(ctx.m_ParticleSystem.Render(ctx.m_Renderer));
-    TRY_VOID(m_GameScreen.OnRender(ctx.m_Renderer));
+    TRY_VOID(ctx.m_ParticleSystem.Render(ctx));
+    TRY_VOID(m_GameScreen.OnRender(ctx));
 
     if (m_Paused) {
-        TRY_VOID(m_PauseScreen.OnRender(ctx.m_Renderer));
+        TRY_VOID(m_PauseScreen.OnRender(ctx));
     }
 
     return Ok();

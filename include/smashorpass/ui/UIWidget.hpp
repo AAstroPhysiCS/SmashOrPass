@@ -9,7 +9,7 @@ namespace sop {
 using UIWidgetId = uint64_t;
 inline constexpr UIWidgetId g_InvalidWidgetId = std::numeric_limits<UIWidgetId>::max();
 
-class EventDispatcher;
+struct AppCtx;
 
 enum class Alignment : uint8_t {
     TopLeft,
@@ -103,8 +103,8 @@ struct LabelData {
 
 struct ButtonData;
 
-using OnClickFunc = std::function<void(EventDispatcher&, ButtonData&)>;
-using OnHoverFunc = std::function<void(EventDispatcher&, ButtonData&)>;
+using OnClickFunc = std::function<void(AppCtx&, ButtonData&)>;
+using OnHoverFunc = std::function<void(AppCtx&, ButtonData&)>;
 
 struct ButtonData {
     std::string Text;

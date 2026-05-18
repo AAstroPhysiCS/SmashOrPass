@@ -7,6 +7,7 @@
 
 #include "SDL3/SDL_error.h"
 #include "SDL3_image/SDL_image.h"
+#include "smashorpass/core/AppCtx.hpp"
 
 namespace sop {
 
@@ -118,7 +119,9 @@ void ParticleSystem::Update(float dt) {
     }
 }
 
-Result<void> ParticleSystem::Render(Renderer& renderer) {
+Result<void> ParticleSystem::Render(AppCtx& ctx) {
+    Renderer& renderer = ctx.m_Renderer;
+
     if (m_ParticleTexture == nullptr) {
         return Err(std::string("ParticleSystem::Render failed: particle texture is null"));
     }

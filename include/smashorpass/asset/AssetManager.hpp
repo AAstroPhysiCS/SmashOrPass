@@ -99,8 +99,8 @@ class AssetManager {
     AssetManager(AssetManager&&) = delete;
     AssetManager& operator=(AssetManager&&) = delete;
 
-    Result<std::reference_wrapper<const SpriteSheet>> getSpriteSheet(
-        CharacterId character, CharacterAnimation animation);
+    Result<std::reference_wrapper<const SpriteSheet>> getSpriteSheet(CharacterId character,
+                                                                     CharacterAnimation animation);
     Result<SDL_Texture*> getArenaBackgroundTexture(ArenaId arena);
     Result<SDL_Texture*> getArenaForegroundTexture(ArenaId arena);
     Result<std::span<const SDL_FRect>> getArenaCollisionBoxes(ArenaId arena);
@@ -136,8 +136,8 @@ class AssetManager {
         ArenaMetadata Metadata;
     };
 
-    Result<std::reference_wrapper<const SpriteSheet>> loadSpriteSheet(
-        CharacterId character, CharacterAnimation animation);
+    Result<std::reference_wrapper<const SpriteSheet>> loadSpriteSheet(CharacterId character,
+                                                                      CharacterAnimation animation);
     Result<std::reference_wrapper<ArenaAsset>> getArenaAsset(ArenaId arena);
     Result<std::reference_wrapper<ArenaAsset>> loadArenaAsset(ArenaId arena);
 
@@ -148,10 +148,9 @@ class AssetManager {
     LoadCharacterAnimationEffectMasks(CharacterId character,
                                       CharacterAnimation animation,
                                       EffectMaskKind kind);
-    Result<std::vector<FrameEffectMask>> BuildEffectMasks(
-        SDL_Surface* surface,
-        std::span<const SpriteSheetFrame> frames,
-        const EffectMaskDefinition& definition);
+    Result<std::vector<FrameEffectMask>> BuildEffectMasks(SDL_Surface* surface,
+                                                          std::span<const SpriteSheetFrame> frames,
+                                                          const EffectMaskDefinition& definition);
 
     std::filesystem::path m_AssetRootDir;
     SDL_Renderer* m_Renderer = nullptr;

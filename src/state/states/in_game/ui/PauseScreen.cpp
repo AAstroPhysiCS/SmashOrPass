@@ -1,46 +1,48 @@
 #include "smashorpass/state/states/in_game/ui/PauseScreen.hpp"
 
+#include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/core/Event.hpp"
 #include "smashorpass/ui/UIBuilder.hpp"
 #include "spdlog/spdlog.h"
 
 namespace sop {
 
-PauseScreen::PauseScreen(EventDispatcher& dispatcher) : UIScreen(dispatcher) {}
+PauseScreen::PauseScreen(AppCtx& ctx) : UIScreen(ctx) {}
 
 void PauseScreen::Build(UIBuilder& builder) {
-    auto actions =
-        builder.Column()
-            .Spacing(14.0f)
-            .Align(Alignment::TopCenter)
-            .Add(builder.Button("Resume")
-                     .Align(Alignment::TopCenter)
-                     .OnClick([](EventDispatcher& dispatcher, ButtonData&) {
-                         spdlog::info("Resume clicked");
-                         dispatcher.Enqueue(NavigationEvent{NavigationAction::ResumeMatch});
-                     }),
+    auto actions = builder.Column()
+                       .Spacing(14.0f)
+                       .Align(Alignment::TopCenter)
+                       .Add(builder.Button("Resume")
+                                .Align(Alignment::TopCenter)
+                                .OnClick([](AppCtx& ctx, ButtonData&) {
+                                    spdlog::info("Resume clicked");
+                                    ctx.m_EventDispatcher.Enqueue(
+                                        NavigationEvent{NavigationAction::ResumeMatch});
+                                }),
 
-                 builder.Button("Options")
-                     .Align(Alignment::TopCenter)
-                     .OnClick([](EventDispatcher& dispatcher, ButtonData&) {
-                         spdlog::info("Options clicked from pause menu");
-                     }),
+                            builder.Button("Options")
+                                .Align(Alignment::TopCenter)
+                                .OnClick([](AppCtx&, ButtonData&) {
+                                    spdlog::info("Options clicked from pause menu");
+                                }),
 
-                 builder.Button("Main Menu")
-                     .Align(Alignment::TopCenter)
-                     .OnClick([](EventDispatcher& dispatcher, ButtonData&) {
-                         spdlog::info("Main menu clicked from pause menu");
-                         dispatcher.Enqueue(NavigationEvent{NavigationAction::ShowMainMenu});
-                     }),
+                            builder.Button("Main Menu")
+                                .Align(Alignment::TopCenter)
+                                .OnClick([](AppCtx& ctx, ButtonData&) {
+                                    spdlog::info("Main menu clicked from pause menu");
+                                    ctx.m_EventDispatcher.Enqueue(
+                                        NavigationEvent{NavigationAction::ShowMainMenu});
+                                }),
 
-                 builder.Button("Exit")
-                     .Align(Alignment::TopCenter)
-                     .OnClick([](EventDispatcher& dispatcher, ButtonData&) {
-                         spdlog::info("Exit clicked from pause menu");
+                            builder.Button("Exit")
+                                .Align(Alignment::TopCenter)
+                                .OnClick([](AppCtx& ctx, ButtonData&) {
+                                    spdlog::info("Exit clicked from pause menu");
 
-                         // TODO: Later:
-                         dispatcher.Enqueue(ApplicationQuitEvent{});
-                     }));
+                                    // TODO: Later:
+                                    ctx.m_EventDispatcher.Enqueue(ApplicationQuitEvent{});
+                                }));
 
     auto menu =
         builder.Column()

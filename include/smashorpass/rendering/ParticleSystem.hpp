@@ -9,6 +9,8 @@ namespace sop {
 
 using namespace sop_util;
 
+struct AppCtx;
+
 struct Particle {
     Vec2 Position{};
     Vec2 Velocity{};
@@ -63,7 +65,7 @@ class ParticleSystem {
 
     void Clear();
     void Update(float dt);
-    Result<void> Render(Renderer& renderer);
+    Result<void> Render(AppCtx& ctx);
 
    private:
     Particle& GetFreeParticle();

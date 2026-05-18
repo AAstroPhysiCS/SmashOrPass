@@ -1,13 +1,14 @@
 #include "smashorpass/state/states/main_menu/ui/CharacterSelectScreen.hpp"
 
 #include "smashorpass/asset/AssetManager.hpp"
+#include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/core/Event.hpp"
 #include "smashorpass/ui/UIBuilder.hpp"
 #include "spdlog/spdlog.h"
 
 namespace sop {
 
-CharacterSelectScreen::CharacterSelectScreen(EventDispatcher& dispatcher) : UIScreen(dispatcher) {}
+CharacterSelectScreen::CharacterSelectScreen(AppCtx& ctx) : UIScreen(ctx) {}
 
 void CharacterSelectScreen::Build(UIBuilder& builder) {
     const auto CreateCharacterCard = [&](CharacterId character,
@@ -26,15 +27,11 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
                  builder.Label(description).Align(Alignment::TopCenter),
                  builder.Button(p1ButtonText)
                      .Align(Alignment::TopCenter)
-                     .OnClick([this, character](EventDispatcher&, ButtonData& d) {
-                         SelectPlayer1(character);
-                     })
+                     .OnClick([this, character](AppCtx&, ButtonData&) { SelectPlayer1(character); })
                      .TextColor(pickedByP1 ? Theme::PLAYER_1_COLOR : Color{255, 255, 255, 255}),
                  builder.Button(p2ButtonText)
                      .Align(Alignment::TopCenter)
-                     .OnClick([this, character](EventDispatcher&, ButtonData& d) {
-                         SelectPlayer2(character);
-                     })
+                     .OnClick([this, character](AppCtx&, ButtonData&) { SelectPlayer2(character); })
                      .TextColor(pickedByP2 ? Theme::PLAYER_2_COLOR : Color{255, 255, 255, 255}));
     };
 
@@ -51,26 +48,27 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
                                   std::move(tankCard),
                                   std::move(mageCard));
 
-    auto actions =
-        builder.Row()
-            .Spacing(16.0f)
-            .Align(Alignment::TopCenter)
-            .Add(builder.Button("Back")
-                     .Align(Alignment::TopCenter)
-                     .OnClick([](EventDispatcher& dispatcher, ButtonData& d) {
-                         spdlog::info("Back clicked");
-                         dispatcher.Enqueue(NavigationEvent{NavigationAction::ShowMainMenu});
-                     }),
+    auto actions = builder.Row()
+                       .Spacing(16.0f)
+                       .Align(Alignment::TopCenter)
+                       .Add(builder.Button("Back")
+                                .Align(Alignment::TopCenter)
+                                .OnClick([](AppCtx& ctx, ButtonData&) {
+                                    spdlog::info("Back clicked");
+                                    ctx.m_EventDispatcher.Enqueue(
+                                        NavigationEvent{NavigationAction::ShowMainMenu});
+                                }),
 
-                 builder.Button("Start Match")
-                     .Align(Alignment::TopCenter)
-                     .OnClick([this](EventDispatcher& dispatcher, ButtonData& d) {
-                         spdlog::info("Starting match: P1={}, P2={}",
-                                      CharacterName(m_Player1Character),
-                                      CharacterName(m_Player2Character));
+                            builder.Button("Start Match")
+                                .Align(Alignment::TopCenter)
+                                .OnClick([this](AppCtx& ctx, ButtonData&) {
+                                    spdlog::info("Starting match: P1={}, P2={}",
+                                                 CharacterName(m_Player1Character),
+                                                 CharacterName(m_Player2Character));
 
-                         dispatcher.Enqueue(NavigationEvent{NavigationAction::StartMatch});
-                     }));
+                                    ctx.m_EventDispatcher.Enqueue(
+                                        NavigationEvent{NavigationAction::StartMatch});
+                                }));
 
     auto menu = builder.Column().Spacing(22.0f).Add(
         builder.Label("SELECT YOUR FIGHTERS").Align(Alignment::TopCenter),

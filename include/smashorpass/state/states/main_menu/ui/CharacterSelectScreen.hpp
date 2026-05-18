@@ -7,7 +7,7 @@ namespace sop {
 
 class CharacterSelectScreen : public UIScreen {
    public:
-    explicit CharacterSelectScreen(EventDispatcher& dispatcher);
+    explicit CharacterSelectScreen(AppCtx& ctx);
     virtual ~CharacterSelectScreen() = default;
 
     void Build(UIBuilder& builder) override;

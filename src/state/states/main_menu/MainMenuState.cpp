@@ -7,8 +7,7 @@ namespace sop {
 
 using namespace sop_util;
 
-MainMenuState::MainMenuState(AppCtx& ctx)
-    : m_MainMenuScreen(ctx.m_EventDispatcher), m_CharacterSelectScreen(ctx.m_EventDispatcher) {
+MainMenuState::MainMenuState(AppCtx& ctx) : m_MainMenuScreen(ctx), m_CharacterSelectScreen(ctx) {
     UIBuilder mainMenuBuilder(m_MainMenuScreen);
     m_MainMenuScreen.Build(mainMenuBuilder);
 
@@ -16,7 +15,7 @@ MainMenuState::MainMenuState(AppCtx& ctx)
     m_CharacterSelectScreen.Build(characterSelectBuilder);
 }
 
-Result<EventFlow> MainMenuState::OnEvent(AppCtx&, const Event& event) {
+Result<EventFlow> MainMenuState::OnEvent(AppCtx& ctx, const Event& event) {
     if (const auto* navigation = std::get_if<NavigationEvent>(&event.Payload)) {
         switch (navigation->Action) {
             case NavigationAction::ShowMainMenu:
@@ -31,16 +30,16 @@ Result<EventFlow> MainMenuState::OnEvent(AppCtx&, const Event& event) {
         }
     }
 
-    return Ok(ActiveScreen().OnEvent(event));
+    return Ok(ActiveScreen().OnEvent(ctx, event));
 }
 
-Result<void> MainMenuState::OnUpdate(AppCtx&) {
-    ActiveScreen().OnUpdate();
+Result<void> MainMenuState::OnUpdate(AppCtx& ctx) {
+    ActiveScreen().OnUpdate(ctx);
     return Ok();
 }
 
 Result<void> MainMenuState::OnRender(AppCtx& ctx) {
-    return ActiveScreen().OnRender(ctx.m_Renderer);
+    return ActiveScreen().OnRender(ctx);
 }
 
 UIScreen& MainMenuState::ActiveScreen() {

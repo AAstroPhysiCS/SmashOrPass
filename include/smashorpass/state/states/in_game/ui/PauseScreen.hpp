@@ -6,7 +6,7 @@ namespace sop {
 
 class PauseScreen : public UIScreen {
    public:
-    explicit PauseScreen(EventDispatcher& dispatcher);
+    explicit PauseScreen(AppCtx& ctx);
 
     void Build(UIBuilder& builder) override;
 };

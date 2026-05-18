@@ -9,13 +9,13 @@ using namespace sop_util;
 
 class GameScreen : public UIScreen {
    public:
-    GameScreen(EventDispatcher& dispatcher);
+    GameScreen(AppCtx& ctx);
     virtual ~GameScreen() = default;
 
     void Build(UIBuilder& builder) final override;
-    EventFlow OnEvent(const Event& event) final override;
-    void OnUpdate() final override;
-    Result<void> OnRender(Renderer& renderer) final override;
+    EventFlow OnEvent(AppCtx& ctx, const Event& event) final override;
+    void OnUpdate(AppCtx& ctx) final override;
+    Result<void> OnRender(AppCtx& ctx) final override;
 
    private:
     void UpdateHudText();

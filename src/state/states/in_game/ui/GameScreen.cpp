@@ -10,7 +10,7 @@ namespace sop {
 
 using namespace sop_util;
 
-GameScreen::GameScreen(EventDispatcher& dispatcher) : UIScreen(dispatcher) {}
+GameScreen::GameScreen(AppCtx& ctx) : UIScreen(ctx) {}
 
 void GameScreen::Build(UIBuilder& builder) {
     auto p1Label = builder.Label("P1").Font(FontId::Small).TextColor(Color{255, 0, 0, 255});
@@ -38,11 +38,11 @@ void GameScreen::Build(UIBuilder& builder) {
     UpdateHudText();
 }
 
-EventFlow GameScreen::OnEvent(const Event& event) {
-    return UIScreen::OnEvent(event);
+EventFlow GameScreen::OnEvent(AppCtx& ctx, const Event& event) {
+    return UIScreen::OnEvent(ctx, event);
 }
 
-void GameScreen::OnUpdate() {
+void GameScreen::OnUpdate(AppCtx&) {
     if (m_Paused) {
         UpdateHudText();
         return;
@@ -59,8 +59,8 @@ void GameScreen::OnUpdate() {
     UpdateHudText();
 }
 
-Result<void> GameScreen::OnRender(Renderer& renderer) {
-    return UIScreen::OnRender(renderer);
+Result<void> GameScreen::OnRender(AppCtx& ctx) {
+    return UIScreen::OnRender(ctx);
 }
 
 void GameScreen::UpdateHudText() {
