@@ -41,6 +41,7 @@ const State* StateManager::TopState() const {
 }
 
 Result<EventFlow> StateManager::DispatchEvent(AppCtx& ctx, const Event& event) {
+    // TODO: Rethink this should we ever introduce a non debug overlay
     if (ctx.DebugOverlayVisible) {
         for (auto it = m_Overlays.rbegin(); it != m_Overlays.rend(); ++it) {
             TRY(eventFlow, (*it)->OnEvent(ctx, event));
