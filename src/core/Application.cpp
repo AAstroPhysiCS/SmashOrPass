@@ -101,6 +101,8 @@ Result<void> Application::Render() {
 }
 
 Result<void> Application::DispatchEvent(const Event& event) {
+    ctx.m_InputHelper.RecordEvent(ctx, event);
+
     if (std::holds_alternative<ApplicationQuitEvent>(event.Payload)) {
         return OnEvent(event);
     }

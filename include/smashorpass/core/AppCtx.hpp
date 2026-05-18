@@ -5,6 +5,7 @@
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/core/DisplayMetrics.hpp"
 #include "smashorpass/core/Event.hpp"
+#include "smashorpass/core/InputHelper.hpp"
 #include "smashorpass/core/Window.hpp"
 #include "smashorpass/rendering/ParticleSystem.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
@@ -22,6 +23,7 @@ struct AppCtx final {
     Window m_Window;
     Renderer m_Renderer;
     EventDispatcher m_EventDispatcher;
+    InputHelper m_InputHelper;
     ParticleSystem m_ParticleSystem;
 
     std::unique_ptr<AssetManager> Assets;
