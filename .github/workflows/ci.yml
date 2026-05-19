@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+
+      - name: Check formatting
+        run: |
+          find include src \
+            -type f \( -name '*.hpp' -o -name '*.h' -o -name '*.cpp' -o -name '*.cc' -o -name '*.cxx' \) \
+            -print0 | xargs -0 clang-format --dry-run --Werror
+
+  build:
+    name: Build / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-2025-vs2026]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ninja-build \
+            pkg-config \
+            autoconf \
+            autoconf-archive \
+            automake \
+            libtool \
+            libltdl-dev \
+            libx11-dev \
+            libxext-dev \
+            libxrandr-dev \
+            libxrender-dev \
+            libxfixes-dev \
+            libxi-dev \
+            libxcursor-dev \
+            libxinerama-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            libdbus-1-dev \
+            libgl1-mesa-dev
+
+      - name: Restore vcpkg cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/vcpkg
+            ~/AppData/Local/vcpkg/archives
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json', 'CMakeLists.txt', 'CMakePresets.json') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
+
+      - name: Bootstrap Linux
+        if: runner.os == 'Linux'
+        run: ./scripts_linux/bootstrap.sh
+
+      - name: Bootstrap Windows
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: call scripts_windows\bootstrap.bat
+
+      - name: Build Linux
+        if: runner.os == 'Linux'
+        run: ./scripts_linux/build.sh all
+
+      - name: Build Windows
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: call scripts_windows\build.bat all
