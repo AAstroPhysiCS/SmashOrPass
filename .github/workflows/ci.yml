@@ -14,15 +14,20 @@ jobs:
   format:
     name: Format
     runs-on: ubuntu-latest
+    container: archlinux:latest
+
+    defaults:
+      run:
+        shell: bash
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
       - name: Install clang-format
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clang-format
+          pacman -Syu --noconfirm --needed archlinux-keyring
+          pacman -S --noconfirm --needed git clang
+
+      - name: Checkout
+        uses: actions/checkout@v6
 
       - name: Check formatting
         run: |
@@ -30,69 +35,86 @@ jobs:
             -type f \( -name '*.hpp' -o -name '*.h' -o -name '*.cpp' -o -name '*.cc' -o -name '*.cxx' \) \
             -print0 | xargs -0 clang-format --dry-run --Werror
 
-  build:
-    name: Build / ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+  build-linux:
+    name: Build / Arch Linux
+    runs-on: ubuntu-latest
+    container: archlinux:latest
 
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-2025-vs2026]
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Install Linux system dependencies
+        run: |
+          pacman -Syu --noconfirm --needed archlinux-keyring
+          pacman -S --noconfirm --needed \
+            base-devel \
+            git \
+            cmake \
+            ninja \
+            pkgconf \
+            autoconf \
+            autoconf-archive \
+            automake \
+            libtool \
+            zstd \
+            curl \
+            zip \
+            unzip \
+            tar \
+            ca-certificates \
+            libx11 \
+            libxext \
+            libxrandr \
+            libxrender \
+            libxfixes \
+            libxi \
+            libxcursor \
+            libxinerama \
+            wayland \
+            libxkbcommon \
+            dbus \
+            mesa \
+            libxtst
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Restore vcpkg cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/vcpkg
+          key: Linux-vcpkg-${{ hashFiles('vcpkg.json', 'CMakeLists.txt', 'CMakePresets.json') }}
+          restore-keys: |
+            Linux-vcpkg-
+
+      - name: Bootstrap Linux
+        run: ./scripts_linux/bootstrap.sh
+
+      - name: Build Linux
+        run: ./scripts_linux/build.sh all
+
+  build-windows:
+    name: Build / windows-2025-vs2026
+    runs-on: windows-2025-vs2026
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install Linux system dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            ninja-build \
-            pkg-config \
-            autoconf \
-            autoconf-archive \
-            automake \
-            libtool \
-            libltdl-dev \
-            libx11-dev \
-            libxext-dev \
-            libxrandr-dev \
-            libxrender-dev \
-            libxfixes-dev \
-            libxi-dev \
-            libxcursor-dev \
-            libxinerama-dev \
-            libwayland-dev \
-            libxkbcommon-dev \
-            libdbus-1-dev \
-            libgl1-mesa-dev \
-            libxtst-dev
-
       - name: Restore vcpkg cache
         uses: actions/cache@v5
         with:
-          path: |
-            ~/.cache/vcpkg
-            ~/AppData/Local/vcpkg/archives
-          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json', 'CMakeLists.txt', 'CMakePresets.json') }}
+          path: ~/AppData/Local/vcpkg/archives
+          key: Windows-vcpkg-${{ hashFiles('vcpkg.json', 'CMakeLists.txt', 'CMakePresets.json') }}
           restore-keys: |
-            ${{ runner.os }}-vcpkg-
-
-      - name: Bootstrap Linux
-        if: runner.os == 'Linux'
-        run: ./scripts_linux/bootstrap.sh
+            Windows-vcpkg-
 
       - name: Bootstrap Windows
-        if: runner.os == 'Windows'
         shell: cmd
         run: call scripts_windows\bootstrap.bat
 
-      - name: Build Linux
-        if: runner.os == 'Linux'
-        run: ./scripts_linux/build.sh all
-
       - name: Build Windows
-        if: runner.os == 'Windows'
         shell: cmd
         run: call scripts_windows\build.bat all
