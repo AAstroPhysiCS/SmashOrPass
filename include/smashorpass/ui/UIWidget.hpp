@@ -3,6 +3,7 @@
 #include "smashorpass/core/Base.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
 #include "smashorpass/ui/Theme.hpp"
+#include <limits>
 
 namespace sop {
 
