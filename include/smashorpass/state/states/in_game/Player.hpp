@@ -58,12 +58,12 @@ class Player {
            float health,
            InputTranslationHelper<InputAction> inputTranslationHelper);
 
-    sop_util::Result<void> OnEvent(AppCtx& ctx, const Event& event);
+    Result<void> OnEvent(AppCtx& ctx, const Event& event);
     void TickGameLogic(AppCtx& ctx, const Arena& arena);
     void TickAnimations(AppCtx& ctx, const Arena& arena);
     [[nodiscard]] bool IsOnGround(AppCtx& ctx, const Arena& arena) const;
-    sop_util::Result<void> Render(AppCtx& ctx, const Arena& arena) const;
-    sop_util::Result<void> RenderCollisionBox(AppCtx& ctx, const Arena& arena) const;
+    Result<void> Render(AppCtx& ctx, const Arena& arena) const;
+    Result<void> RenderCollisionBox(AppCtx& ctx, const Arena& arena) const;
 };
 
 }  // namespace sop

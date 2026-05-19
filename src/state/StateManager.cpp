@@ -4,8 +4,6 @@
 
 namespace sop {
 
-using namespace sop_util;
-
 StateManager::~StateManager() = default;
 
 void StateManager::PopState() {

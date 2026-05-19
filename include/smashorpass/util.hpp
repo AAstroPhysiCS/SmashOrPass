@@ -8,7 +8,17 @@
 #include <type_traits>
 #include <utility>
 
-namespace sop_util {
+namespace sop {
+
+template <class E>
+constexpr auto Err(E&& error) {
+    return std::unexpected<std::decay_t<E>>(std::forward<E>(error));
+}
+
+template <class T>
+constexpr auto Ok(T&& value) {
+    return std::forward<T>(value);
+}
 
 // ---- RESULT ------------------------------------------------
 
@@ -23,20 +33,26 @@ namespace sop_util {
 // Result is always [[nodiscard]].
 
 // Result, Ok() and Err()
+
 template <class T, class E = std::string>
 struct [[nodiscard("Result must be checked")]] Result : std::expected<T, E> {
-    using std::expected<T, E>::expected;
+    using Base = std::expected<T, E>;
+
+    using Base::Base;
+    using Base::operator bool;
+    using Base::operator=;
+
+    template <class U>
+    Result& operator&=(const Result<U, E>& other) {
+        // Keep existing error if already failed
+        if (!*this)
+            return *this;
+        // Otherwise copy/move failure from other
+        if (!other)
+            *this = Err(other.error());
+        return *this;
+    }
 };
-
-template <class E>
-constexpr auto Err(E&& error) {
-    return std::unexpected<std::decay_t<E>>(std::forward<E>(error));
-}
-
-template <class T>
-constexpr auto Ok(T&& value) {
-    return std::forward<T>(value);
-}
 
 struct OkVoid {
     template <class E = std::string>
@@ -82,9 +98,15 @@ inline Result<void> SdlResult(bool ok, std::string_view operation) {
 #define SOP_UTIL_TRY_IMPL(result_var, value_var, expr)       \
     auto result_var = (expr);                                \
     if (!result_var.has_value()) {                           \
-        return sop_util::Err(std::move(result_var).error()); \
+        return sop::Err(std::move(result_var).error()); \
     }                                                        \
     auto value_var = *std::move(result_var)
+
+#define SOP_UTIL_TRY_AND_IMPL(accumulator, result_var, expr) \
+    do {                                                     \
+        auto result_var = (expr);                            \
+        (accumulator) &= result_var;                         \
+    } while (false)
 
 #define TRY(value_var, expr)                                                            \
     SOP_UTIL_CLANG_SUPPRESS_COUNTER_WARNING                                             \
@@ -95,7 +117,7 @@ inline Result<void> SdlResult(bool ok, std::string_view operation) {
     do {                                                         \
         auto result_var = (expr);                                \
         if (!result_var.has_value()) {                           \
-            return sop_util::Err(std::move(result_var).error()); \
+            return sop::Err(std::move(result_var).error()); \
         }                                                        \
     } while (false)
 
@@ -104,4 +126,9 @@ inline Result<void> SdlResult(bool ok, std::string_view operation) {
     SOP_UTIL_TRY_VOID_IMPL(SOP_UTIL_TRY_CONCAT(_try_result_, __COUNTER__), expr); \
     SOP_UTIL_CLANG_RESTORE_COUNTER_WARNING
 
-}  // namespace sop_util
+#define TRY_AND_VOID(accumulator, expr)                                                       \
+    SOP_UTIL_CLANG_SUPPRESS_COUNTER_WARNING                                                   \
+    SOP_UTIL_TRY_AND_IMPL(accumulator, SOP_UTIL_TRY_CONCAT(_try_result_, __COUNTER__), expr); \
+    SOP_UTIL_CLANG_RESTORE_COUNTER_WARNING
+
+}  // namespace sop

@@ -8,8 +8,6 @@
 
 namespace sop {
 
-using namespace sop_util;
-
 Result<void> Window::Initialize(const WindowCreateInfo& createInfo) {
     m_CreateInfo = createInfo;
 

@@ -8,8 +8,6 @@
 
 namespace sop {
 
-using namespace sop_util;
-
 Renderer::ScopedClip::ScopedClip(Renderer& renderer) : m_Renderer(&renderer) {}
 
 Renderer::ScopedClip::~ScopedClip() {

@@ -14,7 +14,7 @@ namespace sop {
 
 struct AppCtx final {
     AppCtx();
-    sop_util::Result<void> Initialize();
+    Result<void> Initialize();
 
     Window m_Window;
     Renderer m_Renderer;

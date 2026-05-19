@@ -14,18 +14,18 @@ class State {
    public:
     virtual ~State() = default;
 
-    virtual sop_util::Result<void> Initialize(AppCtx& ctx) = 0;
+    virtual Result<void> Initialize(AppCtx& ctx) = 0;
 
     [[nodiscard]] virtual std::string_view DebugName() const = 0;
 
-    virtual sop_util::Result<EventFlow> OnEvent(AppCtx&, const Event&) {
-        return sop_util::Ok(EventFlow::Passed);
+    virtual Result<EventFlow> OnEvent(AppCtx&, const Event&) {
+        return Ok(EventFlow::Passed);
     }
-    virtual sop_util::Result<void> OnUpdate(AppCtx&) {
-        return sop_util::Ok();
+    virtual Result<void> OnUpdate(AppCtx&) {
+        return Ok();
     }
-    virtual sop_util::Result<void> OnRender(AppCtx&) {
-        return sop_util::Ok();
+    virtual Result<void> OnRender(AppCtx&) {
+        return Ok();
     }
 };
 

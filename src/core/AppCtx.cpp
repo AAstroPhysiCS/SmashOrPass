@@ -2,8 +2,6 @@
 
 namespace sop {
 
-using namespace sop_util;
-
 AppCtx::AppCtx() : m_Assets(SOP_ASSET_ROOT_DIR) {}
 
 Result<void> AppCtx::Initialize() {

@@ -27,7 +27,7 @@ inline SDL_FPoint PlayerStartPosition(std::size_t playerIndex) {
     }
 }
 
-inline sop_util::Result<void> FillDefaultInputTranslation(
+inline Result<void> FillDefaultInputTranslation(
     InputTranslationHelper<InputAction>& helper, int player) {
     if (player == 0) {
         // Player 1: WASD
@@ -36,7 +36,7 @@ inline sop_util::Result<void> FillDefaultInputTranslation(
         helper.BindKey(SDLK_W, InputAction::JUMP);
         helper.BindKey(SDLK_LSHIFT, InputAction::DASH);
         helper.BindKey(SDLK_SPACE, InputAction::ATTACK);
-        return sop_util::Ok();
+        return Ok();
     }
 
     if (player == 1) {
@@ -46,10 +46,10 @@ inline sop_util::Result<void> FillDefaultInputTranslation(
         helper.BindKey(SDLK_UP, InputAction::JUMP);
         helper.BindKey(SDLK_RSHIFT, InputAction::DASH);
         helper.BindKey(SDLK_RCTRL, InputAction::ATTACK);
-        return sop_util::Ok();
+        return Ok();
     }
 
-    return sop_util::Err(
+    return Err(
         std::string{"Default Input Translation is not yet supported for player: "} +
         std::to_string(player));
 }

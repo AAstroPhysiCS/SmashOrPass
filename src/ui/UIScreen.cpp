@@ -7,8 +7,6 @@
 
 namespace sop {
 
-using namespace sop_util;
-
 UIScreen::UIScreen(AppCtx&) {}
 
 EventFlow UIScreen::OnEvent(AppCtx& ctx, const Event& event) {

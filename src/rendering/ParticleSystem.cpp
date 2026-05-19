@@ -11,8 +11,6 @@
 
 namespace sop {
 
-using namespace sop_util;
-
 Result<void> ParticleSystem::Initialize(const Renderer& renderer, size_t maxParticles) {
     if (maxParticles == 0) {
         return Err(std::string(

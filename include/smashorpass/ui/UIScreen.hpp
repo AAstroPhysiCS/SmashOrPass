@@ -32,15 +32,15 @@ class UIScreen {
 
     virtual EventFlow OnEvent(AppCtx& ctx, const Event& event);
     virtual void OnUpdate(AppCtx& ctx);
-    virtual sop_util::Result<void> OnRender(AppCtx& ctx);
+    virtual Result<void> OnRender(AppCtx& ctx);
 
     void RebuildUI();
 
    private:
-    sop_util::Result<Vec2> MeasureWidget(AppCtx& ctx, UIWidgetId id);
+    Result<Vec2> MeasureWidget(AppCtx& ctx, UIWidgetId id);
     void LayoutWidget(UIWidgetId id, SDL_FRect rect);
 
-    sop_util::Result<void> RenderWidget(AppCtx& ctx, const UIWidget& widget);
+    Result<void> RenderWidget(AppCtx& ctx, const UIWidget& widget);
 
     bool PointInRect(const Vec2& point, const SDL_FRect& rect) const;
 

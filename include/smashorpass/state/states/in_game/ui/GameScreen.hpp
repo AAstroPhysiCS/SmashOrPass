@@ -25,7 +25,7 @@ class GameScreen : public UIScreen {
     void Build(UIBuilder& builder) final override;
     EventFlow OnEvent(AppCtx& ctx, const Event& event) final override;
     void OnUpdate(AppCtx& ctx) final override;
-    sop_util::Result<void> OnRender(AppCtx& ctx) final override;
+    Result<void> OnRender(AppCtx& ctx) final override;
 
    private:
     void UpdateHudText();

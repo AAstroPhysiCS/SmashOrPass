@@ -79,16 +79,16 @@ class AssetManager {
     AssetManager& operator=(AssetManager&&) = delete;
 
     // Query available assets so everything is runtime and dynamic.
-    sop_util::Result<std::vector<std::string>> AvailableArenaAssets(AppCtx& ctx) const;
-    sop_util::Result<std::vector<std::string>> AvailableCharacterAssets(AppCtx& ctx) const;
+    Result<std::vector<std::string>> AvailableArenaAssets(AppCtx& ctx) const;
+    Result<std::vector<std::string>> AvailableCharacterAssets(AppCtx& ctx) const;
 
     // Actually load assets.
-    sop_util::Result<ArenaAssetHandle> LoadArenaAsset(AppCtx& ctx, std::string_view id);
-    sop_util::Result<CharacterAssetHandle> LoadCharacterAsset(AppCtx& ctx, std::string_view id);
+    Result<ArenaAssetHandle> LoadArenaAsset(AppCtx& ctx, std::string_view id);
+    Result<CharacterAssetHandle> LoadCharacterAsset(AppCtx& ctx, std::string_view id);
 
-    sop_util::Result<std::reference_wrapper<const ArenaAsset>> Get(
+    Result<std::reference_wrapper<const ArenaAsset>> Get(
         const ArenaAssetHandle& handle) const;
-    sop_util::Result<std::reference_wrapper<const CharacterAsset>> Get(
+    Result<std::reference_wrapper<const CharacterAsset>> Get(
         const CharacterAssetHandle& handle) const;
 
     void Update(AppCtx& ctx);
@@ -129,7 +129,7 @@ class AssetManager {
     struct AssetLoadResult {
         AssetLoadKind Kind{};
         std::string Id;
-        sop_util::Result<LoadedAssetData> Loaded;
+        Result<LoadedAssetData> Loaded;
     };
 
     template <typename TAsset>
@@ -146,13 +146,13 @@ class AssetManager {
         std::vector<std::string> CharacterAssetsToDestroy;
     };
 
-    static sop_util::Result<LoadedArenaAsset> LoadArenaAssetFromDisk(
+    static Result<LoadedArenaAsset> LoadArenaAssetFromDisk(
         const std::filesystem::path& assetRootDir, std::string_view id);
-    static sop_util::Result<LoadedCharacterSpriteSheet> LoadCharacterSpriteSheetFromDisk(
+    static Result<LoadedCharacterSpriteSheet> LoadCharacterSpriteSheetFromDisk(
         const std::filesystem::path& assetRootDir,
         std::string_view id,
         CharacterAnimation animation);
-    static sop_util::Result<LoadedCharacterAsset> LoadCharacterAssetFromDisk(
+    static Result<LoadedCharacterAsset> LoadCharacterAssetFromDisk(
         const std::filesystem::path& assetRootDir, std::string_view id);
 
     void WorkerMain(std::stop_token stopToken);

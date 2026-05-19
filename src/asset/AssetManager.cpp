@@ -23,8 +23,6 @@
 
 namespace sop {
 
-using namespace sop_util;
-
 using SurfacePtr = std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)>;
 
 static constexpr std::array kCharacterAnimations{

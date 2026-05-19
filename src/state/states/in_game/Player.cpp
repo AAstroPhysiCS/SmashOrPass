@@ -10,8 +10,6 @@
 
 namespace sop {
 
-using namespace sop_util;
-
 constexpr float kPlayerScale = 0.4f;
 constexpr float kGravity = 0.28f;
 constexpr float kJumpVelocity = -10.0f;

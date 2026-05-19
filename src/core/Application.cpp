@@ -15,25 +15,19 @@
 
 namespace sop {
 
-using namespace sop_util;
+Application::Application() {
+    Result<void> success = Ok();
 
-Application::Application() {}
+    TRY_AND_VOID(success, ctx.Initialize());
+    TRY_AND_VOID(success, ctx.m_Renderer.SetVSync(true));
+    TRY_AND_VOID(success, RefreshDisplayMetrics());
 
-Result<void> Application::Initialize() {
-    TRY_VOID(ctx.Initialize());
-    TRY_VOID(ctx.m_Renderer.SetVSync(true));
-    TRY_VOID(RefreshDisplayMetrics());
+    TRY_AND_VOID(success, ctx.m_StateManager.ResetToState<MainMenuState>(ctx));
+    TRY_AND_VOID(success, ctx.m_StateManager.PushOverlay<DebugState>(ctx));
 
-    TRY(mainMenu, ctx.m_StateManager.ResetToState<MainMenuState>(ctx));
-    (void)mainMenu;
-    TRY(debugOverlay, ctx.m_StateManager.PushOverlay<DebugState>(ctx));
-    (void)debugOverlay;
-
-    m_Initialized = true;
-    return Ok();
+    if (success)
+        m_Initialized = true;
 }
-
-Application::~Application() = default;
 
 Result<void> Application::Run() {
     if (!m_Initialized) {

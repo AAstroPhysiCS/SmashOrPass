@@ -27,13 +27,13 @@ class Window {
     Window(Window&&) = delete;
     Window& operator=(Window&&) = delete;
 
-    sop_util::Result<void> Initialize(const WindowCreateInfo& createInfo);
+    Result<void> Initialize(const WindowCreateInfo& createInfo);
 
-    sop_util::Result<SDL_Point> GetSize() const;
-    sop_util::Result<SDL_Point> GetPixelSize() const;
-    sop_util::Result<float> GetDisplayScale() const;
-    sop_util::Result<float> GetPixelDensity() const;
-    sop_util::Result<DisplayMetrics> GetDisplayMetrics() const;
+    Result<SDL_Point> GetSize() const;
+    Result<SDL_Point> GetPixelSize() const;
+    Result<float> GetDisplayScale() const;
+    Result<float> GetPixelDensity() const;
+    Result<DisplayMetrics> GetDisplayMetrics() const;
 
     [[nodiscard]] inline SDL_Window* NativeHandle() const noexcept {
         return m_NativeHandle;

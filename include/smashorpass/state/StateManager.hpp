@@ -24,27 +24,27 @@ class StateManager {
 
     template <typename TState, typename... TArgs>
         requires IsState<TState>
-    sop_util::Result<std::reference_wrapper<TState>> PushState(AppCtx& ctx, TArgs&&... args) {
+    Result<std::reference_wrapper<TState>> PushState(AppCtx& ctx, TArgs&&... args) {
         auto state = std::make_unique<TState>(ctx, std::forward<TArgs>(args)...);
         TState& ref = *state;
         TRY_VOID(ref.Initialize(ctx));
         m_States.push_back(std::move(state));
-        return sop_util::Ok(std::ref(ref));
+        return Ok(std::ref(ref));
     }
 
     template <typename TState, typename... TArgs>
         requires IsState<TState>
-    sop_util::Result<std::reference_wrapper<TState>> PushOverlay(AppCtx& ctx, TArgs&&... args) {
+    Result<std::reference_wrapper<TState>> PushOverlay(AppCtx& ctx, TArgs&&... args) {
         auto state = std::make_unique<TState>(ctx, std::forward<TArgs>(args)...);
         TState& ref = *state;
         TRY_VOID(ref.Initialize(ctx));
         m_Overlays.push_back(std::move(state));
-        return sop_util::Ok(std::ref(ref));
+        return Ok(std::ref(ref));
     }
 
     template <typename TState, typename... TArgs>
         requires IsState<TState>
-    sop_util::Result<std::reference_wrapper<TState>> ReplaceTopState(AppCtx& ctx, TArgs&&... args) {
+    Result<std::reference_wrapper<TState>> ReplaceTopState(AppCtx& ctx, TArgs&&... args) {
         auto state = std::make_unique<TState>(ctx, std::forward<TArgs>(args)...);
         TState& ref = *state;
         TRY_VOID(ref.Initialize(ctx));
@@ -53,18 +53,18 @@ class StateManager {
         } else {
             m_States.back() = std::move(state);
         }
-        return sop_util::Ok(std::ref(ref));
+        return Ok(std::ref(ref));
     }
 
     template <typename TState, typename... TArgs>
         requires IsState<TState>
-    sop_util::Result<std::reference_wrapper<TState>> ResetToState(AppCtx& ctx, TArgs&&... args) {
+    Result<std::reference_wrapper<TState>> ResetToState(AppCtx& ctx, TArgs&&... args) {
         auto state = std::make_unique<TState>(ctx, std::forward<TArgs>(args)...);
         TState& ref = *state;
         TRY_VOID(ref.Initialize(ctx));
         ClearStates();
         m_States.push_back(std::move(state));
-        return sop_util::Ok(std::ref(ref));
+        return Ok(std::ref(ref));
     }
 
     void PopState();
@@ -87,9 +87,9 @@ class StateManager {
         return dynamic_cast<const TState*>(TopState());
     }
 
-    sop_util::Result<EventFlow> DispatchEvent(AppCtx& ctx, const Event& event);
-    sop_util::Result<void> Update(AppCtx& ctx);
-    sop_util::Result<void> Render(AppCtx& ctx);
+    Result<EventFlow> DispatchEvent(AppCtx& ctx, const Event& event);
+    Result<void> Update(AppCtx& ctx);
+    Result<void> Render(AppCtx& ctx);
 
    private:
     std::vector<std::unique_ptr<State>> m_Overlays;

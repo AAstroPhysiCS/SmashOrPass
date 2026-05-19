@@ -3,6 +3,7 @@
 #include <string_view>
 #include <utility>
 
+#include "spdlog/spdlog.h" // in order to have spdlog in entrypoint... dont want the "client side" to have to include spdlog just for logging in main()
 #include "smashorpass/core/AppCtx.hpp"
 
 namespace sop {
@@ -10,20 +11,18 @@ namespace sop {
 class Application {
    public:
     Application();
-    ~Application();
+    ~Application() = default;
 
-    sop_util::Result<void> Initialize();
-    sop_util::Result<void> Run();
-
+    Result<void> Run();
    private:
-    sop_util::Result<void> ProcessEvents();
-    sop_util::Result<void> Update();
-    sop_util::Result<void> Render();
+    Result<void> ProcessEvents();
+    Result<void> Update();
+    Result<void> Render();
 
-    sop_util::Result<void> DispatchEvent(const Event& event);
-    sop_util::Result<void> RefreshDisplayMetrics();
-    sop_util::Result<void> OnEvent(const Event& event);
-    sop_util::Result<void> ToggleDebugOverlay();
+    Result<void> DispatchEvent(const Event& event);
+    Result<void> RefreshDisplayMetrics();
+    Result<void> OnEvent(const Event& event);
+    Result<void> ToggleDebugOverlay();
 
     AppCtx ctx;
     bool m_Initialized{false};

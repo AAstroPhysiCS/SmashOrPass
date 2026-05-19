@@ -73,86 +73,86 @@ class Renderer final {
     Renderer(Renderer&&) = delete;
     Renderer& operator=(Renderer&&) = delete;
 
-    sop_util::Result<void> Initialize(Window& window, const char* driverName = nullptr);
+    Result<void> Initialize(Window& window, const char* driverName = nullptr);
 
-    sop_util::Result<void> BeginFrame(Color clear = Color{18, 18, 24, 255});
-    sop_util::Result<void> EndFrame();
-    sop_util::Result<void> Flush();
+    Result<void> BeginFrame(Color clear = Color{18, 18, 24, 255});
+    Result<void> EndFrame();
+    Result<void> Flush();
 
-    sop_util::Result<void> SetVSync(bool enabled);
-    sop_util::Result<bool> IsVSync() const;
+    Result<void> SetVSync(bool enabled);
+    Result<bool> IsVSync() const;
 
-    sop_util::Result<void> SetLogicalPresentation(int width,
+    Result<void> SetLogicalPresentation(int width,
                                                   int height,
                                                   SDL_RendererLogicalPresentation mode);
-    sop_util::Result<void> GetLogicalPresentation(int& width,
+    Result<void> GetLogicalPresentation(int& width,
                                                   int& height,
                                                   SDL_RendererLogicalPresentation& mode) const;
-    sop_util::Result<SDL_FRect> GetLogicalPresentationRect() const;
+    Result<SDL_FRect> GetLogicalPresentationRect() const;
 
-    sop_util::Result<void> SetViewport(std::optional<SDL_Rect> rect);
-    sop_util::Result<std::optional<SDL_Rect>> GetViewport() const;
+    Result<void> SetViewport(std::optional<SDL_Rect> rect);
+    Result<std::optional<SDL_Rect>> GetViewport() const;
 
-    sop_util::Result<void> SetClipRect(std::optional<SDL_Rect> rect);
-    sop_util::Result<void> PushClipRect(std::optional<SDL_Rect> rect);
-    sop_util::Result<void> PopClipRect();
-    sop_util::Result<ScopedClip> Clip(std::optional<SDL_Rect> rect) {
+    Result<void> SetClipRect(std::optional<SDL_Rect> rect);
+    Result<void> PushClipRect(std::optional<SDL_Rect> rect);
+    Result<void> PopClipRect();
+    Result<ScopedClip> Clip(std::optional<SDL_Rect> rect) {
         TRY_VOID(PushClipRect(rect));
-        return sop_util::Ok(ScopedClip(*this));
+        return Ok(ScopedClip(*this));
     }
 
-    sop_util::Result<void> SetScale(float x, float y);
-    sop_util::Result<void> ApplyDisplayScale(float displayScale);
-    sop_util::Result<SDL_FPoint> GetScale() const;
+    Result<void> SetScale(float x, float y);
+    Result<void> ApplyDisplayScale(float displayScale);
+    Result<SDL_FPoint> GetScale() const;
 
-    sop_util::Result<void> SetTarget(SDL_Texture* target);
-    sop_util::Result<void> ResetTarget();
+    Result<void> SetTarget(SDL_Texture* target);
+    Result<void> ResetTarget();
     [[nodiscard]] SDL_Texture* GetTarget() const;
 
-    sop_util::Result<SDL_Point> GetOutputSize() const;
-    sop_util::Result<SDL_Point> GetCurrentOutputSize() const;
-    sop_util::Result<SDL_FPoint> GetLogicalOutputSize() const;
-    sop_util::Result<SDL_Rect> GetSafeArea() const;
+    Result<SDL_Point> GetOutputSize() const;
+    Result<SDL_Point> GetCurrentOutputSize() const;
+    Result<SDL_FPoint> GetLogicalOutputSize() const;
+    Result<SDL_Rect> GetSafeArea() const;
 
-    sop_util::Result<void> WindowToRender(float windowX,
+    Result<void> WindowToRender(float windowX,
                                           float windowY,
                                           float& renderX,
                                           float& renderY) const;
-    sop_util::Result<void> RenderToWindow(float renderX,
+    Result<void> RenderToWindow(float renderX,
                                           float renderY,
                                           float& windowX,
                                           float& windowY) const;
-    sop_util::Result<void> ConvertEventToRenderCoordinates(SDL_Event& event) const;
+    Result<void> ConvertEventToRenderCoordinates(SDL_Event& event) const;
 
-    sop_util::Result<void> Clear(Color color);
-    sop_util::Result<void> SetDrawColor(Color color);
-    sop_util::Result<Color> GetDrawColor() const;
-    sop_util::Result<void> SetBlendMode(SDL_BlendMode blendMode);
-    sop_util::Result<SDL_BlendMode> GetBlendMode() const;
+    Result<void> Clear(Color color);
+    Result<void> SetDrawColor(Color color);
+    Result<Color> GetDrawColor() const;
+    Result<void> SetBlendMode(SDL_BlendMode blendMode);
+    Result<SDL_BlendMode> GetBlendMode() const;
 
-    sop_util::Result<void> DrawPoint(float x, float y, Color color);
-    sop_util::Result<void> DrawLine(float x1, float y1, float x2, float y2, Color color);
-    sop_util::Result<void> DrawLines(std::span<const SDL_FPoint> points, Color color);
+    Result<void> DrawPoint(float x, float y, Color color);
+    Result<void> DrawLine(float x1, float y1, float x2, float y2, Color color);
+    Result<void> DrawLines(std::span<const SDL_FPoint> points, Color color);
 
-    sop_util::Result<void> DrawRect(const SDL_FRect& rect, Color color);
-    sop_util::Result<void> DrawRects(std::span<const SDL_FRect> rects, Color color);
-    sop_util::Result<void> FillRect(const SDL_FRect& rect, Color color);
-    sop_util::Result<void> FillRects(std::span<const SDL_FRect> rects, Color color);
+    Result<void> DrawRect(const SDL_FRect& rect, Color color);
+    Result<void> DrawRects(std::span<const SDL_FRect> rects, Color color);
+    Result<void> FillRect(const SDL_FRect& rect, Color color);
+    Result<void> FillRects(std::span<const SDL_FRect> rects, Color color);
 
-    sop_util::Result<void> DrawTexture(SDL_Texture* texture, const SDL_FRect& dst);
-    sop_util::Result<void> DrawTexture(SDL_Texture* texture, const TextureDrawParams& params);
-    sop_util::Result<void> DrawTextureTiled(SDL_Texture* texture,
+    Result<void> DrawTexture(SDL_Texture* texture, const SDL_FRect& dst);
+    Result<void> DrawTexture(SDL_Texture* texture, const TextureDrawParams& params);
+    Result<void> DrawTextureTiled(SDL_Texture* texture,
                                             const TiledTextureDrawParams& params);
-    sop_util::Result<void> DrawTexture9Grid(SDL_Texture* texture, const NineGridDrawParams& params);
+    Result<void> DrawTexture9Grid(SDL_Texture* texture, const NineGridDrawParams& params);
 
-    sop_util::Result<void> DrawGeometry(SDL_Texture* texture,
+    Result<void> DrawGeometry(SDL_Texture* texture,
                                         std::span<const SDL_Vertex> vertices,
                                         std::span<const int> indices = {});
 
-    sop_util::Result<void> DrawText(
+    Result<void> DrawText(
         FontId id, float x, float y, std::string_view text, Color color = Color::White());
 
-    sop_util::Result<SDL_Surface*> ReadPixels(const SDL_Rect* rect = nullptr) const;
+    Result<SDL_Surface*> ReadPixels(const SDL_Rect* rect = nullptr) const;
 
     [[nodiscard]] inline SDL_Renderer* NativeHandle() const {
         return m_NativeHandle;
@@ -171,16 +171,16 @@ class Renderer final {
     static std::optional<SDL_Rect> Intersect(const std::optional<SDL_Rect>& a,
                                              const std::optional<SDL_Rect>& b);
 
-    sop_util::Result<void> ApplyClipStack();
+    Result<void> ApplyClipStack();
 
-    sop_util::Result<TextureStateBackup> BackupTextureState(SDL_Texture* texture) const;
-    sop_util::Result<void> RestoreTextureState(SDL_Texture* texture,
+    Result<TextureStateBackup> BackupTextureState(SDL_Texture* texture) const;
+    Result<void> RestoreTextureState(SDL_Texture* texture,
                                                const TextureStateBackup& backup) const;
-    sop_util::Result<void> ApplyTextureState(SDL_Texture* texture,
+    Result<void> ApplyTextureState(SDL_Texture* texture,
                                              Color tint,
                                              SDL_BlendMode blendMode) const;
 
-    sop_util::Result<Vec2> MeasureText(FontId id, std::string_view text);
+    Result<Vec2> MeasureText(FontId id, std::string_view text);
     TTF_Font* GetFontById(FontId id);
 
    private:

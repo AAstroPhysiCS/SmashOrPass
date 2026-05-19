@@ -5,8 +5,6 @@
 
 namespace sop {
 
-using namespace sop_util;
-
 MainMenuState::MainMenuState(AppCtx& ctx) : m_MainMenuScreen(ctx), m_CharacterSelectScreen(ctx) {
     UIBuilder mainMenuBuilder(m_MainMenuScreen);
     m_MainMenuScreen.Build(mainMenuBuilder);

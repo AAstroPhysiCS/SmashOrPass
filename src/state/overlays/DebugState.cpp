@@ -12,8 +12,6 @@
 
 namespace sop {
 
-using namespace sop_util;
-
 DebugState::DebugState(AppCtx&) {}
 
 Result<void> DebugState::Initialize(AppCtx& ctx) {

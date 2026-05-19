@@ -16,8 +16,6 @@ using Clock = std::chrono::steady_clock;
 
 namespace sop {
 
-using namespace sop_util;
-
 constexpr int kGameLogicTicksPerSecond = 120;
 constexpr int kGameLogicMaxCatchUpTicks = 10;
 constexpr int kAnimationTicksPerSecond = 60;
