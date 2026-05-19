@@ -4,7 +4,6 @@
 #include <utility>
 
 #include "smashorpass/core/AppCtx.hpp"
-using namespace sop_util;
 
 namespace sop {
 
@@ -13,18 +12,18 @@ class Application {
     Application();
     ~Application();
 
-    Result<void> Initialize();
-    Result<void> Run();
+    sop_util::Result<void> Initialize();
+    sop_util::Result<void> Run();
 
    private:
-    Result<void> ProcessEvents();
-    Result<void> Update();
-    Result<void> Render();
+    sop_util::Result<void> ProcessEvents();
+    sop_util::Result<void> Update();
+    sop_util::Result<void> Render();
 
-    Result<void> DispatchEvent(const Event& event);
-    Result<void> RefreshDisplayMetrics();
-    Result<void> OnEvent(const Event& event);
-    Result<void> ToggleDebugOverlay();
+    sop_util::Result<void> DispatchEvent(const Event& event);
+    sop_util::Result<void> RefreshDisplayMetrics();
+    sop_util::Result<void> OnEvent(const Event& event);
+    sop_util::Result<void> ToggleDebugOverlay();
 
     AppCtx ctx;
     bool m_Initialized{false};

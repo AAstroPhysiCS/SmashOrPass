@@ -1,11 +1,21 @@
 #pragma once
 
-#include "smashorpass/state/states/in_game/Game.hpp"
+#include <cstdint>
+#include <string>
+
 #include "smashorpass/ui/UIScreen.hpp"
 
 namespace sop {
 
-using namespace sop_util;
+enum class GameMode : uint8_t { Smash, Deathmatch };
+
+struct PlayerMatchState {
+    std::string Name;
+    int HP = 100;
+    int Stocks = 3;
+    int RoundsWon = 0;
+    bool FacingRight = true;
+};
 
 class GameScreen : public UIScreen {
    public:
@@ -15,7 +25,7 @@ class GameScreen : public UIScreen {
     void Build(UIBuilder& builder) final override;
     EventFlow OnEvent(AppCtx& ctx, const Event& event) final override;
     void OnUpdate(AppCtx& ctx) final override;
-    Result<void> OnRender(AppCtx& ctx) final override;
+    sop_util::Result<void> OnRender(AppCtx& ctx) final override;
 
    private:
     void UpdateHudText();

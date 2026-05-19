@@ -16,7 +16,7 @@ void MainMenuScreen::Build(UIBuilder& builder) {
             .Align(Alignment::TopCenter)
             .OnClick([](AppCtx& ctx, ButtonData&) {
                 ctx.m_EventDispatcher.Enqueue(
-                    NavigationEvent{NavigationAction::ShowCharacterSelect});
+                    NavigationEvent{.Action = NavigationAction::ShowCharacterSelect});
             }),
         builder.Button("Options").Align(Alignment::TopCenter).OnClick([](AppCtx&, ButtonData&) {
             spdlog::info("Options clicked");

@@ -18,7 +18,7 @@ void PauseScreen::Build(UIBuilder& builder) {
                                 .OnClick([](AppCtx& ctx, ButtonData&) {
                                     spdlog::info("Resume clicked");
                                     ctx.m_EventDispatcher.Enqueue(
-                                        NavigationEvent{NavigationAction::ResumeMatch});
+                                        NavigationEvent{.Action = NavigationAction::ResumeMatch});
                                 }),
 
                             builder.Button("Options")
@@ -32,7 +32,7 @@ void PauseScreen::Build(UIBuilder& builder) {
                                 .OnClick([](AppCtx& ctx, ButtonData&) {
                                     spdlog::info("Main menu clicked from pause menu");
                                     ctx.m_EventDispatcher.Enqueue(
-                                        NavigationEvent{NavigationAction::ShowMainMenu});
+                                        NavigationEvent{.Action = NavigationAction::ShowMainMenu});
                                 }),
 
                             builder.Button("Exit")

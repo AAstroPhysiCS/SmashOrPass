@@ -7,8 +7,6 @@
 
 namespace sop {
 
-using namespace sop_util;
-
 struct AppCtx;
 
 struct Particle {
@@ -59,13 +57,14 @@ class ParticleSystem {
     ParticleSystem(ParticleSystem&&) = delete;
     ParticleSystem& operator=(ParticleSystem&&) = delete;
 
-    Result<void> Initialize(const Renderer& renderer, size_t maxParticles = std::pow(2, 12));
+    sop_util::Result<void> Initialize(const Renderer& renderer,
+                                      size_t maxParticles = std::pow(2, 12));
 
     void EmitBurst(const ParticleBurstDesc& desc);
 
     void Clear();
     void Update(float dt);
-    Result<void> Render(AppCtx& ctx);
+    sop_util::Result<void> Render(AppCtx& ctx);
 
    private:
     Particle& GetFreeParticle();

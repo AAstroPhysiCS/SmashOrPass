@@ -24,9 +24,6 @@ Result<void> Application::Initialize() {
     TRY_VOID(ctx.m_Renderer.SetVSync(true));
     TRY_VOID(RefreshDisplayMetrics());
 
-    TRY(assets, AssetManager::Create(SOP_ASSET_ROOT_DIR, ctx.m_Renderer.NativeHandle()));
-    ctx.Assets = std::move(assets);
-
     TRY(mainMenu, ctx.m_StateManager.ResetToState<MainMenuState>(ctx));
     (void)mainMenu;
     TRY(debugOverlay, ctx.m_StateManager.PushOverlay<DebugState>(ctx));
@@ -90,6 +87,7 @@ Result<void> Application::ProcessEvents() {
 }
 
 Result<void> Application::Update() {
+    ctx.m_Assets.Update(ctx);
     return ctx.m_StateManager.Update(ctx);
 }
 
@@ -142,15 +140,10 @@ Result<void> Application::OnEvent(const Event& event) {
                 return Ok();
             }
             case NavigationAction::StartMatch: {
-                if (ctx.Assets != nullptr) {
-                    TRY(backgroundTexture, ctx.Assets->getArenaBackgroundTexture(ArenaId::Chains));
-                    (void)backgroundTexture;
-                    TRY(foregroundTexture, ctx.Assets->getArenaForegroundTexture(ArenaId::Chains));
-                    (void)foregroundTexture;
-                    TRY_VOID(ctx.Assets->preloadCharacterSpriteSheets(kDefaultCharacterId));
-                }
                 ctx.m_ParticleSystem.Clear();
-                TRY(inGameState, ctx.m_StateManager.ResetToState<InGameState>(ctx));
+                TRY(inGameState,
+                    ctx.m_StateManager.ResetToState<InGameState>(
+                        ctx, navigation->ArenaAsset, navigation->CharacterAssets));
                 (void)inGameState;
                 return Ok();
             }

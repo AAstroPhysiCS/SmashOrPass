@@ -6,20 +6,20 @@
 
 namespace sop {
 
-using namespace sop_util;
-
 class MainMenuState final : public State {
    public:
     explicit MainMenuState(AppCtx& ctx);
     ~MainMenuState() override = default;
 
+    sop_util::Result<void> Initialize(AppCtx& ctx) final;
+
     [[nodiscard]] std::string_view DebugName() const final {
         return "MainMenu";
     }
 
-    Result<EventFlow> OnEvent(AppCtx& ctx, const Event& event) final;
-    Result<void> OnUpdate(AppCtx& ctx) final;
-    Result<void> OnRender(AppCtx& ctx) final;
+    sop_util::Result<EventFlow> OnEvent(AppCtx& ctx, const Event& event) final;
+    sop_util::Result<void> OnUpdate(AppCtx& ctx) final;
+    sop_util::Result<void> OnRender(AppCtx& ctx) final;
 
    private:
     enum class View {

@@ -19,19 +19,17 @@ void GameScreen::Build(UIBuilder& builder) {
     auto centerLabel = builder.Label("Match").Font(FontId::Small);
     m_CenterLabel = centerLabel.GetId();
 
-    auto animationsWipLabel = builder.Label("ANIMATIONS WIP DONT JUDGE XD").Font(FontId::Small);
-
     auto p2Label = builder.Label("P2").Font(FontId::Small).TextColor(Color{0, 80, 255, 255});
     m_P2Label = p2Label.GetId();
 
     auto hintLabel = builder.Label("ESC = Pause   F1 = Debug").Font(FontId::Small);
     m_BottomHintLabel = hintLabel.GetId();
 
-    auto root = builder.Stack().Add(
-        builder.Align(Alignment::TopLeft, p1Label),
-        builder.Align(Alignment::TopCenter, builder.Column().Add(centerLabel, animationsWipLabel)),
-        builder.Align(Alignment::TopRight, p2Label),
-        builder.Align(Alignment::BottomCenter, hintLabel));
+    auto root =
+        builder.Stack().Add(builder.Align(Alignment::TopLeft, p1Label),
+                            builder.Align(Alignment::TopCenter, builder.Column().Add(centerLabel)),
+                            builder.Align(Alignment::TopRight, p2Label),
+                            builder.Align(Alignment::BottomCenter, hintLabel));
 
     builder.SetRoot(root);
 

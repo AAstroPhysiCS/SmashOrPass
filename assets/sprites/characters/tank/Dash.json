@@ -1,0 +1,38 @@
+{
+  "character": "samurai",
+  "animation": "Dash",
+  "sheet_width": 1024,
+  "sheet_height": 512,
+  "frames": [
+    {
+      "source": "0000.png",
+      "x_left": 2,
+      "x_right": 323,
+      "y_top": 2,
+      "y_bottom": 305,
+      "anchor_x": 37,
+      "anchor_y": -81,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 291,
+        "height": 273
+      }
+    },
+    {
+      "source": "0001.png",
+      "x_left": 329,
+      "x_right": 650,
+      "y_top": 2,
+      "y_bottom": 305,
+      "anchor_x": 37,
+      "anchor_y": -81,
+      "collision_box": {
+        "x": 0,
+        "y": 0,
+        "width": 291,
+        "height": 273
+      }
+    }
+  ]
+}

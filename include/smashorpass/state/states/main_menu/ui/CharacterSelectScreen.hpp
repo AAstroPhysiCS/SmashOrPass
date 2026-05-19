@@ -1,6 +1,9 @@
 #pragma once
 
-#include "smashorpass/asset/AssetManager.hpp"
+#include <string>
+#include <string_view>
+#include <vector>
+
 #include "smashorpass/ui/UIScreen.hpp"
 
 namespace sop {
@@ -13,14 +16,12 @@ class CharacterSelectScreen : public UIScreen {
     void Build(UIBuilder& builder) override;
 
    private:
-    CharacterId m_Player1Character = CharacterId::Samurai;
-    CharacterId m_Player2Character = CharacterId::Samurai;
+    std::vector<std::string> m_Characters;
+    std::string m_Player1Character;
+    std::string m_Player2Character;
 
-    ButtonData* m_PlayerP1SelectedButtonData = nullptr;
-    ButtonData* m_PlayerP2SelectedButtonData = nullptr;
-
-    const char* CharacterName(CharacterId character) const;
-    void SelectPlayer1(CharacterId character);
-    void SelectPlayer2(CharacterId character);
+    std::string CharacterName(std::string_view character) const;
+    void SelectPlayer1(std::string character);
+    void SelectPlayer2(std::string character);
 };
 }  // namespace sop

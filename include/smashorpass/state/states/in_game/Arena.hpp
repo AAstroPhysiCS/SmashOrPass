@@ -2,51 +2,52 @@
 
 #include <SDL3/SDL_rect.h>
 
+#include "smashorpass/asset/AssetManager.hpp"
+
 namespace sop {
 
-inline constexpr float kDefaultArenaWidth = 1920.0f;
-inline constexpr float kDefaultArenaHeight = 1080.0f;
-inline constexpr float kArenaAspectRatio = kDefaultArenaWidth / kDefaultArenaHeight;
+struct Arena {
+    ArenaAssetHandle asset;
+    // Rectangular space in the window the arena actually occupies.
+    SDL_Rect dimensions{};
 
-[[nodiscard]] inline SDL_FRect MakeContainedArenaRect(SDL_FPoint logicalSize,
-                                                      float aspectRatio = kArenaAspectRatio) {
-    if (logicalSize.x <= 0.0f || logicalSize.y <= 0.0f || aspectRatio <= 0.0f) {
+    void ResizeToWindow(SDL_FPoint logicalWindowSize) {
+        if (logicalWindowSize.x <= 0.0f || logicalWindowSize.y <= 0.0f) {
+            return;
+        }
+
+        float arenaWidth = logicalWindowSize.x;
+        float arenaHeight = arenaWidth / ARENA_BASELINE_ASPECT_RATIO;
+
+        if (arenaHeight > logicalWindowSize.y) {
+            arenaHeight = logicalWindowSize.y;
+            arenaWidth = arenaHeight * ARENA_BASELINE_ASPECT_RATIO;
+        }
+
+        dimensions = SDL_Rect{
+            static_cast<int>((logicalWindowSize.x - arenaWidth) * 0.5f),
+            static_cast<int>((logicalWindowSize.y - arenaHeight) * 0.5f),
+            static_cast<int>(arenaWidth),
+            static_cast<int>(arenaHeight),
+        };
+    }
+};
+
+[[nodiscard]] inline SDL_FRect MapBaselineRectToArena(const SDL_FRect& baselineRect,
+                                                      const SDL_Rect& arenaRect) {
+    if (arenaRect.w <= 0 || arenaRect.h <= 0) {
         return SDL_FRect{};
     }
 
-    float arenaWidth = logicalSize.x;
-    float arenaHeight = arenaWidth / aspectRatio;
-
-    if (arenaHeight > logicalSize.y) {
-        arenaHeight = logicalSize.y;
-        arenaWidth = arenaHeight * aspectRatio;
-    }
-
-    return SDL_FRect{(logicalSize.x - arenaWidth) * 0.5f,
-                     (logicalSize.y - arenaHeight) * 0.5f,
-                     arenaWidth,
-                     arenaHeight};
-}
-
-[[nodiscard]] inline SDL_FRect MapDesignRectToArena(const SDL_FRect& designRect,
-                                                    const SDL_FRect& arenaRect,
-                                                    SDL_FPoint designSize = SDL_FPoint{
-                                                        kDefaultArenaWidth,
-                                                        kDefaultArenaHeight,
-                                                    }) {
-    if (designSize.x <= 0.0f || designSize.y <= 0.0f || arenaRect.w <= 0.0f ||
-        arenaRect.h <= 0.0f) {
-        return SDL_FRect{};
-    }
-
-    const float scaleX = arenaRect.w / designSize.x;
-    const float scaleY = arenaRect.h / designSize.y;
+    const float scaleX = static_cast<float>(arenaRect.w) / static_cast<float>(ARENA_BASELINE_WIDTH);
+    const float scaleY =
+        static_cast<float>(arenaRect.h) / static_cast<float>(ARENA_BASELINE_HEIGHT);
 
     return SDL_FRect{
-        arenaRect.x + (designRect.x * scaleX),
-        arenaRect.y + (designRect.y * scaleY),
-        designRect.w * scaleX,
-        designRect.h * scaleY,
+        static_cast<float>(arenaRect.x) + baselineRect.x * scaleX,
+        static_cast<float>(arenaRect.y) + baselineRect.y * scaleY,
+        baselineRect.w * scaleX,
+        baselineRect.h * scaleY,
     };
 }
 

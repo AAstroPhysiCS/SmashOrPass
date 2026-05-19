@@ -4,7 +4,7 @@ namespace sop {
 
 using namespace sop_util;
 
-AppCtx::AppCtx() = default;
+AppCtx::AppCtx() : m_Assets(SOP_ASSET_ROOT_DIR) {}
 
 Result<void> AppCtx::Initialize() {
     TRY_VOID(m_Window.Initialize(

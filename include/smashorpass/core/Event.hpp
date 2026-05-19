@@ -4,9 +4,11 @@
 #include <SDL3/SDL_keycode.h>
 
 #include <deque>
+#include <vector>
 
 #include "Base.hpp"
 #include "DisplayMetrics.hpp"
+#include "smashorpass/asset/AssetManager.hpp"
 
 namespace sop {
 
@@ -52,7 +54,9 @@ enum class NavigationAction {
 };
 
 struct NavigationEvent {
-    NavigationAction Action;
+    NavigationAction Action = NavigationAction::ShowMainMenu;
+    ArenaAssetHandle ArenaAsset{};
+    std::vector<CharacterAssetHandle> CharacterAssets{};
 };
 
 struct ApplicationQuitEvent {};

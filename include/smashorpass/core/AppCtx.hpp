@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/core/DisplayMetrics.hpp"
 #include "smashorpass/core/Event.hpp"
@@ -14,11 +12,9 @@
 
 namespace sop {
 
-using namespace sop_util;
-
 struct AppCtx final {
     AppCtx();
-    Result<void> Initialize();
+    sop_util::Result<void> Initialize();
 
     Window m_Window;
     Renderer m_Renderer;
@@ -26,7 +22,7 @@ struct AppCtx final {
     InputHelper m_InputHelper;
     ParticleSystem m_ParticleSystem;
 
-    std::unique_ptr<AssetManager> Assets;
+    AssetManager m_Assets;
     StateManager m_StateManager;
 
     DisplayMetrics m_DisplayMetrics;

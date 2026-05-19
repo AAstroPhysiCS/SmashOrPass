@@ -6,8 +6,6 @@
 
 namespace sop {
 
-using namespace sop_util;
-
 struct AppCtx;
 class UIBuilder;
 
@@ -34,15 +32,15 @@ class UIScreen {
 
     virtual EventFlow OnEvent(AppCtx& ctx, const Event& event);
     virtual void OnUpdate(AppCtx& ctx);
-    virtual Result<void> OnRender(AppCtx& ctx);
+    virtual sop_util::Result<void> OnRender(AppCtx& ctx);
 
     void RebuildUI();
 
    private:
-    Result<Vec2> MeasureWidget(AppCtx& ctx, UIWidgetId id);
+    sop_util::Result<Vec2> MeasureWidget(AppCtx& ctx, UIWidgetId id);
     void LayoutWidget(UIWidgetId id, SDL_FRect rect);
 
-    Result<void> RenderWidget(AppCtx& ctx, const UIWidget& widget);
+    sop_util::Result<void> RenderWidget(AppCtx& ctx, const UIWidget& widget);
 
     bool PointInRect(const Vec2& point, const SDL_FRect& rect) const;
 

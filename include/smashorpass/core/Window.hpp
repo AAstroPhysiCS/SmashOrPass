@@ -11,8 +11,6 @@ struct SDL_Window;
 
 namespace sop {
 
-using namespace sop_util;
-
 struct WindowCreateInfo {
     int32_t Width{800};
     int32_t Height{600};
@@ -29,13 +27,13 @@ class Window {
     Window(Window&&) = delete;
     Window& operator=(Window&&) = delete;
 
-    Result<void> Initialize(const WindowCreateInfo& createInfo);
+    sop_util::Result<void> Initialize(const WindowCreateInfo& createInfo);
 
-    Result<SDL_Point> GetSize() const;
-    Result<SDL_Point> GetPixelSize() const;
-    Result<float> GetDisplayScale() const;
-    Result<float> GetPixelDensity() const;
-    Result<DisplayMetrics> GetDisplayMetrics() const;
+    sop_util::Result<SDL_Point> GetSize() const;
+    sop_util::Result<SDL_Point> GetPixelSize() const;
+    sop_util::Result<float> GetDisplayScale() const;
+    sop_util::Result<float> GetPixelDensity() const;
+    sop_util::Result<DisplayMetrics> GetDisplayMetrics() const;
 
     [[nodiscard]] inline SDL_Window* NativeHandle() const noexcept {
         return m_NativeHandle;

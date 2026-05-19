@@ -1,506 +1,829 @@
 #include "smashorpass/asset/AssetManager.hpp"
 
+#include <SDL3/SDL_pixels.h>
+#include <SDL3/SDL_render.h>
+#include <SDL3/SDL_surface.h>
 #include <SDL3_image/SDL_image.h>
+#include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <array>
-#include <cstdint>
+#include <filesystem>
 #include <format>
 #include <fstream>
-#include <iterator>
-#include <span>
+#include <memory>
+#include <mutex>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
 
-#include "SDL3/SDL.h"
-#include "smashorpass/core/Base.hpp"
-#include "spdlog/spdlog.h"
+#include "smashorpass/core/AppCtx.hpp"
 
 namespace sop {
 
 using namespace sop_util;
 
-namespace {
+using SurfacePtr = std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)>;
 
-struct SpriteSheetBytes {
-    std::vector<uint8_t> Sprite;
-    std::vector<uint8_t> Hitbox;
-    std::vector<uint8_t> Metadata;
+static constexpr std::array kCharacterAnimations{
+    CharacterAnimation::Idle,
+    CharacterAnimation::Walk,
+    CharacterAnimation::Ascending,
+    CharacterAnimation::Falling,
+    CharacterAnimation::Attacks,
+    CharacterAnimation::Dash,
 };
 
-Result<std::vector<uint8_t>> ReadBytes(const std::filesystem::path& path) {
-    std::ifstream file(path, std::ios::binary);
-    if (!file.is_open()) {
-        return Err(std::format("Failed to open asset file: {}", path.string()));
+static std::string_view CharacterAnimationName(CharacterAnimation animation) {
+    switch (animation) {
+        case CharacterAnimation::Idle:
+            return "Idle";
+        case CharacterAnimation::Walk:
+            return "Walk";
+        case CharacterAnimation::Ascending:
+            return "Ascending";
+        case CharacterAnimation::Falling:
+            return "Falling";
+        case CharacterAnimation::Attacks:
+            return "Attacks";
+        case CharacterAnimation::Dash:
+            return "Dash";
     }
 
-    std::vector<uint8_t> bytes{std::istreambuf_iterator<char>(file),
-                               std::istreambuf_iterator<char>()};
-    if (file.bad()) {
-        return Err(std::format("Failed to read asset file: {}", path.string()));
-    }
-
-    return Ok(std::move(bytes));
+    return "Unknown";
 }
 
-void AppendPath(std::string& paths, const std::filesystem::path& path) {
-    if (!paths.empty()) {
-        paths += ", ";
-    }
-
-    paths += path.string();
-}
-
-[[nodiscard]] std::vector<uint8_t> MakeErrorSpriteSheetMetadata() {
-    constexpr std::string_view kMetadata = R"json({
-  "character": "error",
-  "animation": "error",
-  "sheet_width": 2048,
-  "sheet_height": 2048,
-  "frames": [
-    {
-      "source": "ERROR.png",
-      "x_left": 0,
-      "x_right": 482,
-      "y_top": 0,
-      "y_bottom": 482,
-      "anchor_x": 241,
-      "anchor_y": 241,
-      "collision_box": {
-        "x": 0,
-        "y": 0,
-        "width": 482,
-        "height": 482
-      }
-    }
-  ]
-})json";
-
-    std::vector<uint8_t> bytes;
-    bytes.reserve(kMetadata.size());
-    for (const char c : kMetadata) {
-        bytes.push_back(static_cast<uint8_t>(c));
-    }
-    return bytes;
-}
-
-Result<SpriteSheetBytes> ReadCharacterSpriteSheetBytes(const std::filesystem::path& assetRootDir,
-                                                       const std::filesystem::path& spritePath,
-                                                       const std::filesystem::path& hitboxPath,
-                                                       const std::filesystem::path& metadataPath) {
-    Result<std::vector<uint8_t>> spriteBytes = ReadBytes(spritePath);
-    Result<std::vector<uint8_t>> hitboxBytes = ReadBytes(hitboxPath);
-    Result<std::vector<uint8_t>> metadataBytes = ReadBytes(metadataPath);
-
-    if (spriteBytes.has_value() && hitboxBytes.has_value() && metadataBytes.has_value()) {
-        return Ok(SpriteSheetBytes{
-            .Sprite = std::move(*spriteBytes),
-            .Hitbox = std::move(*hitboxBytes),
-            .Metadata = std::move(*metadataBytes),
-        });
-    }
-
-    std::string missingPaths;
-    if (!spriteBytes.has_value()) {
-        AppendPath(missingPaths, spritePath);
-    }
-    if (!hitboxBytes.has_value()) {
-        AppendPath(missingPaths, hitboxPath);
-    }
-    if (!metadataBytes.has_value()) {
-        AppendPath(missingPaths, metadataPath);
-    }
-
-    const std::filesystem::path fallbackPath = assetRootDir / "sprites" / "ERROR.png";
-    spdlog::warn("Missing character sprite sheet asset(s): {}. Using fallback sprite: {}",
-                 missingPaths,
-                 fallbackPath.string());
-
-    TRY(fallbackSpriteBytes, ReadBytes(fallbackPath));
-    std::vector<uint8_t> fallbackHitboxBytes = fallbackSpriteBytes;
-
-    return Ok(SpriteSheetBytes{
-        .Sprite = std::move(fallbackSpriteBytes),
-        .Hitbox = std::move(fallbackHitboxBytes),
-        .Metadata = MakeErrorSpriteSheetMetadata(),
-    });
-}
-
-Result<std::string_view> ArenaBaseName(ArenaId arenaId) {
-    switch (arenaId) {
-        case ArenaId::Chains:
-            return Ok(std::string_view{"chains"});
-    }
-
-    return Err(std::string("Unhandled arena id"));
-}
-
-}  // namespace
-
-Result<std::unique_ptr<AssetManager>> AssetManager::Create(std::filesystem::path assetRootDir,
-                                                           SDL_Renderer* renderer) {
-    if (renderer == nullptr) {
-        return Err(std::string("AssetManager::Create failed: renderer is null"));
-    }
-
-    return Ok(std::unique_ptr<AssetManager>(new AssetManager(std::move(assetRootDir), renderer)));
-}
-
-AssetManager::AssetManager(std::filesystem::path assetRootDir, SDL_Renderer* renderer)
-    : m_AssetRootDir(std::move(assetRootDir)), m_Renderer(renderer) {}
-
-Result<std::reference_wrapper<const SpriteSheet>> AssetManager::getSpriteSheet(
-    CharacterId character, CharacterAnimation animation) {
-    auto characterIt = m_SpriteSheets.find(character);
-    if (characterIt != m_SpriteSheets.end()) {
-        auto animationIt = characterIt->second.find(animation);
-        if (animationIt != characterIt->second.end()) {
-            return Ok(std::cref(animationIt->second));
-        }
-    }
-
-    return loadSpriteSheet(character, animation);
-}
-
-Result<SDL_Texture*> AssetManager::getArenaBackgroundTexture(ArenaId arena) {
-    TRY(asset, getArenaAsset(arena));
-    SDL_Texture* texture = asset.get().BackgroundTexture.get();
+static Result<void> ConfigureArenaTexture(SDL_Texture* texture, std::string_view name) {
     if (texture == nullptr) {
-        return Err(std::string("Arena background texture is null"));
+        return Err(std::format("ConfigureArenaTexture failed: {} texture is null", name));
     }
-    return Ok(texture);
-}
 
-Result<SDL_Texture*> AssetManager::getArenaForegroundTexture(ArenaId arena) {
-    TRY(asset, getArenaAsset(arena));
-    SDL_Texture* texture = asset.get().ForegroundTexture.get();
-    if (texture == nullptr) {
-        return Err(std::string("Arena foreground texture is null"));
-    }
-    return Ok(texture);
-}
-
-Result<std::span<const SDL_FRect>> AssetManager::getArenaCollisionBoxes(ArenaId arena) {
-    TRY(asset, getArenaAsset(arena));
-    return Ok(asset.get().Metadata.getCollisionBoxes());
-}
-
-Result<void> AssetManager::preloadCharacterSpriteSheets(CharacterId character) {
-    constexpr std::array kAnimations{
-        CharacterAnimation::Ascending,
-        CharacterAnimation::Attacks,
-        CharacterAnimation::Dash,
-        CharacterAnimation::Falling,
-        CharacterAnimation::Idle,
-        CharacterAnimation::Walk,
-    };
-
-    for (const CharacterAnimation animation : kAnimations) {
-        TRY(spriteSheet, getSpriteSheet(character, animation));
-        (void)spriteSheet;
-    }
+    TRY_VOID(SdlResult(SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND),
+                       std::string("SDL_SetTextureBlendMode ") + std::string(name)));
+    TRY_VOID(SdlResult(SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST),
+                       std::string("SDL_SetTextureScaleMode ") + std::string(name)));
     return Ok();
 }
 
-Result<std::span<const FrameEffectMask>> AssetManager::GetCharacterAnimationEffectMasks(
-    CharacterId character, CharacterAnimation animation, EffectMaskKind kind) {
-    const CharacterAnimationEffectMaskKey key{
-        .Character = character,
-        .Animation = animation,
-        .Kind = kind,
+static Result<TexturePtr> CreateDefaultArenaTexture(
+    AppCtx& ctx, Uint8 red, Uint8 green, Uint8 blue, Uint8 alpha, std::string_view name) {
+    SurfacePtr surface{
+        SDL_CreateSurface(ARENA_BASELINE_WIDTH, ARENA_BASELINE_HEIGHT, SDL_PIXELFORMAT_RGBA32),
+        SDL_DestroySurface,
     };
-
-    const auto it = m_CharacterAnimationEffectMasks.find(key);
-    if (it != m_CharacterAnimationEffectMasks.end()) {
-        return Ok(std::span<const FrameEffectMask>{it->second.data(), it->second.size()});
+    if (!surface) {
+        return Err(SdlError(std::string("SDL_CreateSurface ") + std::string(name)));
     }
 
-    TRY(masksRef, LoadCharacterAnimationEffectMasks(character, animation, kind));
-    const std::vector<FrameEffectMask>& masks = masksRef.get();
+    TRY_VOID(SdlResult(
+        SDL_FillSurfaceRect(
+            surface.get(), nullptr, SDL_MapSurfaceRGBA(surface.get(), red, green, blue, alpha)),
+        std::string("SDL_FillSurfaceRect ") + std::string(name)));
 
-    return Ok(std::span<const FrameEffectMask>{masks.data(), masks.size()});
-}
-
-Result<std::reference_wrapper<const SpriteSheet>> AssetManager::loadSpriteSheet(
-    CharacterId character, CharacterAnimation animation) {
-    TRY(characterDir, GetCharacterDirName(character));
-    TRY(animationBase, GetAnimationBaseName(animation));
-    const std::filesystem::path basePath = m_AssetRootDir / "sprites" / "characters" /
-                                           std::string{characterDir} / std::string{animationBase};
-
-    TRY(bytes,
-        ReadCharacterSpriteSheetBytes(m_AssetRootDir,
-                                      basePath.string() + ".png",
-                                      basePath.string() + "_boxes.png",
-                                      basePath.string() + ".json"));
-
-    auto& animations = m_SpriteSheets[character];
-    TRY(spriteSheet, SpriteSheet::parse(bytes.Sprite, bytes.Hitbox, bytes.Metadata));
-    TRY_VOID(spriteSheet.createSpriteTexture(m_Renderer));
-
-    auto [it, inserted] = animations.try_emplace(animation, std::move(spriteSheet));
-
-    if (!inserted) {
-        return Err(std::string("Sprite sheet should only be loaded once"));
-    }
-
-    return Ok(std::cref(it->second));
-}
-
-Result<std::reference_wrapper<AssetManager::ArenaAsset>> AssetManager::getArenaAsset(
-    ArenaId arena) {
-    auto it = m_Arenas.find(arena);
-    if (it != m_Arenas.end()) {
-        return Ok(std::ref(it->second));
-    }
-
-    return loadArenaAsset(arena);
-}
-
-Result<std::reference_wrapper<AssetManager::ArenaAsset>> AssetManager::loadArenaAsset(
-    ArenaId arena) {
-    TRY(arenaBaseName, ArenaBaseName(arena));
-    const std::filesystem::path basePath =
-        m_AssetRootDir / "sprites" / "arenas" / std::string{arenaBaseName};
-    const std::filesystem::path backgroundTexturePath = basePath.string() + "_background.png";
-    const std::filesystem::path foregroundTexturePath = basePath.string() + "_foreground.png";
-    const std::filesystem::path metadataPath = basePath.string() + ".json";
-    const std::string backgroundTexturePathString = backgroundTexturePath.string();
-    const std::string foregroundTexturePathString = foregroundTexturePath.string();
-    TRY(metadataBytes, ReadBytes(metadataPath));
-
-    TexturePtr backgroundTexture{IMG_LoadTexture(m_Renderer, backgroundTexturePathString.c_str())};
-    if (backgroundTexture == nullptr) {
-        return Err(std::format("Failed to load arena background texture '{}': {}",
-                               backgroundTexturePathString,
-                               SDL_GetError()));
-    }
-
-    TexturePtr foregroundTexture{IMG_LoadTexture(m_Renderer, foregroundTexturePathString.c_str())};
-    if (foregroundTexture == nullptr) {
-        return Err(std::format("Failed to load arena foreground texture '{}': {}",
-                               foregroundTexturePathString,
-                               SDL_GetError()));
-    }
-
-    TRY(metadata, ArenaMetadata::parse(metadataBytes));
-
-    ArenaAsset arenaAsset{
-        .BackgroundTexture = std::move(backgroundTexture),
-        .ForegroundTexture = std::move(foregroundTexture),
-        .Metadata = std::move(metadata),
+    TexturePtr texture{
+        SDL_CreateTextureFromSurface(ctx.m_Renderer.NativeHandle(), surface.get()),
+        SDL_DestroyTexture,
     };
-
-    auto [it, inserted] = m_Arenas.try_emplace(arena, std::move(arenaAsset));
-    if (!inserted) {
-        return Err(std::string("Arena asset should only be loaded once"));
+    if (!texture) {
+        return Err(SdlError(std::string("SDL_CreateTextureFromSurface ") + std::string(name)));
     }
 
-    return Ok(std::ref(it->second));
+    TRY_VOID(ConfigureArenaTexture(texture.get(), name));
+    return Ok(std::move(texture));
 }
 
-Result<std::string_view> AssetManager::GetCharacterDirName(CharacterId character) const {
-    switch (character) {
-        case CharacterId::Samurai:
-            return Ok(std::string_view{"samurai"});
-        case CharacterId::Brawler:
-            return Ok(std::string_view{"brawler"});
-        case CharacterId::Tank:
-            return Ok(std::string_view{"tank"});
-        case CharacterId::Mage:
-            return Ok(std::string_view{"mage"});
-    }
-    return Err(std::string("Unhandled character id"));
-}
-
-Result<std::string_view> AssetManager::GetAnimationBaseName(CharacterAnimation animation) const {
-    switch (animation) {
-        case CharacterAnimation::Ascending:
-            return Ok(std::string_view{"Ascending"});
-        case CharacterAnimation::Attacks:
-            return Ok(std::string_view{"Attacks"});
-        case CharacterAnimation::Dash:
-            return Ok(std::string_view{"Dash"});
-        case CharacterAnimation::Falling:
-            return Ok(std::string_view{"Falling"});
-        case CharacterAnimation::Idle:
-            return Ok(std::string_view{"Idle"});
-        case CharacterAnimation::Walk:
-            return Ok(std::string_view{"Walk"});
-    }
-
-    return Err(std::string("Unhandled character animation"));
-}
-
-Result<std::reference_wrapper<const std::vector<FrameEffectMask>>>
-AssetManager::LoadCharacterAnimationEffectMasks(CharacterId character,
-                                                CharacterAnimation animation,
-                                                EffectMaskKind kind) {
-    const auto CharacterAnimationBasePath =
-        [&](const std::filesystem::path& assetRootDir,
-            CharacterId character,
-            CharacterAnimation animation) -> Result<std::filesystem::path> {
-        TRY(characterDir, GetCharacterDirName(character));
-        TRY(animationBase, GetAnimationBaseName(animation));
-        return Ok(assetRootDir / "sprites" / "characters" / std::string{characterDir} /
-                  std::string{animationBase});
-    };
-
-    const auto LoadSurfaceFromBytes = [](std::span<const uint8_t> bytes,
-                                         const char* name) -> Result<SDL_Surface*> {
-        SDL_IOStream* io = SDL_IOFromConstMem(bytes.data(), bytes.size());
-        if (io == nullptr) {
-            return Err(std::format("Failed to create IO stream for {}: {}", name, SDL_GetError()));
-        }
-
-        SDL_Surface* surface = IMG_LoadPNG_IO(io);
-        const std::string loadError = surface == nullptr ? SDL_GetError() : "";
-        if (!SDL_CloseIO(io)) {
-            if (surface != nullptr) {
-                SDL_DestroySurface(surface);
-            }
-            return Err(std::format("SDL_CloseIO failed: {}", SDL_GetError()));
-        }
-        if (surface == nullptr) {
-            return Err(std::format("Failed to load PNG surface for {}: {}", name, loadError));
-        }
-
-        return Ok(surface);
-    };
-
-    const auto CreateEffectMaskDefinition =
-        [](EffectMaskKind kind) -> Result<EffectMaskDefinition> {
-        switch (kind) {
-            case EffectMaskKind::SwordGreen:
-                return Ok(EffectMaskDefinition{
-                    .SampleStep = 4,
-                    .PixelPredicate =
-                        [](const EffectMaskPixel& pixel) {
-                            const float r = static_cast<float>(pixel.R);
-                            const float g = static_cast<float>(pixel.G);
-                            const float b = static_cast<float>(pixel.B);
-
-                            return pixel.A > 64 && g > 110.0f && g > r * 1.25f && g > b * 1.25f;
-                        },
-                });
-        }
-        return Err(std::string("Unhandled effect mask kind"));
-    };
-
-    TRY(spriteSheetRef, getSpriteSheet(character, animation));
-    const SpriteSheet& spriteSheet = spriteSheetRef.get();
-    const std::span<const SpriteSheetFrame> frames = spriteSheet.getFrames();
-
-    TRY(basePath, CharacterAnimationBasePath(m_AssetRootDir, character, animation));
-
-    TRY(bytes,
-        ReadCharacterSpriteSheetBytes(m_AssetRootDir,
-                                      basePath.string() + ".png",
-                                      basePath.string() + "_boxes.png",
-                                      basePath.string() + ".json"));
-
-    TRY(rawSpriteSurface, LoadSurfaceFromBytes(bytes.Sprite, "effect mask sprite surface"));
-    std::unique_ptr<SDL_Surface, SdlSurfaceDeleter> spriteSurface{rawSpriteSurface};
-
-    TRY(definition, CreateEffectMaskDefinition(kind));
-
-    TRY(masks, BuildEffectMasks(spriteSurface.get(), frames, definition));
-
-    const CharacterAnimationEffectMaskKey key{
-        .Character = character,
-        .Animation = animation,
-        .Kind = kind,
-    };
-
-    auto [it, inserted] = m_CharacterAnimationEffectMasks.try_emplace(key, std::move(masks));
-
-    if (!inserted) {
-        return Err(std::string("Effect mask should only be loaded once"));
-    }
-
-    return Ok(std::cref(it->second));
-}
-
-Result<std::vector<FrameEffectMask>> AssetManager::BuildEffectMasks(
-    SDL_Surface* surface,
-    std::span<const SpriteSheetFrame> frames,
-    const EffectMaskDefinition& definition) {
+static Result<TexturePtr> CreateArenaTextureFromSurface(AppCtx& ctx,
+                                                        SDL_Surface* surface,
+                                                        std::string_view name) {
     if (surface == nullptr) {
-        return Err(std::string("Effect mask generation requires a valid surface"));
-    }
-    if (definition.SampleStep <= 0) {
-        return Err(std::string("Effect mask sample step must be positive"));
-    }
-    if (definition.PixelPredicate == nullptr) {
-        return Err(std::string("Effect mask requires a pixel predicate"));
+        return Err(std::format("CreateArenaTextureFromSurface failed: {} surface is null", name));
     }
 
-    std::vector<FrameEffectMask> masks;
-    masks.resize(frames.size());
-
-    std::unique_ptr<SDL_Surface, SdlSurfaceDeleter> rgbaSurface{
-        SDL_ConvertSurface(surface, SDL_PIXELFORMAT_RGBA32)};
-    if (rgbaSurface == nullptr) {
-        return Err(std::format("SDL_ConvertSurface failed: {}", SDL_GetError()));
+    TexturePtr texture{
+        SDL_CreateTextureFromSurface(ctx.m_Renderer.NativeHandle(), surface),
+        SDL_DestroyTexture,
+    };
+    if (!texture) {
+        return Err(SdlError(std::string("SDL_CreateTextureFromSurface ") + std::string(name)));
     }
 
-    for (const SpriteSheetFrame& frame : frames) {
-        if (frame.x_right > static_cast<uint32_t>(rgbaSurface->w) ||
-            frame.y_bottom > static_cast<uint32_t>(rgbaSurface->h)) {
-            return Err(std::string("Effect mask frame is outside the sprite surface"));
+    TRY_VOID(ConfigureArenaTexture(texture.get(), name));
+    return Ok(std::move(texture));
+}
+
+static Result<ArenaAsset> CreateDefaultArenaAsset(AppCtx& ctx, std::string id) {
+    TRY(background, CreateDefaultArenaTexture(ctx, 24, 24, 32, 255, "background"));
+    TRY(foreground, CreateDefaultArenaTexture(ctx, 0, 0, 0, 0, "foreground"));
+
+    return Ok(ArenaAsset{
+        .m_Id = std::move(id),
+        .m_Background = std::move(background),
+        .m_Foreground = std::move(foreground),
+        .m_CollisionBoxes =
+            {
+                SDL_FRect{.x = 355.0f, .y = 700.0f, .w = 1210.0f, .h = 40.0f},
+            },
+    });
+}
+
+static Result<void> ConfigureCharacterTexture(SDL_Texture* texture, std::string_view name) {
+    if (texture == nullptr) {
+        return Err(std::format("ConfigureCharacterTexture failed: {} texture is null", name));
+    }
+
+    TRY_VOID(SdlResult(SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND),
+                       std::string("SDL_SetTextureBlendMode ") + std::string(name)));
+    TRY_VOID(SdlResult(SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST),
+                       std::string("SDL_SetTextureScaleMode ") + std::string(name)));
+    return Ok();
+}
+
+static Result<TexturePtr> CreateDefaultCharacterTexture(AppCtx& ctx, std::string_view name) {
+    constexpr int kDefaultCharacterWidth = 60;
+    constexpr int kDefaultCharacterHeight = 400;
+
+    SurfacePtr surface{
+        SDL_CreateSurface(kDefaultCharacterWidth, kDefaultCharacterHeight, SDL_PIXELFORMAT_RGBA32),
+        SDL_DestroySurface,
+    };
+    if (!surface) {
+        return Err(SdlError(std::string("SDL_CreateSurface ") + std::string(name)));
+    }
+
+    TRY_VOID(SdlResult(SDL_FillSurfaceRect(
+                           surface.get(), nullptr, SDL_MapSurfaceRGBA(surface.get(), 0, 0, 0, 255)),
+                       std::string("SDL_FillSurfaceRect ") + std::string(name)));
+
+    TexturePtr texture{
+        SDL_CreateTextureFromSurface(ctx.m_Renderer.NativeHandle(), surface.get()),
+        SDL_DestroyTexture,
+    };
+    if (!texture) {
+        return Err(SdlError(std::string("SDL_CreateTextureFromSurface ") + std::string(name)));
+    }
+
+    TRY_VOID(ConfigureCharacterTexture(texture.get(), name));
+    return Ok(std::move(texture));
+}
+
+static Result<TexturePtr> CreateCharacterTextureFromSurface(AppCtx& ctx,
+                                                            SDL_Surface* surface,
+                                                            std::string_view name) {
+    if (surface == nullptr) {
+        return Err(
+            std::format("CreateCharacterTextureFromSurface failed: {} surface is null", name));
+    }
+
+    TexturePtr texture{
+        SDL_CreateTextureFromSurface(ctx.m_Renderer.NativeHandle(), surface),
+        SDL_DestroyTexture,
+    };
+    if (!texture) {
+        return Err(SdlError(std::string("SDL_CreateTextureFromSurface ") + std::string(name)));
+    }
+
+    TRY_VOID(ConfigureCharacterTexture(texture.get(), name));
+    return Ok(std::move(texture));
+}
+
+static Result<CharacterSpriteSheet> CreateDefaultCharacterSpriteSheet(
+    AppCtx& ctx, CharacterAnimation animation) {
+    TRY(texture, CreateDefaultCharacterTexture(ctx, CharacterAnimationName(animation)));
+
+    CharacterSpriteSheet sheet{};
+    sheet.m_Texture = std::move(texture);
+    sheet.m_Frames.push_back(CharacterSpriteSheetFrame{
+        .m_Location = SDL_FRect{.x = 0.0f, .y = 0.0f, .w = 60.0f, .h = 400.0f},
+        .m_Anchor = SDL_Point{.x = 30, .y = 133},
+        .m_CollisionBox = SDL_FRect{.x = 0.0f, .y = 0.0f, .w = 60.0f, .h = 400.0f},
+    });
+
+    return Ok(std::move(sheet));
+}
+
+static Result<CharacterAsset> CreateDefaultCharacterAsset(AppCtx& ctx, std::string id) {
+    CharacterAsset asset{};
+    asset.m_Id = std::move(id);
+
+    for (const CharacterAnimation animation : kCharacterAnimations) {
+        TRY(sheet, CreateDefaultCharacterSpriteSheet(ctx, animation));
+        asset.m_SpriteSheets.try_emplace(animation, std::move(sheet));
+    }
+
+    return Ok(std::move(asset));
+}
+
+static Result<SurfacePtr> LoadArenaSurface(const std::filesystem::path& path,
+                                           std::string_view name) {
+    const std::string pathString = path.string();
+    SurfacePtr surface{IMG_Load(pathString.c_str()), SDL_DestroySurface};
+    if (!surface) {
+        return Err(
+            std::format("Failed to load arena {} '{}': {}", name, pathString, SDL_GetError()));
+    }
+
+    if (surface->w != ARENA_BASELINE_WIDTH || surface->h != ARENA_BASELINE_HEIGHT) {
+        return Err(std::format("Arena {} '{}' must be {}x{}, got {}x{}",
+                               name,
+                               pathString,
+                               ARENA_BASELINE_WIDTH,
+                               ARENA_BASELINE_HEIGHT,
+                               surface->w,
+                               surface->h));
+    }
+
+    return Ok(std::move(surface));
+}
+
+static Result<std::vector<SDL_FRect>> LoadArenaCollisionBoxes(const std::filesystem::path& path) {
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        return Err(std::format("Failed to open arena metadata '{}'", path.string()));
+    }
+
+    const auto getFloat = [](const nlohmann::json& j, const char* key) {
+        return j.at(key).get<float>();
+    };
+
+    try {
+        const nlohmann::json json = nlohmann::json::parse(file);
+        const auto& collisionsJson = json.at("collisions");
+        if (!collisionsJson.is_array()) {
+            return Err(std::string("Arena metadata collisions field must be an array"));
+        }
+
+        std::vector<SDL_FRect> collisionBoxes;
+        collisionBoxes.reserve(collisionsJson.size());
+
+        for (const auto& collisionJson : collisionsJson) {
+            SDL_FRect box{
+                .x = getFloat(collisionJson, "x"),
+                .y = getFloat(collisionJson, "y"),
+                .w = getFloat(collisionJson, "width"),
+                .h = getFloat(collisionJson, "height"),
+            };
+
+            if (box.w < 0.0f || box.h < 0.0f) {
+                return Err(std::string("Arena collision box cannot be negative"));
+            }
+
+            if (box.x < 0.0f || box.y < 0.0f ||
+                box.x + box.w > static_cast<float>(ARENA_BASELINE_WIDTH) ||
+                box.y + box.h > static_cast<float>(ARENA_BASELINE_HEIGHT)) {
+                return Err(std::string("Arena collision box must be inside the arena baseline"));
+            }
+
+            collisionBoxes.push_back(box);
+        }
+
+        return Ok(std::move(collisionBoxes));
+    } catch (const nlohmann::json::exception& e) {
+        return Err(std::format("Failed to parse arena metadata '{}': {}", path.string(), e.what()));
+    }
+}
+
+static Result<SurfacePtr> LoadCharacterSurface(const std::filesystem::path& path,
+                                               std::string_view name) {
+    const std::string pathString = path.string();
+    SurfacePtr surface{IMG_Load(pathString.c_str()), SDL_DestroySurface};
+    if (!surface) {
+        return Err(
+            std::format("Failed to load character {} '{}': {}", name, pathString, SDL_GetError()));
+    }
+
+    return Ok(std::move(surface));
+}
+
+static Result<std::vector<CharacterSpriteSheetFrame>> LoadCharacterFrames(
+    const std::filesystem::path& path) {
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        return Err(std::format("Failed to open character metadata '{}'", path.string()));
+    }
+
+    const auto getFloat = [](const nlohmann::json& j, const char* key) {
+        return j.at(key).get<float>();
+    };
+    const auto getInt = [](const nlohmann::json& j, const char* key) {
+        return j.at(key).get<int>();
+    };
+
+    try {
+        const nlohmann::json json = nlohmann::json::parse(file);
+        const auto& framesJson = json.at("frames");
+        if (!framesJson.is_array() || framesJson.empty()) {
+            return Err(std::string("Character metadata frames field must be a non-empty array"));
+        }
+
+        std::vector<CharacterSpriteSheetFrame> frames;
+        frames.reserve(framesJson.size());
+
+        for (const auto& frameJson : framesJson) {
+            const float xLeft = getFloat(frameJson, "x_left");
+            const float xRight = getFloat(frameJson, "x_right");
+            const float yTop = getFloat(frameJson, "y_top");
+            const float yBottom = getFloat(frameJson, "y_bottom");
+
+            const auto& collisionBoxJson = frameJson.at("collision_box");
+            frames.push_back(CharacterSpriteSheetFrame{
+                .m_Location =
+                    SDL_FRect{.x = xLeft, .y = yTop, .w = xRight - xLeft, .h = yBottom - yTop},
+                .m_Anchor = SDL_Point{.x = getInt(frameJson, "anchor_x"),
+                                      .y = getInt(frameJson, "anchor_y")},
+                .m_CollisionBox =
+                    SDL_FRect{
+                        .x = getFloat(collisionBoxJson, "x"),
+                        .y = getFloat(collisionBoxJson, "y"),
+                        .w = getFloat(collisionBoxJson, "width"),
+                        .h = getFloat(collisionBoxJson, "height"),
+                    },
+            });
+        }
+
+        return Ok(std::move(frames));
+    } catch (const nlohmann::json::exception& e) {
+        return Err(
+            std::format("Failed to parse character metadata '{}': {}", path.string(), e.what()));
+    }
+}
+
+AssetManager::AssetManager(std::filesystem::path assetRootDir)
+    : m_AssetRootDir(std::move(assetRootDir)),
+      m_DestructionQueues(std::make_shared<DestructionQueueState>()),
+      m_LoadWorker([this](std::stop_token stopToken) { WorkerMain(stopToken); }) {}
+
+AssetManager::~AssetManager() {
+    if (m_LoadWorker.joinable()) {
+        m_LoadWorker.request_stop();
+        m_LoadRequestCv.notify_all();
+    }
+}
+
+Result<AssetManager::LoadedArenaAsset> AssetManager::LoadArenaAssetFromDisk(
+    const std::filesystem::path& assetRootDir, std::string_view id) {
+    if (id.empty()) {
+        return Err(std::string("Arena asset id is empty"));
+    }
+
+    const std::filesystem::path arenaDir = assetRootDir / "sprites" / "arenas" / std::string{id};
+    TRY(background, LoadArenaSurface(arenaDir / "background.png", "background"));
+    TRY(foreground, LoadArenaSurface(arenaDir / "foreground.png", "foreground"));
+    TRY(collisionBoxes, LoadArenaCollisionBoxes(arenaDir / "arena.json"));
+
+    return Ok(LoadedArenaAsset{
+        .Id = std::string{id},
+        .Background = std::move(background),
+        .Foreground = std::move(foreground),
+        .CollisionBoxes = std::move(collisionBoxes),
+    });
+}
+
+Result<AssetManager::LoadedCharacterSpriteSheet> AssetManager::LoadCharacterSpriteSheetFromDisk(
+    const std::filesystem::path& assetRootDir, std::string_view id, CharacterAnimation animation) {
+    const std::string animationName{CharacterAnimationName(animation)};
+    const std::filesystem::path characterDir =
+        assetRootDir / "sprites" / "characters" / std::string{id};
+
+    TRY(surface, LoadCharacterSurface(characterDir / (animationName + ".png"), animationName));
+    TRY(frames, LoadCharacterFrames(characterDir / (animationName + ".json")));
+
+    return Ok(LoadedCharacterSpriteSheet{
+        .Animation = animation,
+        .Surface = std::move(surface),
+        .Frames = std::move(frames),
+    });
+}
+
+Result<AssetManager::LoadedCharacterAsset> AssetManager::LoadCharacterAssetFromDisk(
+    const std::filesystem::path& assetRootDir, std::string_view id) {
+    if (id.empty()) {
+        return Err(std::string("Character asset id is empty"));
+    }
+
+    LoadedCharacterAsset asset{};
+    asset.Id = std::string{id};
+
+    for (const CharacterAnimation animation : kCharacterAnimations) {
+        auto sheet = LoadCharacterSpriteSheetFromDisk(assetRootDir, id, animation);
+        if (!sheet) {
+            spdlog::warn("Failed to load character asset '{}', animation '{}': {}",
+                         id,
+                         CharacterAnimationName(animation),
+                         sheet.error());
+            continue;
+        }
+
+        asset.SpriteSheets.try_emplace(animation, std::move(*sheet));
+    }
+
+    return Ok(std::move(asset));
+}
+
+void AssetManager::WorkerMain(std::stop_token stopToken) {
+    while (!stopToken.stop_requested()) {
+        AssetLoadRequest request{};
+        {
+            std::unique_lock lock(m_LoadRequestMutex);
+            m_LoadRequestCv.wait(lock, [this, &stopToken] {
+                return stopToken.stop_requested() || !m_LoadRequests.empty();
+            });
+
+            if (stopToken.stop_requested()) {
+                m_LoadRequests.clear();
+                return;
+            }
+
+            request = std::move(m_LoadRequests.front());
+            m_LoadRequests.pop_front();
+        }
+
+        Result<LoadedAssetData> loaded = [this, &request]() -> Result<LoadedAssetData> {
+            switch (request.Kind) {
+                case AssetLoadKind::Arena: {
+                    TRY(asset, LoadArenaAssetFromDisk(m_AssetRootDir, request.Id));
+                    return Ok(LoadedAssetData{std::move(asset)});
+                }
+                case AssetLoadKind::Character: {
+                    TRY(asset, LoadCharacterAssetFromDisk(m_AssetRootDir, request.Id));
+                    return Ok(LoadedAssetData{std::move(asset)});
+                }
+            }
+
+            return Err(std::string("Unknown asset load request kind"));
+        }();
+
+        if (stopToken.stop_requested()) {
+            return;
+        }
+
+        {
+            std::lock_guard lock(m_LoadResultMutex);
+            m_LoadResults.push_back(AssetLoadResult{
+                .Kind = request.Kind,
+                .Id = std::move(request.Id),
+                .Loaded = std::move(loaded),
+            });
+        }
+    }
+}
+
+void AssetManager::QueueLoadRequest(AssetLoadKind kind, std::string id) {
+    {
+        std::lock_guard lock(m_LoadRequestMutex);
+        m_LoadRequests.push_back(AssetLoadRequest{.Kind = kind, .Id = std::move(id)});
+    }
+
+    m_LoadRequestCv.notify_one();
+}
+
+void AssetManager::Update(AppCtx& ctx) {
+    ProcessLoadedAssetQueue(ctx);
+    ProcessDestructionQueue();
+}
+
+Result<std::vector<std::string>> AssetManager::AvailableArenaAssets(AppCtx&) const {
+    const std::filesystem::path arenaDir = m_AssetRootDir / "sprites" / "arenas";
+
+    std::error_code ec;
+    const bool arenaDirExists = std::filesystem::exists(arenaDir, ec);
+    if (ec) {
+        return Err(std::format(
+            "Failed to inspect arena asset directory '{}': {}", arenaDir.string(), ec.message()));
+    }
+    if (!arenaDirExists) {
+        return Ok(std::vector<std::string>{});
+    }
+
+    std::vector<std::string> ids;
+    for (std::filesystem::directory_iterator it{arenaDir, ec}, end; !ec && it != end;
+         it.increment(ec)) {
+        if (!it->is_directory(ec) || ec) {
+            continue;
+        }
+
+        const std::string assetId = it->path().filename().string();
+        if (!assetId.empty() && std::ranges::find(ids, assetId) == ids.end()) {
+            ids.push_back(assetId);
         }
     }
 
-    const bool mustLock = SDL_MUSTLOCK(rgbaSurface.get());
-    if (mustLock) {
-        if (!SDL_LockSurface(rgbaSurface.get())) {
-            return Err(std::format("SDL_LockSurface failed: {}", SDL_GetError()));
+    if (ec) {
+        return Err(std::format(
+            "Failed to scan arena asset directory '{}': {}", arenaDir.string(), ec.message()));
+    }
+
+    std::ranges::sort(ids);
+    return Ok(std::move(ids));
+}
+
+Result<std::vector<std::string>> AssetManager::AvailableCharacterAssets(AppCtx&) const {
+    const std::filesystem::path characterDir = m_AssetRootDir / "sprites" / "characters";
+
+    std::error_code ec;
+    const bool characterDirExists = std::filesystem::exists(characterDir, ec);
+    if (ec) {
+        return Err(std::format("Failed to inspect character asset directory '{}': {}",
+                               characterDir.string(),
+                               ec.message()));
+    }
+    if (!characterDirExists) {
+        return Ok(std::vector<std::string>{});
+    }
+
+    std::vector<std::string> ids;
+    for (std::filesystem::directory_iterator it{characterDir, ec}, end; !ec && it != end;
+         it.increment(ec)) {
+        if (!it->is_directory(ec) || ec) {
+            continue;
+        }
+
+        const std::string assetId = it->path().filename().string();
+        if (!assetId.empty() && std::ranges::find(ids, assetId) == ids.end()) {
+            ids.push_back(assetId);
         }
     }
 
-    const auto* pixels = static_cast<const Uint8*>(rgbaSurface->pixels);
+    if (ec) {
+        return Err(std::format("Failed to scan character asset directory '{}': {}",
+                               characterDir.string(),
+                               ec.message()));
+    }
 
-    for (size_t frameIndex = 0; frameIndex < frames.size(); ++frameIndex) {
-        const SpriteSheetFrame& frame = frames[frameIndex];
-        FrameEffectMask& mask = masks[frameIndex];
+    std::ranges::sort(ids);
+    return Ok(std::move(ids));
+}
 
-        for (uint32_t y = frame.y_top; y < frame.y_bottom; y += definition.SampleStep) {
-            for (uint32_t x = frame.x_left; x < frame.x_right; x += definition.SampleStep) {
-                const Uint8* p = pixels + y * rgbaSurface->pitch + x * 4;
+Result<ArenaAssetHandle> AssetManager::LoadArenaAsset(AppCtx& ctx, std::string_view id) {
+    const std::string cacheId{id};
+    ProcessDestructionQueue();
 
-                const EffectMaskPixel pixel{
-                    .R = p[0],
-                    .G = p[1],
-                    .B = p[2],
-                    .A = p[3],
+    std::lock_guard lock(m_AssetLifecycleMutex);
 
-                    .SheetX = x,
-                    .SheetY = y,
+    auto cached = m_ArenaAssets.find(cacheId);
+    if (cached == m_ArenaAssets.end()) {
+        TRY(asset, CreateDefaultArenaAsset(ctx, cacheId));
+        cached = m_ArenaAssets.try_emplace(cacheId, std::move(asset)).first;
+        if (cacheId.empty()) {
+            spdlog::warn("No arena asset id provided. Using fallback arena asset.");
+        } else {
+            QueueLoadRequest(AssetLoadKind::Arena, cacheId);
+        }
+    }
 
-                    .LocalX = x - frame.x_left,
-                    .LocalY = y - frame.y_top,
+    AssetSlot<ArenaAsset>& slot = cached->second;
+    std::shared_ptr<const std::string> handleId = slot.HandleId.lock();
+    if (!handleId) {
+        std::weak_ptr<DestructionQueueState> destroyQueues = m_DestructionQueues;
+        handleId = std::shared_ptr<const std::string>(
+            new std::string(cacheId), [destroyQueues](const std::string* idToDestroy) {
+                if (auto queues = destroyQueues.lock()) {
+                    std::lock_guard queueLock(queues->mutex_destruction_queues);
+                    queues->ArenaAssetsToDestroy.push_back(*idToDestroy);
+                }
+                delete idToDestroy;
+            });
+        slot.HandleId = handleId;
+    }
 
-                    .FrameIndex = frameIndex,
-                };
+    return Ok(ArenaAssetHandle{std::move(handleId)});
+}
 
-                if (!definition.PixelPredicate(pixel)) {
+Result<CharacterAssetHandle> AssetManager::LoadCharacterAsset(AppCtx& ctx, std::string_view id) {
+    const std::string cacheId{id};
+    ProcessDestructionQueue();
+
+    std::lock_guard lock(m_AssetLifecycleMutex);
+
+    auto cached = m_CharacterAssets.find(cacheId);
+    if (cached == m_CharacterAssets.end()) {
+        TRY(asset, CreateDefaultCharacterAsset(ctx, cacheId));
+        cached = m_CharacterAssets.try_emplace(cacheId, std::move(asset)).first;
+        if (cacheId.empty()) {
+            spdlog::warn("No character asset id provided. Using fallback character asset.");
+        } else {
+            QueueLoadRequest(AssetLoadKind::Character, cacheId);
+        }
+    }
+
+    AssetSlot<CharacterAsset>& slot = cached->second;
+    std::shared_ptr<const std::string> handleId = slot.HandleId.lock();
+    if (!handleId) {
+        std::weak_ptr<DestructionQueueState> destroyQueues = m_DestructionQueues;
+        handleId = std::shared_ptr<const std::string>(
+            new std::string(cacheId), [destroyQueues](const std::string* idToDestroy) {
+                if (auto queues = destroyQueues.lock()) {
+                    std::lock_guard queueLock(queues->mutex_destruction_queues);
+                    queues->CharacterAssetsToDestroy.push_back(*idToDestroy);
+                }
+                delete idToDestroy;
+            });
+        slot.HandleId = handleId;
+    }
+
+    return Ok(CharacterAssetHandle{std::move(handleId)});
+}
+
+Result<std::reference_wrapper<const ArenaAsset>> AssetManager::Get(
+    const ArenaAssetHandle& handle) const {
+    if (!handle.m_Id) {
+        return Err(std::string("AssetManager::Get failed: arena asset handle is invalid"));
+    }
+
+    std::lock_guard lock(m_AssetLifecycleMutex);
+
+    const auto asset = m_ArenaAssets.find(*handle.m_Id);
+    if (asset == m_ArenaAssets.end()) {
+        return Err(
+            std::format("AssetManager::Get failed: arena asset '{}' is not loaded", *handle.m_Id));
+    }
+
+    if (asset->second.HandleId.lock() != handle.m_Id) {
+        return Err(std::format(
+            "AssetManager::Get failed: arena asset handle '{}' does not belong to this manager",
+            *handle.m_Id));
+    }
+
+    return Ok(std::cref(asset->second.Asset));
+}
+
+Result<std::reference_wrapper<const CharacterAsset>> AssetManager::Get(
+    const CharacterAssetHandle& handle) const {
+    if (!handle.m_Id) {
+        return Err(std::string("AssetManager::Get failed: character asset handle is invalid"));
+    }
+
+    std::lock_guard lock(m_AssetLifecycleMutex);
+
+    const auto asset = m_CharacterAssets.find(*handle.m_Id);
+    if (asset == m_CharacterAssets.end()) {
+        return Err(std::format("AssetManager::Get failed: character asset '{}' is not loaded",
+                               *handle.m_Id));
+    }
+
+    if (asset->second.HandleId.lock() != handle.m_Id) {
+        return Err(
+            std::format("AssetManager::Get failed: character asset handle '{}' does not "
+                        "belong to this manager",
+                        *handle.m_Id));
+    }
+
+    return Ok(std::cref(asset->second.Asset));
+}
+
+void AssetManager::ProcessLoadedAssetQueue(AppCtx& ctx) {
+    std::deque<AssetLoadResult> loadResults;
+    {
+        std::lock_guard lock(m_LoadResultMutex);
+        loadResults.swap(m_LoadResults);
+    }
+
+    for (AssetLoadResult& result : loadResults) {
+        switch (result.Kind) {
+            case AssetLoadKind::Arena: {
+                {
+                    std::lock_guard lock(m_AssetLifecycleMutex);
+                    const auto asset = m_ArenaAssets.find(result.Id);
+                    if (asset == m_ArenaAssets.end() || asset->second.HandleId.expired()) {
+                        continue;
+                    }
+                }
+
+                if (!result.Loaded) {
+                    spdlog::warn(
+                        "Failed to load arena asset '{}': {}", result.Id, result.Loaded.error());
                     continue;
                 }
 
-                mask.Points.push_back(Vec2{
-                    static_cast<float>(pixel.LocalX),
-                    static_cast<float>(pixel.LocalY),
-                });
+                LoadedArenaAsset* loaded = std::get_if<LoadedArenaAsset>(&*result.Loaded);
+                if (loaded == nullptr) {
+                    spdlog::warn("Failed to load arena asset '{}': worker returned character data",
+                                 result.Id);
+                    continue;
+                }
+
+                auto background =
+                    CreateArenaTextureFromSurface(ctx, loaded->Background.get(), "background");
+                if (!background) {
+                    spdlog::warn(
+                        "Failed to load arena asset '{}': {}", result.Id, background.error());
+                    continue;
+                }
+
+                auto foreground =
+                    CreateArenaTextureFromSurface(ctx, loaded->Foreground.get(), "foreground");
+                if (!foreground) {
+                    spdlog::warn(
+                        "Failed to load arena asset '{}': {}", result.Id, foreground.error());
+                    continue;
+                }
+
+                ArenaAsset arenaAsset{
+                    .m_Id = std::move(loaded->Id),
+                    .m_Background = std::move(*background),
+                    .m_Foreground = std::move(*foreground),
+                    .m_CollisionBoxes = std::move(loaded->CollisionBoxes),
+                };
+
+                std::lock_guard lock(m_AssetLifecycleMutex);
+                const auto asset = m_ArenaAssets.find(result.Id);
+                if (asset == m_ArenaAssets.end() || asset->second.HandleId.expired()) {
+                    continue;
+                }
+
+                asset->second.Asset = std::move(arenaAsset);
+                break;
+            }
+            case AssetLoadKind::Character: {
+                {
+                    std::lock_guard lock(m_AssetLifecycleMutex);
+                    const auto asset = m_CharacterAssets.find(result.Id);
+                    if (asset == m_CharacterAssets.end() || asset->second.HandleId.expired()) {
+                        continue;
+                    }
+                }
+
+                if (!result.Loaded) {
+                    spdlog::warn("Failed to load character asset '{}': {}",
+                                 result.Id,
+                                 result.Loaded.error());
+                    continue;
+                }
+
+                LoadedCharacterAsset* loaded = std::get_if<LoadedCharacterAsset>(&*result.Loaded);
+                if (loaded == nullptr) {
+                    spdlog::warn("Failed to load character asset '{}': worker returned arena data",
+                                 result.Id);
+                    continue;
+                }
+
+                auto characterAssetResult = CreateDefaultCharacterAsset(ctx, std::move(loaded->Id));
+                if (!characterAssetResult) {
+                    spdlog::warn("Failed to create fallback sheets for character asset '{}': {}",
+                                 result.Id,
+                                 characterAssetResult.error());
+                    continue;
+                }
+
+                CharacterAsset characterAsset = std::move(*characterAssetResult);
+                for (auto& [animation, loadedSheet] : loaded->SpriteSheets) {
+                    auto texture = CreateCharacterTextureFromSurface(
+                        ctx, loadedSheet.Surface.get(), CharacterAnimationName(animation));
+                    if (!texture) {
+                        spdlog::warn(
+                            "Failed to create texture for character asset '{}', "
+                            "animation '{}': {}",
+                            result.Id,
+                            CharacterAnimationName(animation),
+                            texture.error());
+                        continue;
+                    }
+
+                    CharacterSpriteSheet sheet{};
+                    sheet.m_Texture = std::move(*texture);
+                    sheet.m_Frames = std::move(loadedSheet.Frames);
+                    characterAsset.m_SpriteSheets.insert_or_assign(animation, std::move(sheet));
+                }
+
+                std::lock_guard lock(m_AssetLifecycleMutex);
+                const auto asset = m_CharacterAssets.find(result.Id);
+                if (asset == m_CharacterAssets.end() || asset->second.HandleId.expired()) {
+                    continue;
+                }
+
+                asset->second.Asset = std::move(characterAsset);
+                break;
             }
         }
     }
+}
 
-    if (mustLock) {
-        SDL_UnlockSurface(rgbaSurface.get());
+void AssetManager::ProcessDestructionQueue() {
+    std::vector<std::string> arenaIds;
+    std::vector<std::string> characterIds;
+
+    {
+        std::lock_guard queueLock(m_DestructionQueues->mutex_destruction_queues);
+        arenaIds.swap(m_DestructionQueues->ArenaAssetsToDestroy);
+        characterIds.swap(m_DestructionQueues->CharacterAssetsToDestroy);
     }
 
-    return Ok(std::move(masks));
+    std::lock_guard lock(m_AssetLifecycleMutex);
+
+    for (const std::string& id : arenaIds) {
+        const auto asset = m_ArenaAssets.find(id);
+        if (asset != m_ArenaAssets.end() && asset->second.HandleId.expired()) {
+            m_ArenaAssets.erase(asset);
+        }
+    }
+
+    for (const std::string& id : characterIds) {
+        const auto asset = m_CharacterAssets.find(id);
+        if (asset != m_CharacterAssets.end() && asset->second.HandleId.expired()) {
+            m_CharacterAssets.erase(asset);
+        }
+    }
 }
 
 }  // namespace sop

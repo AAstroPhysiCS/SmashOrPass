@@ -15,6 +15,10 @@ MainMenuState::MainMenuState(AppCtx& ctx) : m_MainMenuScreen(ctx), m_CharacterSe
     m_CharacterSelectScreen.Build(characterSelectBuilder);
 }
 
+Result<void> MainMenuState::Initialize(AppCtx&) {
+    return Ok();
+}
+
 Result<EventFlow> MainMenuState::OnEvent(AppCtx& ctx, const Event& event) {
     if (const auto* navigation = std::get_if<NavigationEvent>(&event.Payload)) {
         switch (navigation->Action) {

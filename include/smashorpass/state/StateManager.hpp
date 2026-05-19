@@ -1,6 +1,5 @@
 #pragma once
 
-#include <concepts>
 #include <functional>
 #include <memory>
 #include <utility>
@@ -11,18 +10,7 @@
 
 namespace sop {
 
-using namespace sop_util;
-
 struct AppCtx;
-
-namespace detail {
-
-template <typename TState>
-concept HasResultInitialize = requires(TState& state, AppCtx& ctx) {
-    { state.Initialize(ctx) } -> std::same_as<Result<void>>;
-};
-
-}  // namespace detail
 
 class StateManager {
    public:
@@ -36,55 +24,47 @@ class StateManager {
 
     template <typename TState, typename... TArgs>
         requires IsState<TState>
-    Result<std::reference_wrapper<TState>> PushState(AppCtx& ctx, TArgs&&... args) {
+    sop_util::Result<std::reference_wrapper<TState>> PushState(AppCtx& ctx, TArgs&&... args) {
         auto state = std::make_unique<TState>(ctx, std::forward<TArgs>(args)...);
         TState& ref = *state;
-        if constexpr (detail::HasResultInitialize<TState>) {
-            TRY_VOID(ref.Initialize(ctx));
-        }
+        TRY_VOID(ref.Initialize(ctx));
         m_States.push_back(std::move(state));
-        return Ok(std::ref(ref));
+        return sop_util::Ok(std::ref(ref));
     }
 
     template <typename TState, typename... TArgs>
         requires IsState<TState>
-    Result<std::reference_wrapper<TState>> PushOverlay(AppCtx& ctx, TArgs&&... args) {
+    sop_util::Result<std::reference_wrapper<TState>> PushOverlay(AppCtx& ctx, TArgs&&... args) {
         auto state = std::make_unique<TState>(ctx, std::forward<TArgs>(args)...);
         TState& ref = *state;
-        if constexpr (detail::HasResultInitialize<TState>) {
-            TRY_VOID(ref.Initialize(ctx));
-        }
+        TRY_VOID(ref.Initialize(ctx));
         m_Overlays.push_back(std::move(state));
-        return Ok(std::ref(ref));
+        return sop_util::Ok(std::ref(ref));
     }
 
     template <typename TState, typename... TArgs>
         requires IsState<TState>
-    Result<std::reference_wrapper<TState>> ReplaceTopState(AppCtx& ctx, TArgs&&... args) {
+    sop_util::Result<std::reference_wrapper<TState>> ReplaceTopState(AppCtx& ctx, TArgs&&... args) {
         auto state = std::make_unique<TState>(ctx, std::forward<TArgs>(args)...);
         TState& ref = *state;
-        if constexpr (detail::HasResultInitialize<TState>) {
-            TRY_VOID(ref.Initialize(ctx));
-        }
+        TRY_VOID(ref.Initialize(ctx));
         if (m_States.empty()) {
             m_States.push_back(std::move(state));
         } else {
             m_States.back() = std::move(state);
         }
-        return Ok(std::ref(ref));
+        return sop_util::Ok(std::ref(ref));
     }
 
     template <typename TState, typename... TArgs>
         requires IsState<TState>
-    Result<std::reference_wrapper<TState>> ResetToState(AppCtx& ctx, TArgs&&... args) {
+    sop_util::Result<std::reference_wrapper<TState>> ResetToState(AppCtx& ctx, TArgs&&... args) {
         auto state = std::make_unique<TState>(ctx, std::forward<TArgs>(args)...);
         TState& ref = *state;
-        if constexpr (detail::HasResultInitialize<TState>) {
-            TRY_VOID(ref.Initialize(ctx));
-        }
+        TRY_VOID(ref.Initialize(ctx));
         ClearStates();
         m_States.push_back(std::move(state));
-        return Ok(std::ref(ref));
+        return sop_util::Ok(std::ref(ref));
     }
 
     void PopState();
@@ -107,9 +87,9 @@ class StateManager {
         return dynamic_cast<const TState*>(TopState());
     }
 
-    Result<EventFlow> DispatchEvent(AppCtx& ctx, const Event& event);
-    Result<void> Update(AppCtx& ctx);
-    Result<void> Render(AppCtx& ctx);
+    sop_util::Result<EventFlow> DispatchEvent(AppCtx& ctx, const Event& event);
+    sop_util::Result<void> Update(AppCtx& ctx);
+    sop_util::Result<void> Render(AppCtx& ctx);
 
    private:
     std::vector<std::unique_ptr<State>> m_Overlays;
