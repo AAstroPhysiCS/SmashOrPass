@@ -25,10 +25,10 @@ struct KeyPressInfo {
 // ---- GENERAL PURPOSE INPUT HELPER --------------------------
 // This is part of the AppCtx and is available to all states.
 
-class InputHelper {
+class Input {
    private:
     std::unordered_map<SDL_Keycode, KeyPressInfo> m_KeysPressed;
-    std::unordered_map<std::uint8_t, KeyPressInfo> m_MouseButtonsPressed;
+    std::unordered_map<uint8_t, KeyPressInfo> m_MouseButtonsPressed;
     glm::vec2 m_CursorPosition{0.0f, 0.0f};
 
    public:
@@ -46,8 +46,7 @@ class InputHelper {
         return it->second;
     }
 
-    [[nodiscard]] std::optional<KeyPressInfo> GetMouseButtonPressInfo(
-        std::uint8_t mouse_button) const {
+    [[nodiscard]] std::optional<KeyPressInfo> GetMouseButtonPressInfo(uint8_t mouse_button) const {
         const auto it = m_MouseButtonsPressed.find(mouse_button);
         if (it == m_MouseButtonsPressed.end()) {
             return std::nullopt;
@@ -59,7 +58,10 @@ class InputHelper {
 // ---- INPUT TRANSLATION HELPER ------------------------------
 // This is part of a state if that state needs it.
 
-template <typename Action>
+template <typename T>
+concept IsAction = std::is_enum_v<T>;
+
+template <IsAction Action>
 class InputTranslationHelper {
    private:
     std::unordered_map<SDL_Keycode, Action> m_KeyboardMapping;
@@ -67,24 +69,28 @@ class InputTranslationHelper {
 
    public:
     void BindKey(SDL_Keycode key, Action action) {
-        const auto existing = m_KeyboardMapping.find(key);
+        UnbindKey(key);
 
-        if (existing != m_KeyboardMapping.end()) {
-            auto reverse_it = m_ActionKeyboardMapping.find(existing->second);
-            if (reverse_it != m_ActionKeyboardMapping.end()) {
-                reverse_it->second.erase(key);
+        m_KeyboardMapping.emplace(key, action);
+        m_ActionKeyboardMapping[action].insert(key);
+    }
 
-                if (reverse_it->second.empty()) {
-                    m_ActionKeyboardMapping.erase(reverse_it);
-                }
-            }
+    void UnbindKey(SDL_Keycode key) {
+        const auto it = m_KeyboardMapping.find(key);
 
-            existing->second = action;
-        } else {
-            m_KeyboardMapping.emplace(key, action);
+        if (it == m_KeyboardMapping.end())
+            return;
+        const Action oldAction = it->second;
+        m_KeyboardMapping.erase(it);
+
+        const auto reverseIt = m_ActionKeyboardMapping.find(oldAction);
+        if (reverseIt == m_ActionKeyboardMapping.end()) {
+            return;
         }
 
-        m_ActionKeyboardMapping[action].insert(key);
+        reverseIt->second.erase(key);
+        if (reverseIt->second.empty())
+            m_ActionKeyboardMapping.erase(reverseIt);
     }
 
     [[nodiscard]] std::optional<Action> TranslateKey(SDL_Keycode key) const {

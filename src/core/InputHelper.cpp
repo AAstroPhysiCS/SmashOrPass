@@ -4,15 +4,13 @@
 
 namespace sop {
 
-void InputHelper::RecordEvent(AppCtx& ctx, const Event& event) {
+void Input::RecordEvent(AppCtx& ctx, const Event& event) {
     (void)ctx;
 
     // Keyboard
     if (const auto* keyEvent = std::get_if<KeyEvent>(&event.Payload)) {
-        if (keyEvent->Down) {
-            if (!keyEvent->Repeat) {
-                m_KeysPressed[keyEvent->Key] = KeyPressInfo{.PressedAt = Clock::now()};
-            }
+        if (keyEvent->Down && !keyEvent->Repeat) {
+            m_KeysPressed[keyEvent->Key] = KeyPressInfo{.PressedAt = Clock::now()};
         } else {
             m_KeysPressed.erase(keyEvent->Key);
         }

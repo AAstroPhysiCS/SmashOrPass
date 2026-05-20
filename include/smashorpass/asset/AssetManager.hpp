@@ -86,8 +86,7 @@ class AssetManager {
     Result<ArenaAssetHandle> LoadArenaAsset(AppCtx& ctx, std::string_view id);
     Result<CharacterAssetHandle> LoadCharacterAsset(AppCtx& ctx, std::string_view id);
 
-    Result<std::reference_wrapper<const ArenaAsset>> Get(
-        const ArenaAssetHandle& handle) const;
+    Result<std::reference_wrapper<const ArenaAsset>> Get(const ArenaAssetHandle& handle) const;
     Result<std::reference_wrapper<const CharacterAsset>> Get(
         const CharacterAssetHandle& handle) const;
 

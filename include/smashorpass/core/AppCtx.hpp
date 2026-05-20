@@ -16,16 +16,16 @@ struct AppCtx final {
     AppCtx();
     Result<void> Initialize();
 
-    Window m_Window;
-    Renderer m_Renderer;
-    EventDispatcher m_EventDispatcher;
-    InputHelper m_InputHelper;
-    ParticleSystem m_ParticleSystem;
+    Window Window;
+    Renderer Renderer;
+    EventDispatcher EventDispatcher;
+    Input Input;
+    ParticleSystem ParticleSystem;
 
-    AssetManager m_Assets;
-    StateManager m_StateManager;
+    AssetManager Assets;
+    StateManager StateManager;
 
-    DisplayMetrics m_DisplayMetrics;
+    DisplayMetrics DisplayMetrics;
 
     bool RenderCollisionBoxes = false;
     bool DebugOverlayVisible = false;

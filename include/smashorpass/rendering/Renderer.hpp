@@ -83,11 +83,11 @@ class Renderer final {
     Result<bool> IsVSync() const;
 
     Result<void> SetLogicalPresentation(int width,
-                                                  int height,
-                                                  SDL_RendererLogicalPresentation mode);
+                                        int height,
+                                        SDL_RendererLogicalPresentation mode);
     Result<void> GetLogicalPresentation(int& width,
-                                                  int& height,
-                                                  SDL_RendererLogicalPresentation& mode) const;
+                                        int& height,
+                                        SDL_RendererLogicalPresentation& mode) const;
     Result<SDL_FRect> GetLogicalPresentationRect() const;
 
     Result<void> SetViewport(std::optional<SDL_Rect> rect);
@@ -114,14 +114,8 @@ class Renderer final {
     Result<SDL_FPoint> GetLogicalOutputSize() const;
     Result<SDL_Rect> GetSafeArea() const;
 
-    Result<void> WindowToRender(float windowX,
-                                          float windowY,
-                                          float& renderX,
-                                          float& renderY) const;
-    Result<void> RenderToWindow(float renderX,
-                                          float renderY,
-                                          float& windowX,
-                                          float& windowY) const;
+    Result<void> WindowToRender(float windowX, float windowY, float& renderX, float& renderY) const;
+    Result<void> RenderToWindow(float renderX, float renderY, float& windowX, float& windowY) const;
     Result<void> ConvertEventToRenderCoordinates(SDL_Event& event) const;
 
     Result<void> Clear(Color color);
@@ -141,13 +135,12 @@ class Renderer final {
 
     Result<void> DrawTexture(SDL_Texture* texture, const SDL_FRect& dst);
     Result<void> DrawTexture(SDL_Texture* texture, const TextureDrawParams& params);
-    Result<void> DrawTextureTiled(SDL_Texture* texture,
-                                            const TiledTextureDrawParams& params);
+    Result<void> DrawTextureTiled(SDL_Texture* texture, const TiledTextureDrawParams& params);
     Result<void> DrawTexture9Grid(SDL_Texture* texture, const NineGridDrawParams& params);
 
     Result<void> DrawGeometry(SDL_Texture* texture,
-                                        std::span<const SDL_Vertex> vertices,
-                                        std::span<const int> indices = {});
+                              std::span<const SDL_Vertex> vertices,
+                              std::span<const int> indices = {});
 
     Result<void> DrawText(
         FontId id, float x, float y, std::string_view text, Color color = Color::White());
@@ -174,11 +167,8 @@ class Renderer final {
     Result<void> ApplyClipStack();
 
     Result<TextureStateBackup> BackupTextureState(SDL_Texture* texture) const;
-    Result<void> RestoreTextureState(SDL_Texture* texture,
-                                               const TextureStateBackup& backup) const;
-    Result<void> ApplyTextureState(SDL_Texture* texture,
-                                             Color tint,
-                                             SDL_BlendMode blendMode) const;
+    Result<void> RestoreTextureState(SDL_Texture* texture, const TextureStateBackup& backup) const;
+    Result<void> ApplyTextureState(SDL_Texture* texture, Color tint, SDL_BlendMode blendMode) const;
 
     Result<Vec2> MeasureText(FontId id, std::string_view text);
     TTF_Font* GetFontById(FontId id);

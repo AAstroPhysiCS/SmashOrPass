@@ -118,7 +118,7 @@ void ParticleSystem::Update(float dt) {
 }
 
 Result<void> ParticleSystem::Render(AppCtx& ctx) {
-    Renderer& renderer = ctx.m_Renderer;
+    Renderer& renderer = ctx.Renderer;
 
     if (m_ParticleTexture == nullptr) {
         return Err(std::string("ParticleSystem::Render failed: particle texture is null"));

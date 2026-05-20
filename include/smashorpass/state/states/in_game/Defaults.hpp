@@ -27,8 +27,8 @@ inline SDL_FPoint PlayerStartPosition(std::size_t playerIndex) {
     }
 }
 
-inline Result<void> FillDefaultInputTranslation(
-    InputTranslationHelper<InputAction>& helper, int player) {
+inline Result<void> FillDefaultInputTranslation(InputTranslationHelper<InputAction>& helper,
+                                                int player) {
     if (player == 0) {
         // Player 1: WASD
         helper.BindKey(SDLK_A, InputAction::MOVE_LEFT);
@@ -49,8 +49,7 @@ inline Result<void> FillDefaultInputTranslation(
         return Ok();
     }
 
-    return Err(
-        std::string{"Default Input Translation is not yet supported for player: "} +
-        std::to_string(player));
+    return Err(std::string{"Default Input Translation is not yet supported for player: "} +
+               std::to_string(player));
 }
 }  // namespace sop

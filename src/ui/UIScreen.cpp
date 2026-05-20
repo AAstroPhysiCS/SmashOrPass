@@ -57,7 +57,7 @@ EventFlow UIScreen::OnEvent(AppCtx& ctx, const Event& event) {
 void UIScreen::OnUpdate(AppCtx&) {}
 
 Result<void> UIScreen::OnRender(AppCtx& ctx) {
-    Renderer& renderer = ctx.m_Renderer;
+    Renderer& renderer = ctx.Renderer;
 
     if (m_RebuildRequested) {
         m_Widgets.clear();
@@ -89,7 +89,7 @@ void UIScreen::RebuildUI() {
 }
 
 Result<void> UIScreen::RenderWidget(AppCtx& ctx, const UIWidget& widget) {
-    Renderer& renderer = ctx.m_Renderer;
+    Renderer& renderer = ctx.Renderer;
 
     switch (widget.Kind) {
         case WidgetKind::Stack:
@@ -126,7 +126,7 @@ Result<void> UIScreen::RenderWidget(AppCtx& ctx, const UIWidget& widget) {
 }
 
 Result<Vec2> UIScreen::MeasureWidget(AppCtx& ctx, UIWidgetId id) {
-    Renderer& renderer = ctx.m_Renderer;
+    Renderer& renderer = ctx.Renderer;
     UIWidget& w = GetWidgetById(id);
 
     switch (w.Kind) {

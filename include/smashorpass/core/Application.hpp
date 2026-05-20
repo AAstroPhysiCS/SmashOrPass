@@ -3,8 +3,8 @@
 #include <string_view>
 #include <utility>
 
-#include "spdlog/spdlog.h" // in order to have spdlog in entrypoint... dont want the "client side" to have to include spdlog just for logging in main()
 #include "smashorpass/core/AppCtx.hpp"
+#include "spdlog/spdlog.h"  // in order to have spdlog in entrypoint... dont want the "client side" to have to include spdlog just for logging in main()
 
 namespace sop {
 
@@ -14,6 +14,7 @@ class Application {
     ~Application() = default;
 
     Result<void> Run();
+
    private:
     Result<void> ProcessEvents();
     Result<void> Update();

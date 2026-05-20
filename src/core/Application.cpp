@@ -19,11 +19,11 @@ Application::Application() {
     Result<void> success = Ok();
 
     TRY_AND_VOID(success, ctx.Initialize());
-    TRY_AND_VOID(success, ctx.m_Renderer.SetVSync(true));
+    TRY_AND_VOID(success, ctx.Renderer.SetVSync(true));
     TRY_AND_VOID(success, RefreshDisplayMetrics());
 
-    TRY_AND_VOID(success, ctx.m_StateManager.ResetToState<MainMenuState>(ctx));
-    TRY_AND_VOID(success, ctx.m_StateManager.PushOverlay<DebugState>(ctx));
+    TRY_AND_VOID(success, ctx.StateManager.ResetToState<MainMenuState>(ctx));
+    TRY_AND_VOID(success, ctx.StateManager.PushOverlay<DebugState>(ctx));
 
     if (success)
         m_Initialized = true;
@@ -31,7 +31,7 @@ Application::Application() {
 
 Result<void> Application::Run() {
     if (!m_Initialized) {
-        return Err(std::string("Application::Run called before Application::Initialize"));
+        return Err(std::string("Application could not be initialized properly!"));
     }
 
     spdlog::info("Starting the game");
@@ -53,17 +53,17 @@ Result<void> Application::ProcessEvents() {
             TRY_VOID(RefreshDisplayMetrics());
 
             TRY_VOID(DispatchEvent(Event{
-                .Payload = WindowMetricsChangedEvent{.Metrics = ctx.m_DisplayMetrics},
+                .Payload = WindowMetricsChangedEvent{.Metrics = ctx.DisplayMetrics},
                 .RawEvent = nullptr,
             }));
         }
 
         SDL_Event translatedSource = event;
         if (IsPointerEventType(event.type)) {
-            TRY_VOID(ctx.m_Renderer.ConvertEventToRenderCoordinates(translatedSource));
+            TRY_VOID(ctx.Renderer.ConvertEventToRenderCoordinates(translatedSource));
         }
 
-        const Event translatedEvent = TranslateSDLEvent(translatedSource, &event);
+        const Event translatedEvent = TranslateSDLEvent(translatedSource);
         TRY_VOID(DispatchEvent(translatedEvent));
 
         if (event.type == SDL_EVENT_QUIT) {
@@ -71,9 +71,9 @@ Result<void> Application::ProcessEvents() {
         }
     }
 
-    while (!ctx.m_EventDispatcher.m_EventQueue.empty()) {
-        Event customEvent = std::move(ctx.m_EventDispatcher.m_EventQueue.front());
-        ctx.m_EventDispatcher.m_EventQueue.pop_front();
+    while (!ctx.EventDispatcher.m_EventQueue.empty()) {
+        Event customEvent = std::move(ctx.EventDispatcher.m_EventQueue.front());
+        ctx.EventDispatcher.m_EventQueue.pop_front();
         TRY_VOID(DispatchEvent(customEvent));
     }
 
@@ -81,19 +81,19 @@ Result<void> Application::ProcessEvents() {
 }
 
 Result<void> Application::Update() {
-    ctx.m_Assets.Update(ctx);
-    return ctx.m_StateManager.Update(ctx);
+    ctx.Assets.Update(ctx);
+    return ctx.StateManager.Update(ctx);
 }
 
 Result<void> Application::Render() {
-    TRY_VOID(ctx.m_Renderer.BeginFrame());
-    auto result = ctx.m_StateManager.Render(ctx);
-    TRY_VOID(ctx.m_Renderer.EndFrame());
+    TRY_VOID(ctx.Renderer.BeginFrame());
+    auto result = ctx.StateManager.Render(ctx);
+    TRY_VOID(ctx.Renderer.EndFrame());
     return result;
 }
 
 Result<void> Application::DispatchEvent(const Event& event) {
-    ctx.m_InputHelper.RecordEvent(ctx, event);
+    ctx.Input.RecordEvent(ctx, event);
 
     if (std::holds_alternative<ApplicationQuitEvent>(event.Payload)) {
         return OnEvent(event);
@@ -105,7 +105,7 @@ Result<void> Application::DispatchEvent(const Event& event) {
         }
     }
 
-    TRY(eventFlow, ctx.m_StateManager.DispatchEvent(ctx, event));
+    TRY(eventFlow, ctx.StateManager.DispatchEvent(ctx, event));
     if (eventFlow == EventFlow::Passed) {
         return OnEvent(event);
     }
@@ -113,43 +113,71 @@ Result<void> Application::DispatchEvent(const Event& event) {
 }
 
 Result<void> Application::RefreshDisplayMetrics() {
-    TRY(displayMetrics, ctx.m_Window.GetDisplayMetrics());
-    ctx.m_DisplayMetrics = displayMetrics;
+    TRY(displayMetrics, ctx.Window.GetDisplayMetrics());
+    ctx.DisplayMetrics = displayMetrics;
 
-    return ctx.m_Renderer.ApplyDisplayScale(ctx.m_DisplayMetrics.DisplayScale);
+    return ctx.Renderer.ApplyDisplayScale(ctx.DisplayMetrics.DisplayScale);
 }
 
 Result<void> Application::OnEvent(const Event& event) {
-    if (std::get_if<ApplicationQuitEvent>(&event.Payload) != nullptr) {
-        ctx.AppRunning = false;
-        return Ok();
-    }
+    {
+        TRY(handled,
+            EventDispatcher::Dispatch<ApplicationQuitEvent>(
+                event, [&](const ApplicationQuitEvent&) { ctx.AppRunning = false; }));
 
-    if (const auto* navigation = std::get_if<NavigationEvent>(&event.Payload)) {
-        switch (navigation->Action) {
-            case NavigationAction::ShowMainMenu: {
-                ctx.m_ParticleSystem.Clear();
-                TRY(mainMenuState, ctx.m_StateManager.ResetToState<MainMenuState>(ctx));
-                (void)mainMenuState;
-                return Ok();
-            }
-            case NavigationAction::StartMatch: {
-                ctx.m_ParticleSystem.Clear();
-                TRY(inGameState,
-                    ctx.m_StateManager.ResetToState<InGameState>(
-                        ctx, navigation->ArenaAsset, navigation->CharacterAssets));
-                (void)inGameState;
-                return Ok();
-            }
-            case NavigationAction::ShowCharacterSelect:
-            case NavigationAction::ResumeMatch:
-                return Ok();
+        if (handled) {
+            return Ok();
         }
     }
 
-    if (const auto* keyEvent = std::get_if<KeyEvent>(&event.Payload)) {
-        if (keyEvent->Down && !keyEvent->Repeat && keyEvent->Key == SDLK_F1) {
-            return ToggleDebugOverlay();
+    {
+        TRY(handled,
+            EventDispatcher::Dispatch<NavigationEvent>(
+                event, [&](const NavigationEvent& navigation) -> Result<void> {
+                    switch (navigation.Action) {
+                        case NavigationAction::ShowMainMenu: {
+                            ctx.ParticleSystem.Clear();
+
+                            TRY(mainMenuState, ctx.StateManager.ResetToState<MainMenuState>(ctx));
+                            (void)mainMenuState;
+
+                            return Ok();
+                        }
+                        case NavigationAction::StartMatch: {
+                            ctx.ParticleSystem.Clear();
+
+                            TRY(inGameState,
+                                ctx.StateManager.ResetToState<InGameState>(
+                                    ctx, navigation.ArenaAsset, navigation.CharacterAssets));
+                            (void)inGameState;
+
+                            return Ok();
+                        }
+                        case NavigationAction::ShowCharacterSelect:
+                        case NavigationAction::ResumeMatch:
+                            return Ok();
+                    }
+                    return Ok();
+                }));
+
+        if (handled) {
+            return Ok();
+        }
+    }
+
+    {
+        TRY(handled,
+            EventDispatcher::Dispatch<KeyEvent>(
+                event, [&](const KeyEvent& keyEvent) -> Result<void> {
+                    if (keyEvent.Down && !keyEvent.Repeat && keyEvent.Key == SDLK_F1) {
+                        TRY_VOID(ToggleDebugOverlay());
+                    }
+
+                    return Ok();
+                }));
+
+        if (handled) {
+            return Ok();
         }
     }
 

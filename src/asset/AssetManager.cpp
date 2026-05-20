@@ -81,7 +81,7 @@ static Result<TexturePtr> CreateDefaultArenaTexture(
         std::string("SDL_FillSurfaceRect ") + std::string(name)));
 
     TexturePtr texture{
-        SDL_CreateTextureFromSurface(ctx.m_Renderer.NativeHandle(), surface.get()),
+        SDL_CreateTextureFromSurface(ctx.Renderer.NativeHandle(), surface.get()),
         SDL_DestroyTexture,
     };
     if (!texture) {
@@ -100,7 +100,7 @@ static Result<TexturePtr> CreateArenaTextureFromSurface(AppCtx& ctx,
     }
 
     TexturePtr texture{
-        SDL_CreateTextureFromSurface(ctx.m_Renderer.NativeHandle(), surface),
+        SDL_CreateTextureFromSurface(ctx.Renderer.NativeHandle(), surface),
         SDL_DestroyTexture,
     };
     if (!texture) {
@@ -155,7 +155,7 @@ static Result<TexturePtr> CreateDefaultCharacterTexture(AppCtx& ctx, std::string
                        std::string("SDL_FillSurfaceRect ") + std::string(name)));
 
     TexturePtr texture{
-        SDL_CreateTextureFromSurface(ctx.m_Renderer.NativeHandle(), surface.get()),
+        SDL_CreateTextureFromSurface(ctx.Renderer.NativeHandle(), surface.get()),
         SDL_DestroyTexture,
     };
     if (!texture) {
@@ -175,7 +175,7 @@ static Result<TexturePtr> CreateCharacterTextureFromSurface(AppCtx& ctx,
     }
 
     TexturePtr texture{
-        SDL_CreateTextureFromSurface(ctx.m_Renderer.NativeHandle(), surface),
+        SDL_CreateTextureFromSurface(ctx.Renderer.NativeHandle(), surface),
         SDL_DestroyTexture,
     };
     if (!texture) {

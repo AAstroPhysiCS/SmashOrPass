@@ -2,13 +2,13 @@
 
 namespace sop {
 
-AppCtx::AppCtx() : m_Assets(SOP_ASSET_ROOT_DIR) {}
+AppCtx::AppCtx() : Assets(SOP_ASSET_ROOT_DIR) {}
 
 Result<void> AppCtx::Initialize() {
-    TRY_VOID(m_Window.Initialize(
+    TRY_VOID(Window.Initialize(
         WindowCreateInfo{.Width = 1920, .Height = 1080, .Title = "Smash Or Pass - The Game"}));
-    TRY_VOID(m_Renderer.Initialize(m_Window));
-    TRY_VOID(m_ParticleSystem.Initialize(m_Renderer));
+    TRY_VOID(Renderer.Initialize(Window));
+    TRY_VOID(ParticleSystem.Initialize(Renderer));
     return Ok();
 }
 

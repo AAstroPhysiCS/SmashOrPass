@@ -57,8 +57,7 @@ class ParticleSystem {
     ParticleSystem(ParticleSystem&&) = delete;
     ParticleSystem& operator=(ParticleSystem&&) = delete;
 
-    sop::Result<void> Initialize(const Renderer& renderer,
-                                      size_t maxParticles = std::pow(2, 12));
+    sop::Result<void> Initialize(const Renderer& renderer, size_t maxParticles = std::pow(2, 12));
 
     void EmitBurst(const ParticleBurstDesc& desc);
 

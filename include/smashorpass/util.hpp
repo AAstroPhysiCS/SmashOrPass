@@ -95,11 +95,11 @@ inline Result<void> SdlResult(bool ok, std::string_view operation) {
 #define SOP_UTIL_TRY_CONCAT_IMPL(a, b) a##b
 #define SOP_UTIL_TRY_CONCAT(a, b) SOP_UTIL_TRY_CONCAT_IMPL(a, b)
 
-#define SOP_UTIL_TRY_IMPL(result_var, value_var, expr)       \
-    auto result_var = (expr);                                \
-    if (!result_var.has_value()) {                           \
+#define SOP_UTIL_TRY_IMPL(result_var, value_var, expr)  \
+    auto result_var = (expr);                           \
+    if (!result_var.has_value()) {                      \
         return sop::Err(std::move(result_var).error()); \
-    }                                                        \
+    }                                                   \
     auto value_var = *std::move(result_var)
 
 #define SOP_UTIL_TRY_AND_IMPL(accumulator, result_var, expr) \
@@ -113,12 +113,12 @@ inline Result<void> SdlResult(bool ok, std::string_view operation) {
     SOP_UTIL_TRY_IMPL(SOP_UTIL_TRY_CONCAT(_try_result_, __COUNTER__), value_var, expr); \
     SOP_UTIL_CLANG_RESTORE_COUNTER_WARNING
 
-#define SOP_UTIL_TRY_VOID_IMPL(result_var, expr)                 \
-    do {                                                         \
-        auto result_var = (expr);                                \
-        if (!result_var.has_value()) {                           \
+#define SOP_UTIL_TRY_VOID_IMPL(result_var, expr)            \
+    do {                                                    \
+        auto result_var = (expr);                           \
+        if (!result_var.has_value()) {                      \
             return sop::Err(std::move(result_var).error()); \
-        }                                                        \
+        }                                                   \
     } while (false)
 
 #define TRY_VOID(expr)                                                            \
