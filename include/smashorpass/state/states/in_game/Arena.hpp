@@ -3,11 +3,12 @@
 #include <SDL3/SDL_rect.h>
 
 #include "smashorpass/asset/AssetManager.hpp"
+#include "smashorpass/asset/assets/ArenaAsset.hpp"
 
 namespace sop {
 
 struct Arena {
-    ArenaAssetHandle asset;
+    Asset<ArenaAssetData> asset;
     // Rectangular space in the window the arena actually occupies.
     SDL_Rect dimensions{};
 

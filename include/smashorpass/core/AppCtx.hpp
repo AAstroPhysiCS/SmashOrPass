@@ -1,6 +1,10 @@
 #pragma once
 
+#include <filesystem>
+
 #include "smashorpass/asset/AssetManager.hpp"
+#include "smashorpass/asset/assets/ArenaAsset.hpp"
+#include "smashorpass/asset/assets/CharacterAsset.hpp"
 #include "smashorpass/core/DisplayMetrics.hpp"
 #include "smashorpass/core/Event.hpp"
 #include "smashorpass/core/InputHelper.hpp"
@@ -25,6 +29,7 @@ struct AppCtx final {
     AssetManager assets;
     StateManager stateManager;
 
+    std::filesystem::path assetRootDir;
     DisplayMetrics displayMetrics;
 
     bool renderCollisionBoxes = false;

@@ -18,8 +18,8 @@ namespace sop {
 class InGameState final : public State {
    public:
     explicit InGameState(AppCtx& ctx,
-                         ArenaAssetHandle arenaAsset = {},
-                         std::vector<CharacterAssetHandle> characterAssets = {});
+                         Asset<ArenaAssetData> arenaAsset = {},
+                         std::vector<Asset<CharacterAssetData>> characterAssets = {});
     ~InGameState() override = default;
 
     Result<void> Initialize(AppCtx& ctx) final;
@@ -55,8 +55,8 @@ class InGameState final : public State {
     PauseScreen m_PauseScreen;
 
     Arena m_Arena;
-    ArenaAssetHandle m_ArenaAsset;
-    std::vector<CharacterAssetHandle> m_CharacterAssets;
+    Asset<ArenaAssetData> m_ArenaAsset;
+    std::vector<Asset<CharacterAssetData>> m_CharacterAssets;
     // Player 1 is at index 0, Player 2 at 1, ...
     std::vector<Player> m_Players;
 

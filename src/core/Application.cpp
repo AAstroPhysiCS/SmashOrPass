@@ -81,7 +81,7 @@ Result<void> Application::ProcessEvents() {
 }
 
 Result<void> Application::Update() {
-    ctx.assets.Update(ctx);
+    ctx.assets.Update();
     return ctx.stateManager.Update(ctx);
 }
 

@@ -25,17 +25,17 @@ enum class PlayerState {
 class Player {
    public:
     Player(int playerId,
-           CharacterAssetHandle asset,
+           Asset<CharacterAssetData> asset,
            SDL_FPoint position,
            bool facingRight,
            float health,
            InputTranslationHelper<InputAction> inputTranslationHelper);
     Result<void> OnEvent(AppCtx& ctx, const Event& event);
 
-    void TickGameLogic(AppCtx& ctx, const Arena& arena);
-    void TickAnimations(AppCtx& ctx, const Arena& arena);
+    Result<void> TickGameLogic(AppCtx& ctx, const Arena& arena);
+    Result<void> TickAnimations(AppCtx& ctx, const Arena& arena);
 
-    [[nodiscard]] bool IsOnGround(AppCtx& ctx, const Arena& arena) const;
+    [[nodiscard]] Result<bool> IsOnGround(AppCtx& ctx, const Arena& arena) const;
 
     Result<void> Render(AppCtx& ctx, const Arena& arena) const;
     Result<void> RenderCollisionBox(AppCtx& ctx, const Arena& arena) const;
@@ -43,7 +43,7 @@ class Player {
    private:
     // ---- Mechanical
     int m_playerId;
-    CharacterAssetHandle m_Asset;
+    Asset<CharacterAssetData> m_Asset;
 
     InputTranslationHelper<InputAction> m_InputTranslationHelper;
     std::vector<InputAction> m_InputQueue;
@@ -68,10 +68,11 @@ class Player {
     // ---- Stats
     float m_Health;
 
-    [[nodiscard]] CharacterAnimation GetAnimationToShow(AppCtx& ctx, const Arena& arena) const;
+    [[nodiscard]] Result<CharacterAnimation> GetAnimationToShow(AppCtx& ctx,
+                                                                const Arena& arena) const;
     [[nodiscard]] std::optional<SDL_FRect> GetBaselineSpriteRect(
         const CharacterSpriteSheetFrame& frame) const;
-    [[nodiscard]] std::optional<SDL_FRect> GetBaselineCollisionBox(AppCtx& ctx) const;
+    [[nodiscard]] Result<std::optional<SDL_FRect>> GetBaselineCollisionBox(AppCtx& ctx) const;
 };
 
 }  // namespace sop

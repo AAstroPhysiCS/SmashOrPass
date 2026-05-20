@@ -24,8 +24,8 @@ Result<void> DebugState::Initialize(AppCtx& ctx) {
 
     ImGui::StyleColorsDark();
 
-    const bool sdl3Initialized = ImGui_ImplSDL3_InitForSDLRenderer(ctx.window.NativeHandle(),
-                                                                   ctx.renderer.NativeHandle());
+    const bool sdl3Initialized =
+        ImGui_ImplSDL3_InitForSDLRenderer(ctx.window.NativeHandle(), ctx.renderer.NativeHandle());
     if (!sdl3Initialized) {
         ImGui::DestroyContext();
         return Err(std::string("Failed to initialize ImGui SDL3 backend"));
@@ -77,8 +77,7 @@ void DebugState::Draw(AppCtx& ctx) {
     ImGui::Separator();
     ImGui::Text(
         "Window: %d x %d", ctx.displayMetrics.WindowSize.x, ctx.displayMetrics.WindowSize.y);
-    ImGui::Text(
-        "Pixels: %d x %d", ctx.displayMetrics.PixelSize.x, ctx.displayMetrics.PixelSize.y);
+    ImGui::Text("Pixels: %d x %d", ctx.displayMetrics.PixelSize.x, ctx.displayMetrics.PixelSize.y);
     ImGui::Text("Logical: %.1f x %.1f",
                 static_cast<double>(logicalSize.x),
                 static_cast<double>(logicalSize.y));

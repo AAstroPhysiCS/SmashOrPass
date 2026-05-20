@@ -4,6 +4,8 @@
 #include <utility>
 
 #include "smashorpass/asset/AssetManager.hpp"
+#include "smashorpass/asset/assets/ArenaAsset.hpp"
+#include "smashorpass/asset/assets/CharacterAsset.hpp"
 #include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/core/Event.hpp"
 #include "smashorpass/ui/UIBuilder.hpp"
@@ -12,16 +14,18 @@
 namespace sop {
 
 CharacterSelectScreen::CharacterSelectScreen(AppCtx& ctx) : UIScreen(ctx) {
-    auto availableCharacters = ctx.assets.AvailableCharacterAssets(ctx);
+    auto availableCharacters =
+        ctx.assets.ListAvailableAssets<CharacterAssetDiscoverer, CharacterAssetLoadJob>();
     if (!availableCharacters.has_value()) {
         spdlog::warn("Failed to list character assets: {}", availableCharacters.error());
         return;
     }
 
     m_Characters = std::move(*availableCharacters);
+
     if (!m_Characters.empty()) {
-        m_Player1Character = m_Characters.front();
-        m_Player2Character = m_Characters.front();
+        m_Player1Character = m_Characters.front().m_Id;
+        m_Player2Character = m_Characters.front().m_Id;
     }
 }
 
@@ -29,15 +33,75 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
     auto backButton =
         builder.Button("Back").Align(Alignment::TopCenter).OnClick([](AppCtx& ctx, ButtonData&) {
             spdlog::info("Back clicked");
-            ctx.eventDispatcher.Enqueue(
-                NavigationEvent{.Action = NavigationAction::ShowMainMenu});
+            ctx.eventDispatcher.Enqueue(NavigationEvent{.Action = NavigationAction::ShowMainMenu});
         });
 
+    const auto startMatch = [this](AppCtx& ctx, ButtonData&) {
+        spdlog::info("Starting match: P1={}, P2={}",
+                     CharacterName(m_Player1Character),
+                     CharacterName(m_Player2Character));
+
+        auto arenaJobs = ctx.assets.ListAvailableAssets<ArenaAssetDiscoverer, ArenaAssetLoadJob>();
+        if (!arenaJobs) {
+            spdlog::warn("Failed to list arena assets: {}", arenaJobs.error());
+            return;
+        }
+
+        ArenaAssetLoadJob arenaJob =
+            arenaJobs->empty() ? ArenaAssetLoadJob{} : std::move(arenaJobs->front());
+        auto arenaAsset =
+            ctx.assets.LoadAsset<ArenaAssetLoadJob, ArenaAssetData>(std::move(arenaJob));
+        if (!arenaAsset) {
+            spdlog::warn("Failed to load arena: {}", arenaAsset.error());
+            return;
+        }
+
+        const auto selectedCharacterJob = [this](std::string_view id) {
+            for (const CharacterAssetLoadJob& job : m_Characters) {
+                if (job.m_Id == id) {
+                    return job;
+                }
+            }
+            return CharacterAssetLoadJob{.m_Id = std::string{id}};
+        };
+
+        auto player1Asset = ctx.assets.LoadAsset<CharacterAssetLoadJob, CharacterAssetData>(
+            selectedCharacterJob(m_Player1Character));
+        if (!player1Asset) {
+            spdlog::warn("Failed to load player 1 character '{}': {}",
+                         m_Player1Character,
+                         player1Asset.error());
+            return;
+        }
+
+        auto player2Asset = ctx.assets.LoadAsset<CharacterAssetLoadJob, CharacterAssetData>(
+            selectedCharacterJob(m_Player2Character));
+        if (!player2Asset) {
+            spdlog::warn("Failed to load player 2 character '{}': {}",
+                         m_Player2Character,
+                         player2Asset.error());
+            return;
+        }
+
+        ctx.eventDispatcher.Enqueue(NavigationEvent{
+            .Action = NavigationAction::StartMatch,
+            .ArenaAsset = *arenaAsset,
+            .CharacterAssets = {*player1Asset, *player2Asset},
+        });
+    };
+
     if (m_Characters.empty()) {
+        auto actions =
+            builder.Row()
+                .Spacing(16.0f)
+                .Align(Alignment::TopCenter)
+                .Add(backButton,
+                     builder.Button("Start Match").Align(Alignment::TopCenter).OnClick(startMatch));
+
         auto menu = builder.Column().Spacing(22.0f).Add(
             builder.Label("SELECT YOUR FIGHTERS").Align(Alignment::TopCenter),
             builder.Label("NO CHARACTERS AVAILABLE").Align(Alignment::TopCenter),
-            backButton);
+            std::move(actions));
 
         auto root = builder.Align(Alignment::Center, std::move(menu));
         builder.SetRoot(root);
@@ -67,8 +131,8 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
     };
 
     auto characterGrid = builder.Row().Spacing(24.0f).Align(Alignment::TopCenter);
-    for (const std::string& character : m_Characters) {
-        auto characterCard = CreateCharacterCard(character);
+    for (const CharacterAssetLoadJob& character : m_Characters) {
+        auto characterCard = CreateCharacterCard(character.m_Id);
         characterGrid.Add(characterCard);
     }
 
@@ -77,52 +141,7 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
             .Spacing(16.0f)
             .Align(Alignment::TopCenter)
             .Add(backButton,
-                 builder.Button("Start Match")
-                     .Align(Alignment::TopCenter)
-                     .OnClick([this](AppCtx& ctx, ButtonData&) {
-                         spdlog::info("Starting match: P1={}, P2={}",
-                                      CharacterName(m_Player1Character),
-                                      CharacterName(m_Player2Character));
-
-                         auto arenaIds = ctx.assets.AvailableArenaAssets(ctx);
-                         if (!arenaIds) {
-                             spdlog::warn("Failed to list arena assets: {}", arenaIds.error());
-                             return;
-                         }
-
-                         const std::string arenaId =
-                             arenaIds->empty() ? std::string{} : arenaIds->front();
-                         auto arenaAsset = ctx.assets.LoadArenaAsset(ctx, arenaId);
-                         if (!arenaAsset) {
-                             spdlog::warn(
-                                 "Failed to load arena '{}': {}", arenaId, arenaAsset.error());
-                             return;
-                         }
-
-                         auto player1Asset =
-                             ctx.assets.LoadCharacterAsset(ctx, m_Player1Character);
-                         if (!player1Asset) {
-                             spdlog::warn("Failed to load player 1 character '{}': {}",
-                                          m_Player1Character,
-                                          player1Asset.error());
-                             return;
-                         }
-
-                         auto player2Asset =
-                             ctx.assets.LoadCharacterAsset(ctx, m_Player2Character);
-                         if (!player2Asset) {
-                             spdlog::warn("Failed to load player 2 character '{}': {}",
-                                          m_Player2Character,
-                                          player2Asset.error());
-                             return;
-                         }
-
-                         ctx.eventDispatcher.Enqueue(NavigationEvent{
-                             .Action = NavigationAction::StartMatch,
-                             .ArenaAsset = *arenaAsset,
-                             .CharacterAssets = {*player1Asset, *player2Asset},
-                         });
-                     }));
+                 builder.Button("Start Match").Align(Alignment::TopCenter).OnClick(startMatch));
 
     auto menu = builder.Column().Spacing(22.0f).Add(
         builder.Label("SELECT YOUR FIGHTERS").Align(Alignment::TopCenter),

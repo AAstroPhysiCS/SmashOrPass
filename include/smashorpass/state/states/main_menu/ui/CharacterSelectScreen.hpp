@@ -4,6 +4,7 @@
 #include <string_view>
 #include <vector>
 
+#include "smashorpass/asset/assets/CharacterAsset.hpp"
 #include "smashorpass/ui/UIScreen.hpp"
 
 namespace sop {
@@ -16,7 +17,7 @@ class CharacterSelectScreen : public UIScreen {
     void Build(UIBuilder& builder) override;
 
    private:
-    std::vector<std::string> m_Characters;
+    std::vector<CharacterAssetLoadJob> m_Characters;
     std::string m_Player1Character;
     std::string m_Player2Character;
 

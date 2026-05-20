@@ -12,28 +12,28 @@ UIScreen::UIScreen(AppCtx&) {}
 EventFlow UIScreen::OnEvent(AppCtx& ctx, const Event& event) {
     bool consumed = false;
 
-    EventDispatcher::Dispatch<MouseButtonEvent>(event,
-                                                [this, &ctx, &consumed](const MouseButtonEvent& e) {
-                                                    if (!e.Down)
-                                                        return;
-                                                    Vec2 mousePos{e.X, e.Y};
+    (void)EventDispatcher::Dispatch<MouseButtonEvent>(
+        event, [this, &ctx, &consumed](const MouseButtonEvent& e) {
+            if (!e.Down)
+                return;
+            Vec2 mousePos{e.X, e.Y};
 
-                                                    for (UIWidget& w : m_Widgets) {
-                                                        if (w.Kind != WidgetKind::Button)
-                                                            continue;
+            for (UIWidget& w : m_Widgets) {
+                if (w.Kind != WidgetKind::Button)
+                    continue;
 
-                                                        if (!PointInRect(mousePos, w.LayoutRect))
-                                                            continue;
+                if (!PointInRect(mousePos, w.LayoutRect))
+                    continue;
 
-                                                        auto& d = std::get<ButtonData>(w.Data);
-                                                        if (d.OnClick)
-                                                            d.OnClick(ctx, d);
-                                                        consumed = true;
-                                                        return;
-                                                    }
-                                                });
+                auto& d = std::get<ButtonData>(w.Data);
+                if (d.OnClick)
+                    d.OnClick(ctx, d);
+                consumed = true;
+                return;
+            }
+        });
 
-    EventDispatcher::Dispatch<MouseMovedEvent>(
+    (void)EventDispatcher::Dispatch<MouseMovedEvent>(
         event, [this, &ctx, &consumed](const MouseMovedEvent& e) {
             Vec2 mousePos{e.X, e.Y};
 

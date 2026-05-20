@@ -9,6 +9,8 @@
 #include "Base.hpp"
 #include "DisplayMetrics.hpp"
 #include "smashorpass/asset/AssetManager.hpp"
+#include "smashorpass/asset/assets/ArenaAsset.hpp"
+#include "smashorpass/asset/assets/CharacterAsset.hpp"
 
 namespace sop {
 
@@ -55,8 +57,8 @@ enum class NavigationAction {
 
 struct NavigationEvent {
     NavigationAction Action = NavigationAction::ShowMainMenu;
-    ArenaAssetHandle ArenaAsset{};
-    std::vector<CharacterAssetHandle> CharacterAssets{};
+    Asset<ArenaAssetData> ArenaAsset{};
+    std::vector<Asset<CharacterAssetData>> CharacterAssets{};
 };
 
 struct ApplicationQuitEvent {};

@@ -63,7 +63,7 @@ constexpr float kDashSpeed = 11.0f;
 }
 
 Player::Player(int playerId,
-               CharacterAssetHandle asset,
+               Asset<CharacterAssetData> asset,
                SDL_FPoint position,
                bool facingRight,
                float health,
@@ -76,31 +76,32 @@ Player::Player(int playerId,
       m_State(PlayerState::IDLE),
       m_Health(health) {}
 
-CharacterAnimation Player::GetAnimationToShow(AppCtx& ctx, const Arena& arena) const {
+Result<CharacterAnimation> Player::GetAnimationToShow(AppCtx& ctx, const Arena& arena) const {
     switch (m_State) {
         case PlayerState::ATTACKING:
-            return CharacterAnimation::Attacks;
+            return Ok(CharacterAnimation::Attacks);
         case PlayerState::DASHING:
-            return CharacterAnimation::Dash;
+            return Ok(CharacterAnimation::Dash);
         case PlayerState::IDLE:
         case PlayerState::RUNNING:
             break;
     }
 
-    if (!IsOnGround(ctx, arena)) {
-        return m_VelocityY < 0.0f ? CharacterAnimation::Ascending : CharacterAnimation::Falling;
+    TRY(onGround, IsOnGround(ctx, arena));
+    if (!onGround) {
+        return Ok(m_VelocityY < 0.0f ? CharacterAnimation::Ascending : CharacterAnimation::Falling);
     }
 
     switch (m_State) {
         case PlayerState::RUNNING:
-            return CharacterAnimation::Walk;
+            return Ok(CharacterAnimation::Walk);
         case PlayerState::IDLE:
         case PlayerState::ATTACKING:
         case PlayerState::DASHING:
-            return CharacterAnimation::Idle;
+            return Ok(CharacterAnimation::Idle);
     }
 
-    return CharacterAnimation::Idle;
+    return Ok(CharacterAnimation::Idle);
 }
 
 std::optional<SDL_FRect> Player::GetBaselineSpriteRect(
@@ -123,15 +124,12 @@ std::optional<SDL_FRect> Player::GetBaselineSpriteRect(
     };
 }
 
-std::optional<SDL_FRect> Player::GetBaselineCollisionBox(AppCtx& ctx) const {
-    auto asset = ctx.assets.Get(m_Asset);
-    if (!asset) {
-        return std::nullopt;
-    }
+Result<std::optional<SDL_FRect>> Player::GetBaselineCollisionBox(AppCtx& ctx) const {
+    TRY(asset, ctx.assets.GetAssetData(m_Asset));
 
-    const auto sheet = asset->get().m_SpriteSheets.find(m_CurrentAnimation);
-    if (sheet == asset->get().m_SpriteSheets.end() || sheet->second.m_Frames.empty()) {
-        return std::nullopt;
+    const auto sheet = asset.get().m_SpriteSheets.find(m_CurrentAnimation);
+    if (sheet == asset.get().m_SpriteSheets.end() || sheet->second.m_Frames.empty()) {
+        return Ok(std::optional<SDL_FRect>{});
     }
 
     const std::vector<CharacterSpriteSheetFrame>& frames = sheet->second.m_Frames;
@@ -139,23 +137,23 @@ std::optional<SDL_FRect> Player::GetBaselineCollisionBox(AppCtx& ctx) const {
         frames[static_cast<std::size_t>(m_CurrentAnimationFrame) % frames.size()];
     const SDL_FRect collisionBox = frame.m_CollisionBox;
     if (collisionBox.w <= 0.0f || collisionBox.h <= 0.0f) {
-        return std::nullopt;
+        return Ok(std::optional<SDL_FRect>{});
     }
 
     std::optional<SDL_FRect> spriteRect = GetBaselineSpriteRect(frame);
     if (!spriteRect) {
-        return std::nullopt;
+        return Ok(std::optional<SDL_FRect>{});
     }
 
     const float collisionX =
         m_FacingRight ? frame.m_Location.w - collisionBox.x - collisionBox.w : collisionBox.x;
 
-    return SDL_FRect{
+    return Ok(std::optional<SDL_FRect>{SDL_FRect{
         .x = spriteRect->x + collisionX * kPlayerScale,
         .y = spriteRect->y + collisionBox.y * kPlayerScale,
         .w = collisionBox.w * kPlayerScale,
         .h = collisionBox.h * kPlayerScale,
-    };
+    }});
 }
 
 Result<void> Player::OnEvent(AppCtx& ctx, const Event& event) {
@@ -173,16 +171,14 @@ Result<void> Player::OnEvent(AppCtx& ctx, const Event& event) {
     return Ok();
 }
 
-void Player::TickGameLogic(AppCtx& ctx, const Arena& arena) {
+Result<void> Player::TickGameLogic(AppCtx& ctx, const Arena& arena) {
     // Apply user input
     const bool jumpRequested = HasQueuedAction(m_InputQueue, InputAction::JUMP);
     const bool dashRequested = HasQueuedAction(m_InputQueue, InputAction::DASH);
-    const bool moveLeft =
-        IsActionHeld(ctx.input, m_InputTranslationHelper, InputAction::MOVE_LEFT);
+    const bool moveLeft = IsActionHeld(ctx.input, m_InputTranslationHelper, InputAction::MOVE_LEFT);
     const bool moveRight =
         IsActionHeld(ctx.input, m_InputTranslationHelper, InputAction::MOVE_RIGHT);
-    const bool attackHeld =
-        IsActionHeld(ctx.input, m_InputTranslationHelper, InputAction::ATTACK);
+    const bool attackHeld = IsActionHeld(ctx.input, m_InputTranslationHelper, InputAction::ATTACK);
 
     m_InputQueue.clear();
 
@@ -190,7 +186,7 @@ void Player::TickGameLogic(AppCtx& ctx, const Arena& arena) {
         --m_DashCooldownTicksRemaining;
     }
 
-    const bool onGround = IsOnGround(ctx, arena);
+    TRY(onGround, IsOnGround(ctx, arena));
     if (onGround) {
         m_AirDashAvailable = true;
         m_DashJumpAvailable = false;
@@ -246,22 +242,15 @@ void Player::TickGameLogic(AppCtx& ctx, const Arena& arena) {
         m_Position.y += m_VelocityY;
     }
 
-    if (!arena.asset) {
-        return;
-    }
-
     // Collision handling
-    auto arenaAsset = ctx.assets.Get(arena.asset);
-    if (!arenaAsset) {
-        return;
-    }
+    TRY(arenaAsset, ctx.assets.GetAssetData(arena.asset));
 
-    std::optional<SDL_FRect> playerCollisionBox = GetBaselineCollisionBox(ctx);
+    TRY(playerCollisionBox, GetBaselineCollisionBox(ctx));
     if (!playerCollisionBox) {
-        return;
+        return Ok();
     }
 
-    const std::vector<SDL_FRect>& solidBoxes = arenaAsset->get().m_CollisionBoxes;
+    const std::vector<SDL_FRect>& solidBoxes = arenaAsset.get().m_CollisionBoxes;
     const std::size_t maxPasses = solidBoxes.size() * 2;
     for (std::size_t pass = 0; pass < maxPasses; ++pass) {
         bool moved = false;
@@ -291,64 +280,57 @@ void Player::TickGameLogic(AppCtx& ctx, const Arena& arena) {
         }
     }
 
-    if (IsOnGround(ctx, arena)) {
+    TRY(onGroundAfterCollision, IsOnGround(ctx, arena));
+    if (onGroundAfterCollision) {
         m_AirDashAvailable = true;
         m_DashJumpAvailable = false;
     } else if (m_State == PlayerState::DASHING && m_AirDashAvailable) {
         m_DashJumpAvailable = true;
     }
+
+    return Ok();
 }
 
-void Player::TickAnimations(AppCtx& ctx, const Arena& arena) {
-    auto asset = ctx.assets.Get(m_Asset);
-    if (!asset) {
-        m_CurrentAnimationFrame = 0;
-        return;
-    }
+Result<void> Player::TickAnimations(AppCtx& ctx, const Arena& arena) {
+    TRY(asset, ctx.assets.GetAssetData(m_Asset));
 
-    const CharacterAnimation animation = GetAnimationToShow(ctx, arena);
+    TRY(animation, GetAnimationToShow(ctx, arena));
     if (animation != m_CurrentAnimation) {
         m_CurrentAnimationFrame = 0;
     }
     m_CurrentAnimation = animation;
-    const auto sheet = asset->get().m_SpriteSheets.find(animation);
-    if (sheet == asset->get().m_SpriteSheets.end() || sheet->second.m_Frames.empty()) {
+    const auto sheet = asset.get().m_SpriteSheets.find(animation);
+    if (sheet == asset.get().m_SpriteSheets.end() || sheet->second.m_Frames.empty()) {
         m_CurrentAnimationFrame = 0;
-        return;
+        return Ok();
     }
 
     m_CurrentAnimationFrame =
         (m_CurrentAnimationFrame + 1) % static_cast<int>(sheet->second.m_Frames.size());
+    return Ok();
 }
 
-bool Player::IsOnGround(AppCtx& ctx, const Arena& arena) const {
-    if (!arena.asset) {
-        return false;
-    }
+Result<bool> Player::IsOnGround(AppCtx& ctx, const Arena& arena) const {
+    TRY(arenaAsset, ctx.assets.GetAssetData(arena.asset));
 
-    auto arenaAsset = ctx.assets.Get(arena.asset);
-    if (!arenaAsset) {
-        return false;
-    }
-
-    std::optional<SDL_FRect> playerCollisionBox = GetBaselineCollisionBox(ctx);
+    TRY(playerCollisionBox, GetBaselineCollisionBox(ctx));
     if (!playerCollisionBox) {
-        return false;
+        return Ok(false);
     }
 
     playerCollisionBox->y += kGroundProbeDistance;
 
-    for (const SDL_FRect& solidBox : arenaAsset->get().m_CollisionBoxes) {
+    for (const SDL_FRect& solidBox : arenaAsset.get().m_CollisionBoxes) {
         if (SDL_HasRectIntersectionFloat(&*playerCollisionBox, &solidBox)) {
-            return true;
+            return Ok(true);
         }
     }
 
-    return false;
+    return Ok(false);
 }
 
 Result<void> Player::Render(AppCtx& ctx, const Arena& arena) const {
-    TRY(asset, ctx.assets.Get(m_Asset));
+    TRY(asset, ctx.assets.GetAssetData(m_Asset));
 
     const auto sheet = asset.get().m_SpriteSheets.find(m_CurrentAnimation);
     if (sheet == asset.get().m_SpriteSheets.end() || sheet->second.m_Frames.empty() ||
@@ -374,13 +356,13 @@ Result<void> Player::Render(AppCtx& ctx, const Arena& arena) const {
 }
 
 Result<void> Player::RenderCollisionBox(AppCtx& ctx, const Arena& arena) const {
-    const std::optional<SDL_FRect> collisionBox = GetBaselineCollisionBox(ctx);
+    TRY(collisionBox, GetBaselineCollisionBox(ctx));
     if (!collisionBox) {
         return Ok();
     }
 
     return ctx.renderer.DrawRect(MapBaselineRectToArena(*collisionBox, arena.dimensions),
-                                   Color{255, 230, 0, 255});
+                                 Color{255, 230, 0, 255});
 }
 
 }  // namespace sop
