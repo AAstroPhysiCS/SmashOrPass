@@ -49,15 +49,35 @@ struct ParticleBurstDesc {
 
 class ParticleSystem {
    public:
-    ParticleSystem() = default;
+    static sop::Result<ParticleSystem, std::string> Create(const Renderer& renderer,
+                                                           size_t maxParticles);
     ~ParticleSystem();
 
     ParticleSystem(const ParticleSystem&) = delete;
     ParticleSystem& operator=(const ParticleSystem&) = delete;
-    ParticleSystem(ParticleSystem&&) = delete;
-    ParticleSystem& operator=(ParticleSystem&&) = delete;
 
-    sop::Result<void> Initialize(const Renderer& renderer, size_t maxParticles = std::pow(2, 12));
+    ParticleSystem(ParticleSystem&& other) noexcept
+        : m_Particles(std::move(other.m_Particles)),
+          m_NextParticle(std::exchange(other.m_NextParticle, 0)),
+          m_ParticleTexture(std::exchange(other.m_ParticleTexture, nullptr)),
+          m_Random(std::move(other.m_Random)) {}
+
+    ParticleSystem& operator=(ParticleSystem&& other) noexcept {
+        if (this == &other) {
+            return *this;
+        }
+
+        if (m_ParticleTexture != nullptr) {
+            SDL_DestroyTexture(m_ParticleTexture);
+        }
+
+        m_Particles = std::move(other.m_Particles);
+        m_NextParticle = std::exchange(other.m_NextParticle, 0);
+        m_ParticleTexture = std::exchange(other.m_ParticleTexture, nullptr);
+        m_Random = std::move(other.m_Random);
+
+        return *this;
+    }
 
     void EmitBurst(const ParticleBurstDesc& desc);
 
@@ -66,10 +86,10 @@ class ParticleSystem {
     sop::Result<void> Render(AppCtx& ctx);
 
    private:
+    ParticleSystem() = default;
     Particle& GetFreeParticle();
 
     float RandomFloat(float min, float max);
-
    private:
     std::vector<Particle> m_Particles;
     size_t m_NextParticle = 0;

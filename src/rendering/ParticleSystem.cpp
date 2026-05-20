@@ -1,50 +1,51 @@
-#include "smashorpass/rendering/ParticleSystem.hpp"
+#include <SDL3/SDL_error.h>
+#include <SDL3/SDL_render.h>
+#include <SDL3_image/SDL_image.h>
 
-#include <algorithm>
-#include <cmath>
-#include <filesystem>
 #include <format>
+#include <filesystem>
+#include <string>
 
-#include "SDL3/SDL_error.h"
-#include "SDL3_image/SDL_image.h"
-#include "smashorpass/core/AppCtx.hpp"
+#include "smashorpass/rendering/ParticleSystem.hpp"
+#include "smashorpass/rendering/Renderer.hpp"
 
 namespace sop {
 
-Result<void> ParticleSystem::Initialize(const Renderer& renderer, size_t maxParticles) {
+Result<ParticleSystem, std::string> ParticleSystem::Create(const Renderer& renderer, std::size_t maxParticles) {
     if (maxParticles == 0) {
-        return Err(std::string(
-            "ParticleSystem::Initialize failed: maxParticles must be greater than zero"));
+        return Err(
+            std::string("ParticleSystem::Create failed: maxParticles must be greater than zero"));
     }
 
-    m_Particles.assign(maxParticles, Particle{});
-    m_NextParticle = 0;
-    m_Random = std::mt19937(std::random_device{}());
+    ParticleSystem system{};
 
-    auto path = std::filesystem::path(SOP_ASSET_ROOT_DIR) /
-                "particles/soft_circle_particle_textures/soft_circle_particle_128.png";
-    auto pathString = path.string();
-    m_ParticleTexture = IMG_LoadTexture(renderer.NativeHandle(), pathString.c_str());
-    if (m_ParticleTexture == nullptr) {
+    system.m_Particles.assign(maxParticles, Particle{});
+    system.m_NextParticle = 0;
+    system.m_Random = std::mt19937(std::random_device{}());
+
+    const auto path = std::filesystem::path(SOP_ASSET_ROOT_DIR) /
+                      "particles/soft_circle_particle_textures/soft_circle_particle_128.png";
+
+    const std::string pathString = path.string();
+
+    SDL_Texture* rawTexture = IMG_LoadTexture(renderer.NativeHandle(), pathString.c_str());
+
+    if (rawTexture == nullptr) {
         return Err(
             std::format("Failed to load particle texture '{}': {}", pathString, SDL_GetError()));
     }
 
-    if (!SDL_SetTextureBlendMode(m_ParticleTexture, SDL_BLENDMODE_BLEND)) {
-        const std::string error = SdlError("SDL_SetTextureBlendMode");
-        SDL_DestroyTexture(m_ParticleTexture);
-        m_ParticleTexture = nullptr;
-        return Err(error);
+    system.m_ParticleTexture = rawTexture;
+
+    if (!SDL_SetTextureBlendMode(system.m_ParticleTexture, SDL_BLENDMODE_BLEND)) {
+        return Err(SdlError("SDL_SetTextureBlendMode"));
     }
 
-    if (!SDL_SetTextureScaleMode(m_ParticleTexture, SDL_SCALEMODE_LINEAR)) {
-        const std::string error = SdlError("SDL_SetTextureScaleMode");
-        SDL_DestroyTexture(m_ParticleTexture);
-        m_ParticleTexture = nullptr;
-        return Err(error);
+    if (!SDL_SetTextureScaleMode(system.m_ParticleTexture, SDL_SCALEMODE_LINEAR)) {
+        return Err(SdlError("SDL_SetTextureScaleMode"));
     }
 
-    return Ok();
+    return Ok(std::move(system));
 }
 
 ParticleSystem::~ParticleSystem() {
