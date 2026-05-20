@@ -7,9 +7,9 @@ namespace sop {
 StateManager::~StateManager() = default;
 
 void StateManager::PopState() {
-    if (!m_States.empty()) {
-        m_States.pop_back();
-    }
+    if (m_States.empty())
+        return;
+    m_States.pop_back();
 }
 
 void StateManager::ClearStates() {
