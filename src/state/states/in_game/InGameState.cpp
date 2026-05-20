@@ -46,7 +46,7 @@ Result<void> InGameState::Initialize(AppCtx& ctx) {
     constexpr float kDefaultPlayerHealth = 100.0f;
 
     Arena defaultArena{.asset = m_ArenaAsset, .dimensions = SDL_Rect{}};
-    defaultArena.ResizeToWindow(ctx.DisplayMetrics.LogicalSize());
+    defaultArena.ResizeToWindow(ctx.displayMetrics.LogicalSize());
     m_Arena = defaultArena;
 
     m_Players.clear();
@@ -185,7 +185,7 @@ void InGameState::TogglePause() {
 }
 
 Result<void> InGameState::AdjustToWindow(AppCtx& ctx) {
-    m_Arena.ResizeToWindow(ctx.DisplayMetrics.LogicalSize());
+    m_Arena.ResizeToWindow(ctx.displayMetrics.LogicalSize());
     return Ok();
 }
 
@@ -204,16 +204,16 @@ Result<void> InGameState::TickAnimation(AppCtx& ctx) {
 }
 
 Result<void> InGameState::TickEffects(AppCtx& ctx, std::chrono::duration<float> dt) {
-    ctx.ParticleSystem.Update(dt.count());
+    ctx.particleSystem.Update(dt.count());
     return Ok();
 }
 
 Result<void> InGameState::RenderBackdrop(AppCtx& ctx) {
-    TRY(arenaAsset, ctx.Assets.Get(m_Arena.asset));
+    TRY(arenaAsset, ctx.assets.Get(m_Arena.asset));
 
     SDL_FRect rect{};
     SDL_RectToFRect(&m_Arena.dimensions, &rect);
-    return ctx.Renderer.DrawTexture(arenaAsset.get().m_Background.get(), rect);
+    return ctx.renderer.DrawTexture(arenaAsset.get().m_Background.get(), rect);
 }
 
 Result<void> InGameState::RenderPlayers(AppCtx& ctx) {
@@ -228,22 +228,22 @@ Result<void> InGameState::RenderEffects(AppCtx&) {
 }
 
 Result<void> InGameState::RenderForeground(AppCtx& ctx) {
-    TRY(arenaAsset, ctx.Assets.Get(m_Arena.asset));
+    TRY(arenaAsset, ctx.assets.Get(m_Arena.asset));
 
     SDL_FRect rect{};
     SDL_RectToFRect(&m_Arena.dimensions, &rect);
-    return ctx.Renderer.DrawTexture(arenaAsset.get().m_Foreground.get(), rect);
+    return ctx.renderer.DrawTexture(arenaAsset.get().m_Foreground.get(), rect);
 }
 
 Result<void> InGameState::RenderCollisionBoxes(AppCtx& ctx) {
-    if (!ctx.RenderCollisionBoxes || !m_Arena.asset) {
+    if (!ctx.renderCollisionBoxes || !m_Arena.asset) {
         return Ok();
     }
 
-    TRY(arenaAsset, ctx.Assets.Get(m_Arena.asset));
+    TRY(arenaAsset, ctx.assets.Get(m_Arena.asset));
 
     for (const SDL_FRect& collisionBox : arenaAsset.get().m_CollisionBoxes) {
-        TRY_VOID(ctx.Renderer.DrawRect(MapBaselineRectToArena(collisionBox, m_Arena.dimensions),
+        TRY_VOID(ctx.renderer.DrawRect(MapBaselineRectToArena(collisionBox, m_Arena.dimensions),
                                          Color{0, 255, 0, 255}));
     }
 

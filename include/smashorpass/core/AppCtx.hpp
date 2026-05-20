@@ -16,20 +16,20 @@ struct AppCtx final {
     AppCtx();
     Result<void> Initialize();
 
-    Window Window;
-    Renderer Renderer;
-    EventDispatcher EventDispatcher;
-    Input Input;
-    ParticleSystem ParticleSystem;
+    Window window;
+    Renderer renderer;
+    EventDispatcher eventDispatcher;
+    Input input;
+    ParticleSystem particleSystem;
 
-    AssetManager Assets;
-    StateManager StateManager;
+    AssetManager assets;
+    StateManager stateManager;
 
-    DisplayMetrics DisplayMetrics;
+    DisplayMetrics displayMetrics;
 
-    bool RenderCollisionBoxes = false;
-    bool DebugOverlayVisible = false;
-    bool AppRunning = true;
+    bool renderCollisionBoxes = false;
+    bool debugOverlayVisible = false;
+    bool appRunning = true;
 };
 
 }  // namespace sop

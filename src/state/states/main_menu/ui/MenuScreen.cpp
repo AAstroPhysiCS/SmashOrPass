@@ -15,7 +15,7 @@ void MainMenuScreen::Build(UIBuilder& builder) {
         builder.Button("Start Game")
             .Align(Alignment::TopCenter)
             .OnClick([](AppCtx& ctx, ButtonData&) {
-                ctx.EventDispatcher.Enqueue(
+                ctx.eventDispatcher.Enqueue(
                     NavigationEvent{.Action = NavigationAction::ShowCharacterSelect});
             }),
         builder.Button("Options").Align(Alignment::TopCenter).OnClick([](AppCtx&, ButtonData&) {
@@ -25,7 +25,7 @@ void MainMenuScreen::Build(UIBuilder& builder) {
             spdlog::info("Scoreboard clicked");
         }),
         builder.Button("Exit").Align(Alignment::TopCenter).OnClick([](AppCtx& ctx, ButtonData&) {
-            ctx.EventDispatcher.Enqueue(ApplicationQuitEvent{});
+            ctx.eventDispatcher.Enqueue(ApplicationQuitEvent{});
         }));
 
     auto root = builder.Align(Alignment::Center, std::move(menu));

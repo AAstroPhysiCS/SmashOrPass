@@ -124,7 +124,7 @@ std::optional<SDL_FRect> Player::GetBaselineSpriteRect(
 }
 
 std::optional<SDL_FRect> Player::GetBaselineCollisionBox(AppCtx& ctx) const {
-    auto asset = ctx.Assets.Get(m_Asset);
+    auto asset = ctx.assets.Get(m_Asset);
     if (!asset) {
         return std::nullopt;
     }
@@ -178,11 +178,11 @@ void Player::TickGameLogic(AppCtx& ctx, const Arena& arena) {
     const bool jumpRequested = HasQueuedAction(m_InputQueue, InputAction::JUMP);
     const bool dashRequested = HasQueuedAction(m_InputQueue, InputAction::DASH);
     const bool moveLeft =
-        IsActionHeld(ctx.Input, m_InputTranslationHelper, InputAction::MOVE_LEFT);
+        IsActionHeld(ctx.input, m_InputTranslationHelper, InputAction::MOVE_LEFT);
     const bool moveRight =
-        IsActionHeld(ctx.Input, m_InputTranslationHelper, InputAction::MOVE_RIGHT);
+        IsActionHeld(ctx.input, m_InputTranslationHelper, InputAction::MOVE_RIGHT);
     const bool attackHeld =
-        IsActionHeld(ctx.Input, m_InputTranslationHelper, InputAction::ATTACK);
+        IsActionHeld(ctx.input, m_InputTranslationHelper, InputAction::ATTACK);
 
     m_InputQueue.clear();
 
@@ -251,7 +251,7 @@ void Player::TickGameLogic(AppCtx& ctx, const Arena& arena) {
     }
 
     // Collision handling
-    auto arenaAsset = ctx.Assets.Get(arena.asset);
+    auto arenaAsset = ctx.assets.Get(arena.asset);
     if (!arenaAsset) {
         return;
     }
@@ -300,7 +300,7 @@ void Player::TickGameLogic(AppCtx& ctx, const Arena& arena) {
 }
 
 void Player::TickAnimations(AppCtx& ctx, const Arena& arena) {
-    auto asset = ctx.Assets.Get(m_Asset);
+    auto asset = ctx.assets.Get(m_Asset);
     if (!asset) {
         m_CurrentAnimationFrame = 0;
         return;
@@ -326,7 +326,7 @@ bool Player::IsOnGround(AppCtx& ctx, const Arena& arena) const {
         return false;
     }
 
-    auto arenaAsset = ctx.Assets.Get(arena.asset);
+    auto arenaAsset = ctx.assets.Get(arena.asset);
     if (!arenaAsset) {
         return false;
     }
@@ -348,7 +348,7 @@ bool Player::IsOnGround(AppCtx& ctx, const Arena& arena) const {
 }
 
 Result<void> Player::Render(AppCtx& ctx, const Arena& arena) const {
-    TRY(asset, ctx.Assets.Get(m_Asset));
+    TRY(asset, ctx.assets.Get(m_Asset));
 
     const auto sheet = asset.get().m_SpriteSheets.find(m_CurrentAnimation);
     if (sheet == asset.get().m_SpriteSheets.end() || sheet->second.m_Frames.empty() ||
@@ -370,7 +370,7 @@ Result<void> Player::Render(AppCtx& ctx, const Arena& arena) const {
     params.dst = MapBaselineRectToArena(*spriteRect, arena.dimensions);
     params.flip = m_FacingRight ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 
-    return ctx.Renderer.DrawTexture(sheet->second.m_Texture.get(), params);
+    return ctx.renderer.DrawTexture(sheet->second.m_Texture.get(), params);
 }
 
 Result<void> Player::RenderCollisionBox(AppCtx& ctx, const Arena& arena) const {
@@ -379,7 +379,7 @@ Result<void> Player::RenderCollisionBox(AppCtx& ctx, const Arena& arena) const {
         return Ok();
     }
 
-    return ctx.Renderer.DrawRect(MapBaselineRectToArena(*collisionBox, arena.dimensions),
+    return ctx.renderer.DrawRect(MapBaselineRectToArena(*collisionBox, arena.dimensions),
                                    Color{255, 230, 0, 255});
 }
 

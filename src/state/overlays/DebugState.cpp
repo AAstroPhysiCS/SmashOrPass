@@ -24,14 +24,14 @@ Result<void> DebugState::Initialize(AppCtx& ctx) {
 
     ImGui::StyleColorsDark();
 
-    const bool sdl3Initialized = ImGui_ImplSDL3_InitForSDLRenderer(ctx.Window.NativeHandle(),
-                                                                   ctx.Renderer.NativeHandle());
+    const bool sdl3Initialized = ImGui_ImplSDL3_InitForSDLRenderer(ctx.window.NativeHandle(),
+                                                                   ctx.renderer.NativeHandle());
     if (!sdl3Initialized) {
         ImGui::DestroyContext();
         return Err(std::string("Failed to initialize ImGui SDL3 backend"));
     }
 
-    const bool rendererInitialized = ImGui_ImplSDLRenderer3_Init(ctx.Renderer.NativeHandle());
+    const bool rendererInitialized = ImGui_ImplSDLRenderer3_Init(ctx.renderer.NativeHandle());
     if (!rendererInitialized) {
         ImGui_ImplSDL3_Shutdown();
         ImGui::DestroyContext();
@@ -59,10 +59,10 @@ void DebugState::BeginFrame() {
 
 void DebugState::Draw(AppCtx& ctx) {
     const ImGuiIO& io = ImGui::GetIO();
-    const SDL_FPoint logicalSize = ctx.DisplayMetrics.LogicalSize();
+    const SDL_FPoint logicalSize = ctx.displayMetrics.LogicalSize();
     const double frameMilliseconds = static_cast<double>(io.DeltaTime) * 1000.0;
     const double framesPerSecond = static_cast<double>(io.Framerate);
-    const State* topState = ctx.StateManager.TopState();
+    const State* topState = ctx.stateManager.TopState();
     const std::string_view stateName =
         topState != nullptr ? topState->DebugName() : std::string_view{"None"};
 
@@ -76,23 +76,23 @@ void DebugState::Draw(AppCtx& ctx) {
 
     ImGui::Separator();
     ImGui::Text(
-        "Window: %d x %d", ctx.DisplayMetrics.WindowSize.x, ctx.DisplayMetrics.WindowSize.y);
+        "Window: %d x %d", ctx.displayMetrics.WindowSize.x, ctx.displayMetrics.WindowSize.y);
     ImGui::Text(
-        "Pixels: %d x %d", ctx.DisplayMetrics.PixelSize.x, ctx.DisplayMetrics.PixelSize.y);
+        "Pixels: %d x %d", ctx.displayMetrics.PixelSize.x, ctx.displayMetrics.PixelSize.y);
     ImGui::Text("Logical: %.1f x %.1f",
                 static_cast<double>(logicalSize.x),
                 static_cast<double>(logicalSize.y));
-    ImGui::Text("Display scale: %.2f", static_cast<double>(ctx.DisplayMetrics.DisplayScale));
-    ImGui::Text("Pixel density: %.2f", static_cast<double>(ctx.DisplayMetrics.PixelDensity));
+    ImGui::Text("Display scale: %.2f", static_cast<double>(ctx.displayMetrics.DisplayScale));
+    ImGui::Text("Pixel density: %.2f", static_cast<double>(ctx.displayMetrics.PixelDensity));
 
     ImGui::Separator();
-    ImGui::Checkbox("Render collision boxes", &ctx.RenderCollisionBoxes);
+    ImGui::Checkbox("Render collision boxes", &ctx.renderCollisionBoxes);
     ImGui::End();
 }
 
 void DebugState::EndFrame(AppCtx& ctx) {
     ImGui::Render();
-    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), ctx.Renderer.NativeHandle());
+    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), ctx.renderer.NativeHandle());
 }
 
 Result<EventFlow> DebugState::OnEvent(AppCtx&, const Event& event) {

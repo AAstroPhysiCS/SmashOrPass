@@ -19,11 +19,11 @@ Application::Application() {
     Result<void> success = Ok();
 
     TRY_AND_VOID(success, ctx.Initialize());
-    TRY_AND_VOID(success, ctx.Renderer.SetVSync(true));
+    TRY_AND_VOID(success, ctx.renderer.SetVSync(true));
     TRY_AND_VOID(success, RefreshDisplayMetrics());
 
-    TRY_AND_VOID(success, ctx.StateManager.ResetToState<MainMenuState>(ctx));
-    TRY_AND_VOID(success, ctx.StateManager.PushOverlay<DebugState>(ctx));
+    TRY_AND_VOID(success, ctx.stateManager.ResetToState<MainMenuState>(ctx));
+    TRY_AND_VOID(success, ctx.stateManager.PushOverlay<DebugState>(ctx));
 
     if (success)
         m_Initialized = true;
@@ -36,7 +36,7 @@ Result<void> Application::Run() {
 
     spdlog::info("Starting the game");
 
-    while (ctx.AppRunning) {
+    while (ctx.appRunning) {
         TRY_VOID(ProcessEvents());
         TRY_VOID(Update());
         TRY_VOID(Render());
@@ -53,27 +53,27 @@ Result<void> Application::ProcessEvents() {
             TRY_VOID(RefreshDisplayMetrics());
 
             TRY_VOID(DispatchEvent(Event{
-                .Payload = WindowMetricsChangedEvent{.Metrics = ctx.DisplayMetrics},
+                .Payload = WindowMetricsChangedEvent{.Metrics = ctx.displayMetrics},
                 .RawEvent = nullptr,
             }));
         }
 
         SDL_Event translatedSource = event;
         if (IsPointerEventType(event.type)) {
-            TRY_VOID(ctx.Renderer.ConvertEventToRenderCoordinates(translatedSource));
+            TRY_VOID(ctx.renderer.ConvertEventToRenderCoordinates(translatedSource));
         }
 
         const Event translatedEvent = TranslateSDLEvent(translatedSource);
         TRY_VOID(DispatchEvent(translatedEvent));
 
         if (event.type == SDL_EVENT_QUIT) {
-            ctx.AppRunning = false;
+            ctx.appRunning = false;
         }
     }
 
-    while (!ctx.EventDispatcher.m_EventQueue.empty()) {
-        Event customEvent = std::move(ctx.EventDispatcher.m_EventQueue.front());
-        ctx.EventDispatcher.m_EventQueue.pop_front();
+    while (!ctx.eventDispatcher.m_EventQueue.empty()) {
+        Event customEvent = std::move(ctx.eventDispatcher.m_EventQueue.front());
+        ctx.eventDispatcher.m_EventQueue.pop_front();
         TRY_VOID(DispatchEvent(customEvent));
     }
 
@@ -81,19 +81,19 @@ Result<void> Application::ProcessEvents() {
 }
 
 Result<void> Application::Update() {
-    ctx.Assets.Update(ctx);
-    return ctx.StateManager.Update(ctx);
+    ctx.assets.Update(ctx);
+    return ctx.stateManager.Update(ctx);
 }
 
 Result<void> Application::Render() {
-    TRY_VOID(ctx.Renderer.BeginFrame());
-    auto result = ctx.StateManager.Render(ctx);
-    TRY_VOID(ctx.Renderer.EndFrame());
+    TRY_VOID(ctx.renderer.BeginFrame());
+    auto result = ctx.stateManager.Render(ctx);
+    TRY_VOID(ctx.renderer.EndFrame());
     return result;
 }
 
 Result<void> Application::DispatchEvent(const Event& event) {
-    ctx.Input.RecordEvent(ctx, event);
+    ctx.input.RecordEvent(ctx, event);
 
     if (std::holds_alternative<ApplicationQuitEvent>(event.Payload)) {
         return OnEvent(event);
@@ -105,7 +105,7 @@ Result<void> Application::DispatchEvent(const Event& event) {
         }
     }
 
-    TRY(eventFlow, ctx.StateManager.DispatchEvent(ctx, event));
+    TRY(eventFlow, ctx.stateManager.DispatchEvent(ctx, event));
     if (eventFlow == EventFlow::Passed) {
         return OnEvent(event);
     }
@@ -113,17 +113,17 @@ Result<void> Application::DispatchEvent(const Event& event) {
 }
 
 Result<void> Application::RefreshDisplayMetrics() {
-    TRY(displayMetrics, ctx.Window.GetDisplayMetrics());
-    ctx.DisplayMetrics = displayMetrics;
+    TRY(displayMetrics, ctx.window.GetDisplayMetrics());
+    ctx.displayMetrics = displayMetrics;
 
-    return ctx.Renderer.ApplyDisplayScale(ctx.DisplayMetrics.DisplayScale);
+    return ctx.renderer.ApplyDisplayScale(ctx.displayMetrics.DisplayScale);
 }
 
 Result<void> Application::OnEvent(const Event& event) {
     {
         TRY(handled,
             EventDispatcher::Dispatch<ApplicationQuitEvent>(
-                event, [&](const ApplicationQuitEvent&) { ctx.AppRunning = false; }));
+                event, [&](const ApplicationQuitEvent&) { ctx.appRunning = false; }));
 
         if (handled) {
             return Ok();
@@ -136,18 +136,18 @@ Result<void> Application::OnEvent(const Event& event) {
                 event, [&](const NavigationEvent& navigation) -> Result<void> {
                     switch (navigation.Action) {
                         case NavigationAction::ShowMainMenu: {
-                            ctx.ParticleSystem.Clear();
+                            ctx.particleSystem.Clear();
 
-                            TRY(mainMenuState, ctx.StateManager.ResetToState<MainMenuState>(ctx));
+                            TRY(mainMenuState, ctx.stateManager.ResetToState<MainMenuState>(ctx));
                             (void)mainMenuState;
 
                             return Ok();
                         }
                         case NavigationAction::StartMatch: {
-                            ctx.ParticleSystem.Clear();
+                            ctx.particleSystem.Clear();
 
                             TRY(inGameState,
-                                ctx.StateManager.ResetToState<InGameState>(
+                                ctx.stateManager.ResetToState<InGameState>(
                                     ctx, navigation.ArenaAsset, navigation.CharacterAssets));
                             (void)inGameState;
 
@@ -185,8 +185,8 @@ Result<void> Application::OnEvent(const Event& event) {
 }
 
 Result<void> Application::ToggleDebugOverlay() {
-    ctx.DebugOverlayVisible = !ctx.DebugOverlayVisible;
-    spdlog::info("Debug overlay {}", ctx.DebugOverlayVisible ? "enabled" : "disabled");
+    ctx.debugOverlayVisible = !ctx.debugOverlayVisible;
+    spdlog::info("Debug overlay {}", ctx.debugOverlayVisible ? "enabled" : "disabled");
     return Ok();
 }
 

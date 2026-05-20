@@ -17,7 +17,7 @@ void PauseScreen::Build(UIBuilder& builder) {
                                 .Align(Alignment::TopCenter)
                                 .OnClick([](AppCtx& ctx, ButtonData&) {
                                     spdlog::info("Resume clicked");
-                                    ctx.EventDispatcher.Enqueue(
+                                    ctx.eventDispatcher.Enqueue(
                                         NavigationEvent{.Action = NavigationAction::ResumeMatch});
                                 }),
 
@@ -31,7 +31,7 @@ void PauseScreen::Build(UIBuilder& builder) {
                                 .Align(Alignment::TopCenter)
                                 .OnClick([](AppCtx& ctx, ButtonData&) {
                                     spdlog::info("Main menu clicked from pause menu");
-                                    ctx.EventDispatcher.Enqueue(
+                                    ctx.eventDispatcher.Enqueue(
                                         NavigationEvent{.Action = NavigationAction::ShowMainMenu});
                                 }),
 
@@ -41,7 +41,7 @@ void PauseScreen::Build(UIBuilder& builder) {
                                     spdlog::info("Exit clicked from pause menu");
 
                                     // TODO: Later:
-                                    ctx.EventDispatcher.Enqueue(ApplicationQuitEvent{});
+                                    ctx.eventDispatcher.Enqueue(ApplicationQuitEvent{});
                                 }));
 
     auto menu =

@@ -12,7 +12,7 @@
 namespace sop {
 
 CharacterSelectScreen::CharacterSelectScreen(AppCtx& ctx) : UIScreen(ctx) {
-    auto availableCharacters = ctx.Assets.AvailableCharacterAssets(ctx);
+    auto availableCharacters = ctx.assets.AvailableCharacterAssets(ctx);
     if (!availableCharacters.has_value()) {
         spdlog::warn("Failed to list character assets: {}", availableCharacters.error());
         return;
@@ -29,7 +29,7 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
     auto backButton =
         builder.Button("Back").Align(Alignment::TopCenter).OnClick([](AppCtx& ctx, ButtonData&) {
             spdlog::info("Back clicked");
-            ctx.EventDispatcher.Enqueue(
+            ctx.eventDispatcher.Enqueue(
                 NavigationEvent{.Action = NavigationAction::ShowMainMenu});
         });
 
@@ -84,7 +84,7 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
                                       CharacterName(m_Player1Character),
                                       CharacterName(m_Player2Character));
 
-                         auto arenaIds = ctx.Assets.AvailableArenaAssets(ctx);
+                         auto arenaIds = ctx.assets.AvailableArenaAssets(ctx);
                          if (!arenaIds) {
                              spdlog::warn("Failed to list arena assets: {}", arenaIds.error());
                              return;
@@ -92,7 +92,7 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
 
                          const std::string arenaId =
                              arenaIds->empty() ? std::string{} : arenaIds->front();
-                         auto arenaAsset = ctx.Assets.LoadArenaAsset(ctx, arenaId);
+                         auto arenaAsset = ctx.assets.LoadArenaAsset(ctx, arenaId);
                          if (!arenaAsset) {
                              spdlog::warn(
                                  "Failed to load arena '{}': {}", arenaId, arenaAsset.error());
@@ -100,7 +100,7 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
                          }
 
                          auto player1Asset =
-                             ctx.Assets.LoadCharacterAsset(ctx, m_Player1Character);
+                             ctx.assets.LoadCharacterAsset(ctx, m_Player1Character);
                          if (!player1Asset) {
                              spdlog::warn("Failed to load player 1 character '{}': {}",
                                           m_Player1Character,
@@ -109,7 +109,7 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
                          }
 
                          auto player2Asset =
-                             ctx.Assets.LoadCharacterAsset(ctx, m_Player2Character);
+                             ctx.assets.LoadCharacterAsset(ctx, m_Player2Character);
                          if (!player2Asset) {
                              spdlog::warn("Failed to load player 2 character '{}': {}",
                                           m_Player2Character,
@@ -117,7 +117,7 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
                              return;
                          }
 
-                         ctx.EventDispatcher.Enqueue(NavigationEvent{
+                         ctx.eventDispatcher.Enqueue(NavigationEvent{
                              .Action = NavigationAction::StartMatch,
                              .ArenaAsset = *arenaAsset,
                              .CharacterAssets = {*player1Asset, *player2Asset},
