@@ -14,7 +14,7 @@
 
 namespace sop {
 
-class AppCtx;
+struct AppCtx;
 
 using TexturePtr = std::unique_ptr<SDL_Texture, decltype(&SDL_DestroyTexture)>;
 using SurfacePtr = std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)>;

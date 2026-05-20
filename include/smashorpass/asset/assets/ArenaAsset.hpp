@@ -12,7 +12,7 @@
 
 namespace sop {
 
-class AppCtx;
+struct AppCtx;
 
 inline constexpr int ARENA_BASELINE_WIDTH = 1920;
 inline constexpr int ARENA_BASELINE_HEIGHT = 1080;

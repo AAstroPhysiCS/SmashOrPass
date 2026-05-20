@@ -16,7 +16,7 @@
 
 namespace sop {
 
-class AppCtx;
+struct AppCtx;
 
 template <typename AssetLoadJob, typename RawAssetData>
 concept ConvertsToRawAssetData = requires(AppCtx& ctx, AssetLoadJob assetLoadJob) {
