@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "smashorpass/core/AppCtx.hpp"
+#include "smashorpass/asset/effects/CharacterFrameEffectMask.hpp"
 #include "smashorpass/util.hpp"
 
 namespace sop {
@@ -291,6 +292,88 @@ Result<void> Player::TickGameLogic(AppCtx& ctx, const Arena& arena) {
     return Ok();
 }
 
+Vec2 Player::LocalFramePointToBaselinePoint(const CharacterSpriteSheetFrame& frame,
+                                            const SDL_FRect& spriteRect,
+                                            Vec2 localPoint,
+                                            bool facingRight) {
+    const float localX = facingRight ? frame.m_Location.w - localPoint.x : localPoint.x;
+
+    return Vec2{
+        spriteRect.x + localX * kPlayerScale,
+        spriteRect.y + localPoint.y * kPlayerScale,
+    };
+}
+
+Vec2 Player::MapBaselinePointToArenaPoint(Vec2 point, const SDL_Rect& arenaDimensions) {
+    const SDL_FRect mapped = MapBaselineRectToArena(
+        SDL_FRect{
+            .x = point.x,
+            .y = point.y,
+            .w = 1.0f,
+            .h = 1.0f,
+        },
+        arenaDimensions);
+
+    return Vec2{mapped.x, mapped.y};
+}
+
+Result<void> Player::DispatchSwordFrameEffects(AppCtx& ctx,
+                                           const Arena& arena,
+                                           const CharacterSpriteSheetFrame& frame,
+                                           std::span<const FrameEffectMask> swordMasks) {
+    const bool frameChanged = m_CurrentAnimation != m_PreviousEffectAnimation ||
+                              m_CurrentAnimationFrame != m_PreviousEffectFrameIndex;
+    m_PreviousEffectAnimation = m_CurrentAnimation;
+    m_PreviousEffectFrameIndex = m_CurrentAnimationFrame;
+
+    if (!frameChanged) {
+        return Ok();
+    }
+
+    if (m_CurrentAnimation != CharacterAnimation::Attacks) {
+        return Ok();
+    }
+
+    const std::size_t frameIndex = static_cast<std::size_t>(m_CurrentAnimationFrame);
+    if (frameIndex >= swordMasks.size()) {
+        return Ok();
+    }
+
+    const FrameEffectMask& mask = swordMasks[frameIndex];
+    if (mask.Points.empty()) {
+        return Ok();
+    }
+
+    const std::optional<SDL_FRect> spriteRect = GetBaselineSpriteRect(frame);
+    if (!spriteRect) {
+        return Ok();
+    }
+
+    constexpr int particlesPerAttackFrame = 6;
+    std::uniform_int_distribution<std::size_t> pointDistribution(0, mask.Points.size() - 1);
+
+    for (int i = 0; i < particlesPerAttackFrame; ++i) {
+        const Vec2 localPoint = mask.Points[pointDistribution(m_EffectRandom)];
+
+        const Vec2 baselinePoint = LocalFramePointToBaselinePoint(frame, *spriteRect, localPoint, m_FacingRight);
+        const Vec2 arenaPoint = MapBaselinePointToArenaPoint(baselinePoint, arena.dimensions);
+
+        ctx.eventDispatcher.Enqueue(PlayerParticleEffectEvent{
+            .Type = PlayerParticleEffectType::SwordFire,
+            .Position = arenaPoint,
+            .Velocity =
+                Vec2{
+                    m_FacingRight ? 90.0f : -90.0f,
+                    m_VelocityY - 120.0f,
+                },
+            .FacingRight = m_FacingRight,
+            .Strength = 1.0f,
+        });
+    }
+
+    return Ok();
+}
+
 Result<void> Player::TickAnimations(AppCtx& ctx, const Arena& arena) {
     TRY(asset, ctx.assets.GetAssetData(m_Asset));
 
@@ -305,8 +388,23 @@ Result<void> Player::TickAnimations(AppCtx& ctx, const Arena& arena) {
         return Ok();
     }
 
-    m_CurrentAnimationFrame =
-        (m_CurrentAnimationFrame + 1) % static_cast<int>(sheet->second.m_Frames.size());
+    const std::vector<CharacterSpriteSheetFrame>& frames = sheet->second.m_Frames;
+    const bool animationChanged = animation != m_CurrentAnimation;
+
+    if (animationChanged) {
+        m_CurrentAnimationFrame = 0;
+    } else {
+        m_CurrentAnimationFrame = (m_CurrentAnimationFrame + 1) % static_cast<int>(frames.size());
+    }
+
+    const CharacterSpriteSheetFrame& frame =
+        frames[static_cast<std::size_t>(m_CurrentAnimationFrame)];
+
+    // maybe not dispatch every frame, maybe do the player events etc also with our event system?
+    const auto swordFireMasks =
+        sheet->second.GetEffectMasks(CharacterFrameEffectMaskType::SwordFire);
+    TRY_VOID(DispatchSwordFrameEffects(ctx, arena, frame, swordFireMasks));
+
     return Ok();
 }
 

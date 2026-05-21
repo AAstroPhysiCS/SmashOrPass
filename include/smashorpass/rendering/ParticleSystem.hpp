@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "smashorpass/rendering/Renderer.hpp"
+#include "smashorpass/core/Event.hpp"
 
 namespace sop {
 
@@ -49,8 +50,7 @@ struct ParticleBurstDesc {
 
 class ParticleSystem {
    public:
-    static sop::Result<ParticleSystem, std::string> Create(const Renderer& renderer,
-                                                           size_t maxParticles = std::pow(2, 10));
+    ParticleSystem() = default;
     ~ParticleSystem();
 
     ParticleSystem(const ParticleSystem&) = delete;
@@ -79,6 +79,8 @@ class ParticleSystem {
         return *this;
     }
 
+    sop::Result<void, std::string> Initialize(const Renderer& renderer,
+                                              size_t maxParticles = std::pow(2, 10));
     void EmitBurst(const ParticleBurstDesc& desc);
 
     void Clear();
@@ -86,10 +88,10 @@ class ParticleSystem {
     sop::Result<void> Render(AppCtx& ctx);
 
    private:
-    ParticleSystem() = default;
     Particle& GetFreeParticle();
 
     float RandomFloat(float min, float max);
+
    private:
     std::vector<Particle> m_Particles;
     size_t m_NextParticle = 0;
@@ -100,4 +102,76 @@ class ParticleSystem {
     friend struct AppCtx;
 };
 
+namespace util {
+
+    inline void EmitSwordFireParticleEffect(ParticleSystem& particleSystem,
+                                        const PlayerParticleEffectEvent& event) {
+        ParticleBurstDesc desc{};
+        desc.Position = event.Position;
+        desc.InitialVelocity = Vec2{
+            event.FacingRight ? -35.0f : 35.0f,
+            -110.0f,
+        };
+        desc.Count = 1;
+        desc.MinSpeed = 90.0f;
+        desc.MaxSpeed = 230.0f;
+        desc.MinLifetime = 1.2f;
+        desc.MaxLifetime = 2.0f;
+        desc.MinSize = 8.0f;
+        desc.MaxSize = 20.0f;
+        desc.StartColor = Color{40, 255, 0, 255};
+        desc.EndColor = Color{255, 0, 0, 0};
+        desc.Acceleration = Vec2{
+            event.FacingRight ? -10.0f : 10.0f,
+            -90.0f,
+        };
+        particleSystem.EmitBurst(desc);
+    }
+
+    inline void EmitDashParticleEffect(ParticleSystem& particleSystem,
+                                       const PlayerParticleEffectEvent& event) {
+        const float strength = std::max(event.Strength, 0.25f);
+
+        // Main blue streak
+        {
+            ParticleBurstDesc desc{};
+            desc.Position = event.Position;
+            desc.InitialVelocity = event.Velocity;
+            desc.Count = 8;
+            desc.MinSpeed = 90.0f * strength;
+            desc.MaxSpeed = 260.0f * strength;
+            desc.MinLifetime = 0.22f;
+            desc.MaxLifetime = 0.5f;
+            desc.MinSize = 8.0f;
+            desc.MaxSize = 22.0f;
+            desc.StartColor = Color{80, 210, 255, 180};
+            desc.EndColor = Color{20, 70, 255, 0};
+            desc.Acceleration = Vec2{0.0f, 0.0f};
+
+            particleSystem.EmitBurst(desc);
+        }
+
+        // Soft afterimage glow
+        {
+            ParticleBurstDesc desc{};
+            desc.Position = event.Position;
+            desc.InitialVelocity = Vec2{
+                event.Velocity.x * 0.35f,
+                event.Velocity.y * 0.35f,
+            };
+            desc.Count = 3;
+            desc.MinSpeed = 20.0f * strength;
+            desc.MaxSpeed = 80.0f * strength;
+            desc.MinLifetime = 0.45f;
+            desc.MaxLifetime = 0.8f;
+            desc.MinSize = 18.0f;
+            desc.MaxSize = 34.0f;
+            desc.StartColor = Color{80, 160, 255, 80};
+            desc.EndColor = Color{20, 40, 160, 0};
+            desc.Acceleration = Vec2{0.0f, 0.0f};
+
+            particleSystem.EmitBurst(desc);
+        }
+    }
+    }  // namespace sop::util
 }  // namespace sop

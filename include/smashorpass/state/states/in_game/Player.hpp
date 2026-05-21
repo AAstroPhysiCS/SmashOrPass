@@ -4,6 +4,7 @@
 
 #include <optional>
 #include <vector>
+#include <random>
 
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/asset/assets/CharacterAsset.hpp"
@@ -41,6 +42,14 @@ class Player {
     Result<void> RenderCollisionBox(AppCtx& ctx, const Arena& arena) const;
 
    private:
+    [[nodiscard]] static Vec2 LocalFramePointToBaselinePoint(const CharacterSpriteSheetFrame& frame,
+                                                             const SDL_FRect& spriteRect,
+                                                             Vec2 localPoint,
+                                                             bool facingRight);
+
+    [[nodiscard]] static Vec2 MapBaselinePointToArenaPoint(Vec2 point,
+                                                           const SDL_Rect& arenaDimensions);
+
     // ---- Mechanical
     int m_playerId;
     Asset<CharacterAssetData> m_Asset;
@@ -53,8 +62,18 @@ class Player {
     bool m_FacingRight;
     PlayerState m_State;
 
+    // ---- Effect tracking for animation frames
+    Result<void> DispatchSwordFrameEffects(AppCtx& ctx,
+                                       const Arena& arena,
+                                       const CharacterSpriteSheetFrame& frame,
+                                       std::span<const FrameEffectMask> swordMasks);
+    std::mt19937 m_EffectRandom{std::random_device{}()};
+
     CharacterAnimation m_CurrentAnimation = CharacterAnimation::Idle;
     int m_CurrentAnimationFrame = 0;
+
+    CharacterAnimation m_PreviousEffectAnimation = CharacterAnimation::Idle;
+    int m_PreviousEffectFrameIndex = -1;
 
     float m_VelocityY = 0.0f;
 

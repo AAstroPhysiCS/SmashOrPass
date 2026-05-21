@@ -11,17 +11,15 @@
 #include "smashorpass/core/AppCtx.hpp"
 namespace sop {
 
-Result<ParticleSystem, std::string> ParticleSystem::Create(const Renderer& renderer, std::size_t maxParticles) {
+Result<void, std::string> ParticleSystem::Initialize(const Renderer& renderer, std::size_t maxParticles) {
     if (maxParticles == 0) {
         return Err(
             std::string("ParticleSystem::Create failed: maxParticles must be greater than zero"));
     }
 
-    ParticleSystem system{};
-
-    system.m_Particles.assign(maxParticles, Particle{});
-    system.m_NextParticle = 0;
-    system.m_Random = std::mt19937(std::random_device{}());
+    m_Particles.assign(maxParticles, Particle{});
+    m_NextParticle = 0;
+    m_Random = std::mt19937(std::random_device{}());
 
     const auto path = std::filesystem::path(SOP_ASSET_ROOT_DIR) /
                       "particles/soft_circle_particle_textures/soft_circle_particle_128.png";
@@ -35,17 +33,17 @@ Result<ParticleSystem, std::string> ParticleSystem::Create(const Renderer& rende
             std::format("Failed to load particle texture '{}': {}", pathString, SDL_GetError()));
     }
 
-    system.m_ParticleTexture = rawTexture;
+    m_ParticleTexture = rawTexture;
 
-    if (!SDL_SetTextureBlendMode(system.m_ParticleTexture, SDL_BLENDMODE_BLEND)) {
+    if (!SDL_SetTextureBlendMode(m_ParticleTexture, SDL_BLENDMODE_BLEND)) {
         return Err(SdlError("SDL_SetTextureBlendMode"));
     }
 
-    if (!SDL_SetTextureScaleMode(system.m_ParticleTexture, SDL_SCALEMODE_LINEAR)) {
+    if (!SDL_SetTextureScaleMode(m_ParticleTexture, SDL_SCALEMODE_LINEAR)) {
         return Err(SdlError("SDL_SetTextureScaleMode"));
     }
 
-    return Ok(std::move(system));
+    return Ok();
 }
 
 ParticleSystem::~ParticleSystem() {
@@ -133,7 +131,13 @@ Result<void> ParticleSystem::Render(AppCtx& ctx) {
         const float t = 1.0f - lifeRatio;
 
         const float size = Lerp(p.StartSize, p.EndSize, t);
-        const Color color = LerpColor(p.StartColor, p.EndColor, t);
+        const float ageT = 1.0f - std::clamp(lifeRatio, 0.0f, 1.0f);
+        const float colorT = std::clamp((ageT / 0.55f), 0.0f, 1.0f);
+
+        const float fadeT = std::clamp(((ageT - 0.55f) / 0.45f), 0.0f, 1.0f);
+
+        Color color = LerpColor(p.StartColor, p.EndColor, colorT);
+        const float alpha = std::lerp(static_cast<float>(p.StartColor.a), static_cast<float>(p.EndColor.a), std::clamp(t, 0.0f, 1.0f));
 
         const SDL_FRect rect{p.Position.x - size * 0.5f, p.Position.y - size * 0.5f, size, size};
 
@@ -142,7 +146,7 @@ Result<void> ParticleSystem::Render(AppCtx& ctx) {
         TRY_VOID(renderer.DrawTexture(m_ParticleTexture,
                                       TextureDrawParams{
                                           .dst = rect,
-                                          .tint = color,
+                                          .tint = {color.r, color.g, color.b, static_cast<uint8_t>(alpha)},
                                           .blendMode = SDL_BLENDMODE_BLEND,
                                       }));
     }

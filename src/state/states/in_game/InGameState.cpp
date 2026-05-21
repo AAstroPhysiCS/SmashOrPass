@@ -115,6 +115,19 @@ Result<EventFlow> InGameState::OnEvent(AppCtx& ctx, const Event& event) {
         TRY_VOID(player.OnEvent(ctx, event));
     }
 
+    EventDispatcher::Dispatch<PlayerParticleEffectEvent>(
+        event, [&](const PlayerParticleEffectEvent& particleEffectEvent) {
+            switch (particleEffectEvent.Type) {
+                case PlayerParticleEffectType::SwordFire: {
+                    sop::util::EmitSwordFireParticleEffect(ctx.particleSystem, particleEffectEvent);
+                    break;
+                }
+                case PlayerParticleEffectType::DashBlue: {
+                    sop::util::EmitDashParticleEffect(ctx.particleSystem, particleEffectEvent);
+                    break;
+            }
+        }});
+
     return Ok(EventFlow::Passed);
 }
 
@@ -223,8 +236,8 @@ Result<void> InGameState::RenderPlayers(AppCtx& ctx) {
     return Ok();
 }
 
-Result<void> InGameState::RenderEffects(AppCtx&) {
-    return Ok();
+Result<void> InGameState::RenderEffects(AppCtx& ctx) {
+    return ctx.particleSystem.Render(ctx);
 }
 
 Result<void> InGameState::RenderForeground(AppCtx& ctx) {

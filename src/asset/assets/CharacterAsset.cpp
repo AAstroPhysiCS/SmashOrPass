@@ -300,9 +300,24 @@ CharacterAssetData RawCharacterAssetData::ToAssetData(AppCtx& ctx) {
             continue;
         }
 
+        CharacterFrameEffectMasks::Factory effectMaskFactory{};
+
+        auto effectMasks = effectMaskFactory.Build(rawSheet.m_Surface.get(),
+                                    std::span<const CharacterSpriteSheetFrame>{
+                                        rawSheet.m_Frames.data(), rawSheet.m_Frames.size()},
+                                    CharacterFrameEffectMasks::Definitions());
+        if (!effectMasks) {
+            spdlog::warn(
+                "Failed to build frame effect masks for character asset '{}', animation '{}': {}",
+                m_Id,
+                CharacterAnimationName(animation),
+                effectMasks.error());
+            continue;
+        }
         CharacterSpriteSheet sheet{};
         sheet.m_Texture = std::move(texture);
         sheet.m_Frames = std::move(rawSheet.m_Frames);
+        sheet.m_EffectMasks = std::move(effectMasks.value());
         asset.m_SpriteSheets.insert_or_assign(animation, std::move(sheet));
     }
 

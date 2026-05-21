@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "smashorpass/util.hpp"
+#include "smashorpass/asset/effects/CharacterFrameEffectMask.hpp"
 
 namespace sop {
 
@@ -28,6 +29,12 @@ struct CharacterSpriteSheetFrame {
 struct CharacterSpriteSheet {
     TexturePtr m_Texture{nullptr, SDL_DestroyTexture};
     std::vector<CharacterSpriteSheetFrame> m_Frames;
+
+    CharacterFrameEffectMasks::Set m_EffectMasks;
+
+    [[nodiscard]] std::span<const FrameEffectMask> GetEffectMasks(CharacterFrameEffectMaskType type) const {
+        return m_EffectMasks.Get(type);
+    }
 };
 
 enum class CharacterAnimation {

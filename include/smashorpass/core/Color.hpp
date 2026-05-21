@@ -41,7 +41,7 @@ struct Color {
         static_cast<uint8_t>(Lerp(static_cast<float>(a.r), static_cast<float>(b.r), t)),
         static_cast<uint8_t>(Lerp(static_cast<float>(a.g), static_cast<float>(b.g), t)),
         static_cast<uint8_t>(Lerp(static_cast<float>(a.b), static_cast<float>(b.b), t)),
-        static_cast<uint8_t>(Lerp(static_cast<float>(a.a), static_cast<float>(b.a), t)),
+        static_cast<uint8_t>(a.a),
     };
 }
 
