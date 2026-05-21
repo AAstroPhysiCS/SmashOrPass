@@ -50,7 +50,7 @@ struct ParticleBurstDesc {
 class ParticleSystem {
    public:
     static sop::Result<ParticleSystem, std::string> Create(const Renderer& renderer,
-                                                           size_t maxParticles);
+                                                           size_t maxParticles = std::pow(2, 10));
     ~ParticleSystem();
 
     ParticleSystem(const ParticleSystem&) = delete;
@@ -96,6 +96,8 @@ class ParticleSystem {
     SDL_Texture* m_ParticleTexture = nullptr;
 
     std::mt19937 m_Random;
+
+    friend struct AppCtx;
 };
 
 }  // namespace sop

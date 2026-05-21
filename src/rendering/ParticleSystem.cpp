@@ -8,7 +8,7 @@
 
 #include "smashorpass/rendering/ParticleSystem.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
-
+#include "smashorpass/core/AppCtx.hpp"
 namespace sop {
 
 Result<ParticleSystem, std::string> ParticleSystem::Create(const Renderer& renderer, std::size_t maxParticles) {
