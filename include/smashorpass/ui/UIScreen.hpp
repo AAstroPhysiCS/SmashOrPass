@@ -35,8 +35,12 @@ class UIScreen {
     virtual Result<void> OnRender(AppCtx& ctx);
 
     void RebuildUI();
+
    protected:
-       inline AppCtx& GetAppCtx() { return m_Ctx; }
+    inline AppCtx& GetAppCtx() {
+        return m_Ctx;
+    }
+
    private:
     Result<Vec2> MeasureWidget(AppCtx& ctx, UIWidgetId id);
     void LayoutWidget(UIWidgetId id, SDL_FRect rect);

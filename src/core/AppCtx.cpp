@@ -19,9 +19,9 @@ Result<void> AppCtx::Initialize() {
                                        RawCharacterAssetData,
                                        CharacterAssetData>()));
     TRY_VOID((assets.RegisterAssetType<AudioAssetDiscoverer,
-                                          AudioAssetLoadJob,
-                                          AudioRawAssetData,
-                                          AudioAssetData>()));
+                                       AudioAssetLoadJob,
+                                       AudioRawAssetData,
+                                       AudioAssetData>()));
     return Ok();
 }
 

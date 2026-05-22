@@ -302,7 +302,8 @@ CharacterAssetData RawCharacterAssetData::ToAssetData(AppCtx& ctx) {
 
         CharacterFrameEffectMasks::Factory effectMaskFactory{};
 
-        auto effectMasks = effectMaskFactory.Build(rawSheet.m_Surface.get(),
+        auto effectMasks =
+            effectMaskFactory.Build(rawSheet.m_Surface.get(),
                                     std::span<const CharacterSpriteSheetFrame>{
                                         rawSheet.m_Frames.data(), rawSheet.m_Frames.size()},
                                     CharacterFrameEffectMasks::Definitions());

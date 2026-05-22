@@ -23,7 +23,9 @@ struct AudioAssetLoadJob {
     AudioAssetType Type = AudioAssetType::SoundEffect;
     bool Predecode = true;
 
-    [[nodiscard]] std::string DebugName() const { return Path.filename().string(); }
+    [[nodiscard]] std::string DebugName() const {
+        return Path.filename().string();
+    }
     [[nodiscard]] struct AudioRawAssetData ToRawAssetData(AppCtx& ctx);
 };
 

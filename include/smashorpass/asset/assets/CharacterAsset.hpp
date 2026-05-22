@@ -10,8 +10,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "smashorpass/util.hpp"
 #include "smashorpass/asset/effects/CharacterFrameEffectMask.hpp"
+#include "smashorpass/util.hpp"
 
 namespace sop {
 
@@ -32,7 +32,8 @@ struct CharacterSpriteSheet {
 
     CharacterFrameEffectMasks::Set m_EffectMasks;
 
-    [[nodiscard]] std::span<const FrameEffectMask> GetEffectMasks(CharacterFrameEffectMaskType type) const {
+    [[nodiscard]] std::span<const FrameEffectMask> GetEffectMasks(
+        CharacterFrameEffectMaskType type) const {
         return m_EffectMasks.Get(type);
     }
 };

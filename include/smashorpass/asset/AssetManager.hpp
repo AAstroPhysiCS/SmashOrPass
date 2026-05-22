@@ -222,7 +222,7 @@ class AssetManager {
 
     template <typename AssetData>
     Result<void> WaitUntilActuallyLoaded(const Asset<AssetData>& asset) {
-        //TODO: just do something else than waiting... temporarily only!!!!!!
+        // TODO: just do something else than waiting... temporarily only!!!!!!
         while (true) {
             Update();
 

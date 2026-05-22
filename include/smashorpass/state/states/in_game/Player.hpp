@@ -3,8 +3,8 @@
 #include <SDL3/SDL_rect.h>
 
 #include <optional>
-#include <vector>
 #include <random>
+#include <vector>
 
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/asset/assets/CharacterAsset.hpp"
@@ -64,9 +64,9 @@ class Player {
 
     // ---- Effect tracking for animation frames
     Result<void> DispatchSwordFrameEffects(AppCtx& ctx,
-                                       const Arena& arena,
-                                       const CharacterSpriteSheetFrame& frame,
-                                       std::span<const FrameEffectMask> swordMasks);
+                                           const Arena& arena,
+                                           const CharacterSpriteSheetFrame& frame,
+                                           std::span<const FrameEffectMask> swordMasks);
     std::mt19937 m_EffectRandom{std::random_device{}()};
 
     CharacterAnimation m_CurrentAnimation = CharacterAnimation::Idle;

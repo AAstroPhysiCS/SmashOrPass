@@ -31,11 +31,12 @@ void MainMenuScreen::Build(UIBuilder& builder) {
     auto root = builder.Align(Alignment::Center, std::move(menu));
     builder.SetRoot(root);
 
-    auto menuSound = (GetAppCtx().assets.LoadAsset<AudioAssetLoadJob, AudioAssetData>(AudioAssetLoadJob{
-        .Path = std::filesystem::path(SOP_ASSET_ROOT_DIR) / "audio/main_menu.ogg",
-        .Type = AudioAssetType::Music,
-        .Predecode = false,
-    }));
+    auto menuSound =
+        (GetAppCtx().assets.LoadAsset<AudioAssetLoadJob, AudioAssetData>(AudioAssetLoadJob{
+            .Path = std::filesystem::path(SOP_ASSET_ROOT_DIR) / "audio/main_menu.ogg",
+            .Type = AudioAssetType::Music,
+            .Predecode = false,
+        }));
 
     if (!menuSound) {
         spdlog::warn("Failed to load menu sound effect: {}", menuSound.error());

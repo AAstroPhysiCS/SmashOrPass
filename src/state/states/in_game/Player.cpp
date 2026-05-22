@@ -5,8 +5,8 @@
 #include <optional>
 #include <utility>
 
-#include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/asset/effects/CharacterFrameEffectMask.hpp"
+#include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/util.hpp"
 
 namespace sop {
@@ -318,9 +318,9 @@ Vec2 Player::MapBaselinePointToArenaPoint(Vec2 point, const SDL_Rect& arenaDimen
 }
 
 Result<void> Player::DispatchSwordFrameEffects(AppCtx& ctx,
-                                           const Arena& arena,
-                                           const CharacterSpriteSheetFrame& frame,
-                                           std::span<const FrameEffectMask> swordMasks) {
+                                               const Arena& arena,
+                                               const CharacterSpriteSheetFrame& frame,
+                                               std::span<const FrameEffectMask> swordMasks) {
     const bool frameChanged = m_CurrentAnimation != m_PreviousEffectAnimation ||
                               m_CurrentAnimationFrame != m_PreviousEffectFrameIndex;
     m_PreviousEffectAnimation = m_CurrentAnimation;
@@ -355,7 +355,8 @@ Result<void> Player::DispatchSwordFrameEffects(AppCtx& ctx,
     for (int i = 0; i < particlesPerAttackFrame; ++i) {
         const Vec2 localPoint = mask.Points[pointDistribution(m_EffectRandom)];
 
-        const Vec2 baselinePoint = LocalFramePointToBaselinePoint(frame, *spriteRect, localPoint, m_FacingRight);
+        const Vec2 baselinePoint =
+            LocalFramePointToBaselinePoint(frame, *spriteRect, localPoint, m_FacingRight);
         const Vec2 arenaPoint = MapBaselinePointToArenaPoint(baselinePoint, arena.dimensions);
 
         ctx.eventDispatcher.Enqueue(PlayerParticleEffectEvent{

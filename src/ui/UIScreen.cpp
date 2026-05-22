@@ -7,8 +7,7 @@
 
 namespace sop {
 
-UIScreen::UIScreen(AppCtx& ctx) 
-    : m_Ctx(ctx) {}
+UIScreen::UIScreen(AppCtx& ctx) : m_Ctx(ctx) {}
 
 EventFlow UIScreen::OnEvent(AppCtx& ctx, const Event& event) {
     bool consumed = false;

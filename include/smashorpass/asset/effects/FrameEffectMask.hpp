@@ -34,7 +34,8 @@ concept FrameEffectMaskType = std::is_enum_v<T>;
 
 template <FrameEffectMaskType TType>
 struct FrameEffectMaskDefinition {
-    using PixelPredicate = bool (*)(const EffectMaskPixel&);  // using raw pointers to avoid unnecessary overhead of
+    using PixelPredicate =
+        bool (*)(const EffectMaskPixel&);  // using raw pointers to avoid unnecessary overhead of
     // std::function for this hot code path and i fucking hate clang format really
     TType Type{};
     uint32_t SampleStep = 4;
@@ -68,10 +69,11 @@ class FrameEffectMaskSet final {
     void Clear() {
         m_Masks.clear();
     }
+
    private:
     std::unordered_map<TType, std::vector<FrameEffectMask>> m_Masks;
 };
-    
+
 template <FrameEffectMaskType TType>
 class FrameEffectMaskFactory final {
    public:
@@ -89,8 +91,8 @@ class FrameEffectMaskFactory final {
             TRY_VOID(ValidateDefinition(definition));
 
             if (spriteSurface == nullptr) {
-                return Err(
-                    std::string{"FrameEffectMaskFactory::Build failed: spriteSurface surface was null."});
+                return Err(std::string{
+                    "FrameEffectMaskFactory::Build failed: spriteSurface surface was null."});
             }
 
             TRY(masks, BuildSingleMaskType(spriteSurface, frames, definition));
@@ -165,8 +167,7 @@ class FrameEffectMaskFactory final {
             const auto clampedLeft =
                 std::min<uint32_t>(left, static_cast<uint32_t>(rgbaSurface->w));
 
-            const auto clampedTop =
-                std::min<uint32_t>(top, static_cast<uint32_t>(rgbaSurface->h));
+            const auto clampedTop = std::min<uint32_t>(top, static_cast<uint32_t>(rgbaSurface->h));
 
             const auto clampedRight =
                 std::min<uint32_t>(right, static_cast<uint32_t>(rgbaSurface->w));

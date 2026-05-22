@@ -1,17 +1,19 @@
+#include "smashorpass/rendering/ParticleSystem.hpp"
+
 #include <SDL3/SDL_error.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3_image/SDL_image.h>
 
-#include <format>
 #include <filesystem>
+#include <format>
 #include <string>
 
-#include "smashorpass/rendering/ParticleSystem.hpp"
-#include "smashorpass/rendering/Renderer.hpp"
 #include "smashorpass/core/AppCtx.hpp"
+#include "smashorpass/rendering/Renderer.hpp"
 namespace sop {
 
-Result<void, std::string> ParticleSystem::Initialize(const Renderer& renderer, std::size_t maxParticles) {
+Result<void, std::string> ParticleSystem::Initialize(const Renderer& renderer,
+                                                     std::size_t maxParticles) {
     if (maxParticles == 0) {
         return Err(
             std::string("ParticleSystem::Create failed: maxParticles must be greater than zero"));
@@ -137,18 +139,21 @@ Result<void> ParticleSystem::Render(AppCtx& ctx) {
         const float fadeT = std::clamp(((ageT - 0.55f) / 0.45f), 0.0f, 1.0f);
 
         Color color = LerpColor(p.StartColor, p.EndColor, colorT);
-        const float alpha = std::lerp(static_cast<float>(p.StartColor.a), static_cast<float>(p.EndColor.a), std::clamp(t, 0.0f, 1.0f));
+        const float alpha = std::lerp(static_cast<float>(p.StartColor.a),
+                                      static_cast<float>(p.EndColor.a),
+                                      std::clamp(t, 0.0f, 1.0f));
 
         const SDL_FRect rect{p.Position.x - size * 0.5f, p.Position.y - size * 0.5f, size, size};
 
         // renderer.FillRect(rect, color);
 
-        TRY_VOID(renderer.DrawTexture(m_ParticleTexture,
-                                      TextureDrawParams{
-                                          .dst = rect,
-                                          .tint = {color.r, color.g, color.b, static_cast<uint8_t>(alpha)},
-                                          .blendMode = SDL_BLENDMODE_BLEND,
-                                      }));
+        TRY_VOID(renderer.DrawTexture(
+            m_ParticleTexture,
+            TextureDrawParams{
+                .dst = rect,
+                .tint = {color.r, color.g, color.b, static_cast<uint8_t>(alpha)},
+                .blendMode = SDL_BLENDMODE_BLEND,
+            }));
     }
     return Ok();
 }

@@ -24,7 +24,8 @@ Result<void> MainMenuState::Initialize(AppCtx& ctx) {
     m_MainMenuMusic = std::move(mainMenuMusic);
 
     TRY_VOID(ctx.assets.WaitUntilActuallyLoaded(m_MainMenuMusic));
-    TRY_VOID(ctx.audioSystem.PlayMusic(ctx, MusicDesc{ .Asset = m_MainMenuMusic, .Gain = 0.65f, .Loops = -1, .FadeOutMs = 500 }));
+    TRY_VOID(ctx.audioSystem.PlayMusic(
+        ctx, MusicDesc{.Asset = m_MainMenuMusic, .Gain = 0.65f, .Loops = -1, .FadeOutMs = 500}));
 
     return Ok();
 }

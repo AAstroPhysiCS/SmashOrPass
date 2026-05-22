@@ -125,8 +125,9 @@ Result<EventFlow> InGameState::OnEvent(AppCtx& ctx, const Event& event) {
                 case PlayerParticleEffectType::DashBlue: {
                     sop::util::EmitDashParticleEffect(ctx.particleSystem, particleEffectEvent);
                     break;
+                }
             }
-        }});
+        });
 
     return Ok(EventFlow::Passed);
 }

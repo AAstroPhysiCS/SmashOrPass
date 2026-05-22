@@ -1,10 +1,9 @@
 #pragma once
 
+#include "smashorpass/asset/assets/AudioAsset.hpp"
 #include "smashorpass/state/State.hpp"
 #include "smashorpass/state/states/main_menu/ui/CharacterSelectScreen.hpp"
 #include "smashorpass/state/states/main_menu/ui/MenuScreen.hpp"
-
-#include "smashorpass/asset/assets/AudioAsset.hpp"
 
 namespace sop {
 
