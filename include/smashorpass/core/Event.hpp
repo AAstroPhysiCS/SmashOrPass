@@ -4,10 +4,13 @@
 #include <SDL3/SDL_keycode.h>
 
 #include <deque>
+#include <vector>
 
-#include "ApplicationState.hpp"
 #include "Base.hpp"
 #include "DisplayMetrics.hpp"
+#include "smashorpass/asset/AssetManager.hpp"
+#include "smashorpass/asset/assets/ArenaAsset.hpp"
+#include "smashorpass/asset/assets/CharacterAsset.hpp"
 
 namespace sop {
 
@@ -45,8 +48,17 @@ struct ControllerButtonEvent {
     bool Down = false;
 };
 
-struct ApplicationStateChangeEvent {
-    ApplicationState NextState = ApplicationState::MainMenu;
+enum class NavigationAction {
+    ShowMainMenu,
+    ShowCharacterSelect,
+    StartMatch,
+    ResumeMatch,
+};
+
+struct NavigationEvent {
+    NavigationAction Action = NavigationAction::ShowMainMenu;
+    Asset<ArenaAssetData> ArenaAsset{};
+    std::vector<Asset<CharacterAssetData>> CharacterAssets{};
 };
 
 struct ApplicationQuitEvent {};
@@ -66,13 +78,18 @@ struct PlayerParticleEffectEvent {
 
 struct NullEvent {};
 
+enum class EventFlow {
+    Passed,
+    Consumed,
+};
+
 using EventPayload = std::variant<KeyEvent,
                                   MouseButtonEvent,
                                   MouseMovedEvent,
                                   WindowResizeEvent,
                                   WindowMetricsChangedEvent,
                                   ControllerButtonEvent,
-                                  ApplicationStateChangeEvent,
+                                  NavigationEvent,
                                   ApplicationQuitEvent,
                                   PlayerParticleEffectEvent,
                                   NullEvent>;
@@ -93,21 +110,30 @@ class EventDispatcher final {
     }
 
     template <typename TEvent, typename TFunc>
-    static bool Dispatch(const Event& evt, TFunc&& function) {
-        if (const auto* event = std::get_if<TEvent>(&evt.Payload)) {
-            std::forward<TFunc>(function)(*event);
-            return true;
+    static Result<bool> Dispatch(const Event& evt, TFunc&& function) {
+        const auto* event = std::get_if<TEvent>(&evt.Payload);
+        if (event == nullptr)
+            return Ok(false);
+
+        using ReturnType = std::invoke_result_t<TFunc, const TEvent&>;
+
+        if constexpr (std::is_void_v<ReturnType>) {
+            std::invoke(std::forward<TFunc>(function), *event);
+            return Ok(true);
+        } else {
+            auto result = std::invoke(std::forward<TFunc>(function), *event);
+            if (!result)
+                return Err(std::move(result).error());
+            return Ok(true);
         }
-        return false;
     }
 
    private:
     EventDispatcher() = default;
 
-    // only application can administer the event queue, create event dispatcher etc... the ownership
-    // is application class only!
     std::deque<Event> m_EventQueue;
 
+    friend struct AppCtx;
     friend class Application;
 };
 
@@ -135,9 +161,9 @@ class EventDispatcher final {
     }
 }
 
-inline static Event TranslateSDLEvent(const SDL_Event& event, const SDL_Event* rawEvent = nullptr) {
+inline static Event TranslateSDLEvent(const SDL_Event& event) {
     Event result{};
-    result.RawEvent = rawEvent != nullptr ? rawEvent : &event;
+    result.RawEvent = &event;
 
     switch (event.type) {
         case SDL_EVENT_KEY_DOWN:

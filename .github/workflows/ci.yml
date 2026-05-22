@@ -1,123 +1,120 @@
 name: CI
 
 on:
-  push:
-    branches: [ main, master ]
   pull_request:
-    branches: [ main, master ]
+    branches: [dev, main]
+  push:
+    branches: [main]
   workflow_dispatch:
 
-jobs:
-  build:
-    name: ${{ matrix.os }} / ${{ matrix.build_type }}
-    runs-on: ${{ matrix.os }}
+permissions:
+  contents: read
 
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-        build_type: [Debug, Release]
+jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+
+    defaults:
+      run:
+        shell: bash
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Linux system dependencies
-        if: runner.os == 'Linux'
+      - name: Install clang-format
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            ninja-build \
-            pkg-config \
+          pacman -Syu --noconfirm --needed archlinux-keyring
+          pacman -S --noconfirm --needed git clang
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Check formatting
+        run: |
+          find include src \
+            -type f \( -name '*.hpp' -o -name '*.h' -o -name '*.cpp' -o -name '*.cc' -o -name '*.cxx' \) \
+            -print0 | xargs -0 clang-format --dry-run --Werror
+
+  build-linux:
+    name: Build / Arch Linux
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Install Linux system dependencies
+        run: |
+          pacman -Syu --noconfirm --needed archlinux-keyring
+          pacman -S --noconfirm --needed \
+            base-devel \
+            git \
+            cmake \
+            ninja \
+            pkgconf \
             autoconf \
             autoconf-archive \
             automake \
             libtool \
-            libltdl-dev \
-            libx11-dev \
-            libxext-dev \
-            libxrandr-dev \
-            libxrender-dev \
-            libxfixes-dev \
-            libxi-dev \
-            libxcursor-dev \
-            libxinerama-dev \
-            libwayland-dev \
-            libxkbcommon-dev \
-            libdbus-1-dev \
-            libgl1-mesa-dev
+            zstd \
+            curl \
+            zip \
+            unzip \
+            tar \
+            ca-certificates \
+            libx11 \
+            libxext \
+            libxrandr \
+            libxrender \
+            libxfixes \
+            libxi \
+            libxcursor \
+            libxinerama \
+            wayland \
+            libxkbcommon \
+            dbus \
+            mesa \
+            libxtst
 
-      - name: Clone vcpkg
-        shell: bash
-        run: |
-          if [ ! -f vcpkg/bootstrap-vcpkg.sh ] && [ ! -f vcpkg/bootstrap-vcpkg.bat ]; then
-            rm -rf vcpkg
-            git clone https://github.com/microsoft/vcpkg.git vcpkg
-          fi
+      - name: Checkout
+        uses: actions/checkout@v6
 
-      - name: Restore cache
-        uses: actions/cache@v4
+      - name: Restore vcpkg cache
+        uses: actions/cache@v5
         with:
-          path: |
-            ~/.cache/vcpkg
-            ~/AppData/Local/vcpkg/archives
-            ${{ github.workspace }}/vcpkg/downloads
-          key: ${{ runner.os }}-${{ matrix.build_type }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', '**/CMakeLists.txt', '**/*.cmake') }}
+          path: ~/.cache/vcpkg
+          key: Linux-vcpkg-${{ hashFiles('vcpkg.json', 'CMakeLists.txt', 'CMakePresets.json') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.build_type }}-
-            ${{ runner.os }}-
+            Linux-vcpkg-
 
-      - name: Bootstrap vcpkg (Linux)
-        if: runner.os == 'Linux'
-        shell: bash
-        run: ./vcpkg/bootstrap-vcpkg.sh
+      - name: Bootstrap Linux
+        run: ./scripts_linux/bootstrap.sh
 
-      - name: Bootstrap vcpkg (Windows)
-        if: runner.os == 'Windows'
-        shell: cmd
-        run: call vcpkg\bootstrap-vcpkg.bat
+      - name: Build Linux
+        run: ./scripts_linux/build.sh all
 
-      - name: Configure CMake (Linux)
-        if: runner.os == 'Linux'
-        run: >
-          cmake -S . -B build
-          -G Ninja
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-          -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+  build-windows:
+    name: Build / windows-2025-vs2026
+    runs-on: windows-2025-vs2026
 
-      - name: Configure CMake (Windows)
-        if: runner.os == 'Windows'
-        shell: cmd
-        run: >
-          cmake -S . -B build
-          -A x64
-          -DCMAKE_TOOLCHAIN_FILE=%GITHUB_WORKSPACE%\vcpkg\scripts\buildsystems\vcpkg.cmake
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
 
-      - name: Build
-        run: cmake --build build --config ${{ matrix.build_type }}
-
-      - name: Test
-        working-directory: build
-        run: ctest --output-on-failure --build-config ${{ matrix.build_type }}
-
-      - name: Upload artifacts (Linux)
-        if: runner.os == 'Linux'
-        uses: actions/upload-artifact@v4
+      - name: Restore vcpkg cache
+        uses: actions/cache@v5
         with:
-          name: smashorpass-${{ runner.os }}-${{ matrix.build_type }}
-          path: |
-            build/SmashOrPass
-            build/src/SmashOrPass
-          if-no-files-found: ignore
+          path: ~/AppData/Local/vcpkg/archives
+          key: Windows-vcpkg-${{ hashFiles('vcpkg.json', 'CMakeLists.txt', 'CMakePresets.json') }}
+          restore-keys: |
+            Windows-vcpkg-
 
-      - name: Upload artifacts (Windows)
-        if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: smashorpass-${{ runner.os }}-${{ matrix.build_type }}
-          path: |
-            build/Debug/SmashOrPass.exe
-            build/Release/SmashOrPass.exe
-            build/src/Debug/SmashOrPass.exe
-            build/src/Release/SmashOrPass.exe
-          if-no-files-found: ignore
+      - name: Bootstrap Windows
+        shell: cmd
+        run: call scripts_windows\bootstrap.bat
+
+      - name: Build Windows
+        shell: cmd
+        run: call scripts_windows\build.bat all

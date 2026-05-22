@@ -2,8 +2,6 @@
 
 #include <SDL3/SDL.h>
 
-#include "smashorpass/ui/Theme.hpp"
-
 #include <algorithm>
 #include <cstdint>
 #include <functional>
@@ -13,6 +11,8 @@
 #include <utility>
 #include <variant>
 #include <vector>
+
+#include "smashorpass/core/Color.hpp"
 
 // TODO: use glm, delete THIS only temporary
 struct Vec2 {

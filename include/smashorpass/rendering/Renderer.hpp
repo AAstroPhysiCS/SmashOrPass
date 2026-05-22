@@ -1,10 +1,9 @@
 #pragma once
 
-#include "smashorpass/core/Base.hpp"
-#include "smashorpass/core/DisplayMetrics.hpp"
-#include "smashorpass/platform/Window.hpp"
-
 #include "SDL3_ttf/SDL_ttf.h"
+#include "smashorpass/core/Base.hpp"
+#include "smashorpass/core/Window.hpp"
+#include "smashorpass/util.hpp"
 
 namespace sop {
 
@@ -49,7 +48,6 @@ class Renderer final {
    public:
     class ScopedClip final {
        public:
-        ScopedClip(Renderer& renderer, std::optional<SDL_Rect> rect);
         ~ScopedClip();
 
         ScopedClip(const ScopedClip&) = delete;
@@ -59,11 +57,15 @@ class Renderer final {
         ScopedClip& operator=(ScopedClip&& other) noexcept;
 
        private:
+        explicit ScopedClip(Renderer& renderer);
+
         Renderer* m_Renderer{nullptr};
+
+        friend class Renderer;
     };
 
    public:
-    explicit Renderer(Window& window, const char* driverName = nullptr);
+    Renderer() = default;
     ~Renderer();
 
     Renderer(const Renderer&) = delete;
@@ -71,73 +73,79 @@ class Renderer final {
     Renderer(Renderer&&) = delete;
     Renderer& operator=(Renderer&&) = delete;
 
-    void BeginFrame(Color clear = Color{18, 18, 24, 255});
-    void EndFrame();
-    void Flush();
+    Result<void> Initialize(Window& window, const char* driverName = nullptr);
 
-    bool SetVSync(bool enabled);
-    [[nodiscard]] bool IsVSync() const;
+    Result<void> BeginFrame(Color clear = Color{18, 18, 24, 255});
+    Result<void> EndFrame();
+    Result<void> Flush();
 
-    bool SetLogicalPresentation(int width, int height, SDL_RendererLogicalPresentation mode);
-    [[nodiscard]] bool GetLogicalPresentation(int& width,
-                                              int& height,
-                                              SDL_RendererLogicalPresentation& mode) const;
-    [[nodiscard]] SDL_FRect GetLogicalPresentationRect() const;
+    Result<void> SetVSync(bool enabled);
+    Result<bool> IsVSync() const;
 
-    bool SetViewport(std::optional<SDL_Rect> rect);
-    [[nodiscard]] std::optional<SDL_Rect> GetViewport() const;
+    Result<void> SetLogicalPresentation(int width,
+                                        int height,
+                                        SDL_RendererLogicalPresentation mode);
+    Result<void> GetLogicalPresentation(int& width,
+                                        int& height,
+                                        SDL_RendererLogicalPresentation& mode) const;
+    Result<SDL_FRect> GetLogicalPresentationRect() const;
 
-    bool SetClipRect(std::optional<SDL_Rect> rect);
-    void PushClipRect(std::optional<SDL_Rect> rect);
-    void PopClipRect();
-    [[nodiscard]] ScopedClip Clip(std::optional<SDL_Rect> rect) {
-        return ScopedClip(*this, rect);
+    Result<void> SetViewport(std::optional<SDL_Rect> rect);
+    Result<std::optional<SDL_Rect>> GetViewport() const;
+
+    Result<void> SetClipRect(std::optional<SDL_Rect> rect);
+    Result<void> PushClipRect(std::optional<SDL_Rect> rect);
+    Result<void> PopClipRect();
+    Result<ScopedClip> Clip(std::optional<SDL_Rect> rect) {
+        TRY_VOID(PushClipRect(rect));
+        return Ok(ScopedClip(*this));
     }
 
-    bool SetScale(float x, float y);
-    bool ApplyDisplayScale(float displayScale);
-    [[nodiscard]] SDL_FPoint GetScale() const;
+    Result<void> SetScale(float x, float y);
+    Result<void> ApplyDisplayScale(float displayScale);
+    Result<SDL_FPoint> GetScale() const;
 
-    bool SetTarget(SDL_Texture* target);
-    void ResetTarget();
+    Result<void> SetTarget(SDL_Texture* target);
+    Result<void> ResetTarget();
     [[nodiscard]] SDL_Texture* GetTarget() const;
 
-    [[nodiscard]] SDL_Point GetOutputSize() const;
-    [[nodiscard]] SDL_Point GetCurrentOutputSize() const;
-    [[nodiscard]] SDL_FPoint GetLogicalOutputSize() const;
-    [[nodiscard]] SDL_Rect GetSafeArea() const;
+    Result<SDL_Point> GetOutputSize() const;
+    Result<SDL_Point> GetCurrentOutputSize() const;
+    Result<SDL_FPoint> GetLogicalOutputSize() const;
+    Result<SDL_Rect> GetSafeArea() const;
 
-    bool WindowToRender(float windowX, float windowY, float& renderX, float& renderY) const;
-    bool RenderToWindow(float renderX, float renderY, float& windowX, float& windowY) const;
-    bool ConvertEventToRenderCoordinates(SDL_Event& event) const;
+    Result<void> WindowToRender(float windowX, float windowY, float& renderX, float& renderY) const;
+    Result<void> RenderToWindow(float renderX, float renderY, float& windowX, float& windowY) const;
+    Result<void> ConvertEventToRenderCoordinates(SDL_Event& event) const;
 
-    bool Clear(Color color);
-    bool SetDrawColor(Color color);
-    [[nodiscard]] Color GetDrawColor() const;
-    bool SetBlendMode(SDL_BlendMode blendMode);
-    [[nodiscard]] SDL_BlendMode GetBlendMode() const;
+    Result<void> Clear(Color color);
+    Result<void> SetDrawColor(Color color);
+    Result<Color> GetDrawColor() const;
+    Result<void> SetBlendMode(SDL_BlendMode blendMode);
+    Result<SDL_BlendMode> GetBlendMode() const;
 
-    bool DrawPoint(float x, float y, Color color);
-    bool DrawLine(float x1, float y1, float x2, float y2, Color color);
-    bool DrawLines(std::span<const SDL_FPoint> points, Color color);
+    Result<void> DrawPoint(float x, float y, Color color);
+    Result<void> DrawLine(float x1, float y1, float x2, float y2, Color color);
+    Result<void> DrawLines(std::span<const SDL_FPoint> points, Color color);
 
-    bool DrawRect(const SDL_FRect& rect, Color color);
-    bool DrawRects(std::span<const SDL_FRect> rects, Color color);
-    bool FillRect(const SDL_FRect& rect, Color color);
-    bool FillRects(std::span<const SDL_FRect> rects, Color color);
+    Result<void> DrawRect(const SDL_FRect& rect, Color color);
+    Result<void> DrawRects(std::span<const SDL_FRect> rects, Color color);
+    Result<void> FillRect(const SDL_FRect& rect, Color color);
+    Result<void> FillRects(std::span<const SDL_FRect> rects, Color color);
 
-    bool DrawTexture(SDL_Texture* texture, const SDL_FRect& dst);
-    bool DrawTexture(SDL_Texture* texture, const TextureDrawParams& params);
-    bool DrawTextureTiled(SDL_Texture* texture, const TiledTextureDrawParams& params);
-    bool DrawTexture9Grid(SDL_Texture* texture, const NineGridDrawParams& params);
+    Result<void> DrawTexture(SDL_Texture* texture, const SDL_FRect& dst);
+    Result<void> DrawTexture(SDL_Texture* texture, const TextureDrawParams& params);
+    Result<void> DrawTextureTiled(SDL_Texture* texture, const TiledTextureDrawParams& params);
+    Result<void> DrawTexture9Grid(SDL_Texture* texture, const NineGridDrawParams& params);
 
-    bool DrawGeometry(SDL_Texture* texture,
-                      std::span<const SDL_Vertex> vertices,
-                      std::span<const int> indices = {});
+    Result<void> DrawGeometry(SDL_Texture* texture,
+                              std::span<const SDL_Vertex> vertices,
+                              std::span<const int> indices = {});
 
-    bool DrawText(FontId id, float x, float y, std::string_view text, Color color = Color::White());
+    Result<void> DrawText(
+        FontId id, float x, float y, std::string_view text, Color color = Color::White());
 
-    [[nodiscard]] SDL_Surface* ReadPixels(const SDL_Rect* rect = nullptr) const;
+    Result<SDL_Surface*> ReadPixels(const SDL_Rect* rect = nullptr) const;
 
     [[nodiscard]] inline SDL_Renderer* NativeHandle() const {
         return m_NativeHandle;
@@ -156,16 +164,16 @@ class Renderer final {
     static std::optional<SDL_Rect> Intersect(const std::optional<SDL_Rect>& a,
                                              const std::optional<SDL_Rect>& b);
 
-    void ApplyClipStack();
+    Result<void> ApplyClipStack();
 
-    TextureStateBackup BackupTextureState(SDL_Texture* texture) const;
-    void RestoreTextureState(SDL_Texture* texture, const TextureStateBackup& backup) const;
-    void ApplyTextureState(SDL_Texture* texture, Color tint, SDL_BlendMode blendMode) const;
+    Result<TextureStateBackup> BackupTextureState(SDL_Texture* texture) const;
+    Result<void> RestoreTextureState(SDL_Texture* texture, const TextureStateBackup& backup) const;
+    Result<void> ApplyTextureState(SDL_Texture* texture, Color tint, SDL_BlendMode blendMode) const;
 
-    Vec2 MeasureText(FontId id, std::string_view text);
+    Result<Vec2> MeasureText(FontId id, std::string_view text);
     TTF_Font* GetFontById(FontId id);
+
    private:
-    Window& m_Window;
     SDL_Renderer* m_NativeHandle{nullptr};
     std::vector<std::optional<SDL_Rect>> m_ClipStack;
 
@@ -174,6 +182,6 @@ class Renderer final {
     TTF_Font* m_MediumFont = nullptr;
     TTF_Font* m_SmallFont = nullptr;
 
-    friend class UIScreen; //for MeasureText
+    friend class UIScreen;  // for MeasureText
 };
 }  // namespace sop

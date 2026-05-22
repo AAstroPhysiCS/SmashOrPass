@@ -101,13 +101,13 @@ struct ButtonNode : public NodeBase {
         data.TextColor = color;
         return *this;
     }
-    
+
     ButtonNode& BackgroundColor(Color color) {
         auto& data = std::get<ButtonData>(this->GetScreen().GetWidgetById(this->GetId()).Data);
         data.BackgroundColor = color;
         return *this;
     }
-    
+
     ButtonNode& BorderColor(Color color) {
         auto& data = std::get<ButtonData>(this->GetScreen().GetWidgetById(this->GetId()).Data);
         data.BorderColor = color;

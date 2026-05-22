@@ -3,13 +3,14 @@
   "version-string": "0.1.0",
   "dependencies": [
     "sdl3",
-    "sdl3-ttf",
     {
       "name": "sdl3-image",
       "features": [
         "png"
       ]
     },
+    "sdl3-ttf",
+    "sdl3-mixer",
     {
       "name": "imgui",
       "features": [
@@ -17,9 +18,9 @@
         "sdl3-renderer-binding"
       ]
     },
+    "fmt",
     "spdlog",
     "glm",
-    "nlohmann-json",
-    "catch2"
+    "nlohmann-json"
   ]
 }
