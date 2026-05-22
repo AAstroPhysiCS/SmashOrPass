@@ -4,6 +4,8 @@
 #include "smashorpass/state/states/main_menu/ui/CharacterSelectScreen.hpp"
 #include "smashorpass/state/states/main_menu/ui/MenuScreen.hpp"
 
+#include "smashorpass/asset/assets/AudioAsset.hpp"
+
 namespace sop {
 
 class MainMenuState final : public State {
@@ -32,6 +34,8 @@ class MainMenuState final : public State {
     View m_View = View::MainMenu;
     MainMenuScreen m_MainMenuScreen;
     CharacterSelectScreen m_CharacterSelectScreen;
+
+    Asset<AudioAssetData> m_MainMenuMusic;
 };
 
 }  // namespace sop

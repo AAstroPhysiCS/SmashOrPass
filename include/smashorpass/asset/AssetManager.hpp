@@ -204,13 +204,35 @@ class AssetManager {
     }
 
     template <typename AssetData>
-    Result<bool> IsAssetActuallyLoaded(const Asset<AssetData>&) {
-        return Err(std::string{"TODO"});
+    Result<bool> IsAssetActuallyLoaded(const Asset<AssetData>& asset) {
+        const TypeInfo assetDataType{typeid(AssetData)};
+
+        auto storedAssetIt = m_StoredAssets.find(asset.Id());
+        if (storedAssetIt == m_StoredAssets.end()) {
+            return Err(std::string{"Asset does not exist."});
+        }
+
+        const StoredAsset& storedAsset = storedAssetIt->second;
+        if (storedAsset.typeInfo != assetDataType) {
+            return Err(std::string{"Asset data type mismatch."});
+        }
+
+        return Ok(storedAsset.actuallyLoaded);
     }
 
     template <typename AssetData>
-    Result<void> WaitUntilActuallyLoaded(const Asset<AssetData>&) {
-        return Err(std::string{"TODO"});
+    Result<void> WaitUntilActuallyLoaded(const Asset<AssetData>& asset) {
+        //TODO: just do something else than waiting... temporarily only!!!!!!
+        while (true) {
+            Update();
+
+            TRY(loaded, IsAssetActuallyLoaded(asset));
+            if (loaded) {
+                return Ok();
+            }
+
+            std::this_thread::yield();
+        }
     }
 
     template <typename AssetData>

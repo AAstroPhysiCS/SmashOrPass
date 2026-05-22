@@ -9,6 +9,7 @@ Result<void> AppCtx::Initialize() {
         WindowCreateInfo{.Width = 1920, .Height = 1080, .Title = "Smash Or Pass - The Game"}));
     TRY_VOID(renderer.Initialize(window));
     TRY_VOID(particleSystem.Initialize(renderer));
+    TRY_VOID(audioSystem.Initialize());
     TRY_VOID((assets.RegisterAssetType<ArenaAssetDiscoverer,
                                        ArenaAssetLoadJob,
                                        RawArenaAssetData,
@@ -17,6 +18,10 @@ Result<void> AppCtx::Initialize() {
                                        CharacterAssetLoadJob,
                                        RawCharacterAssetData,
                                        CharacterAssetData>()));
+    TRY_VOID((assets.RegisterAssetType<AudioAssetDiscoverer,
+                                          AudioAssetLoadJob,
+                                          AudioRawAssetData,
+                                          AudioAssetData>()));
     return Ok();
 }
 

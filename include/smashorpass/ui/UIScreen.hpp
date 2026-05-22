@@ -35,7 +35,8 @@ class UIScreen {
     virtual Result<void> OnRender(AppCtx& ctx);
 
     void RebuildUI();
-
+   protected:
+       inline AppCtx& GetAppCtx() { return m_Ctx; }
    private:
     Result<Vec2> MeasureWidget(AppCtx& ctx, UIWidgetId id);
     void LayoutWidget(UIWidgetId id, SDL_FRect rect);
@@ -70,6 +71,7 @@ class UIScreen {
 
     std::vector<UIWidget> m_Widgets;
     UIWidgetId m_Root = g_InvalidWidgetId;
+    AppCtx& m_Ctx;
 
     friend class UIBuilder;
 

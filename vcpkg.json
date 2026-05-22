@@ -10,6 +10,7 @@
       ]
     },
     "sdl3-ttf",
+    "sdl3-mixer",
     {
       "name": "imgui",
       "features": [

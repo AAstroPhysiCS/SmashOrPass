@@ -5,11 +5,13 @@
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/asset/assets/ArenaAsset.hpp"
 #include "smashorpass/asset/assets/CharacterAsset.hpp"
+#include "smashorpass/asset/assets/AudioAsset.hpp"
 #include "smashorpass/core/DisplayMetrics.hpp"
 #include "smashorpass/core/Event.hpp"
 #include "smashorpass/core/InputHelper.hpp"
 #include "smashorpass/core/Window.hpp"
 #include "smashorpass/rendering/ParticleSystem.hpp"
+#include "smashorpass/audio/AudioSystem.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
 #include "smashorpass/state/StateManager.hpp"
 #include "smashorpass/util.hpp"
@@ -25,6 +27,7 @@ struct AppCtx final {
     EventDispatcher eventDispatcher;
     Input input;
     ParticleSystem particleSystem;
+    AudioSystem audioSystem;
 
     AssetManager assets;
     StateManager stateManager;

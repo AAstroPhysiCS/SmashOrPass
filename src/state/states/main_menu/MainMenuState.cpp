@@ -13,7 +13,19 @@ MainMenuState::MainMenuState(AppCtx& ctx) : m_MainMenuScreen(ctx), m_CharacterSe
     m_CharacterSelectScreen.Build(characterSelectBuilder);
 }
 
-Result<void> MainMenuState::Initialize(AppCtx&) {
+Result<void> MainMenuState::Initialize(AppCtx& ctx) {
+    TRY(mainMenuMusic,
+        (ctx.assets.LoadAsset<AudioAssetLoadJob, AudioAssetData>(AudioAssetLoadJob{
+            .Path = std::filesystem::path(SOP_ASSET_ROOT_DIR) / "audio/main_menu.ogg",
+            .Type = AudioAssetType::Music,
+            .Predecode = false,
+        })));
+
+    m_MainMenuMusic = std::move(mainMenuMusic);
+
+    TRY_VOID(ctx.assets.WaitUntilActuallyLoaded(m_MainMenuMusic));
+    TRY_VOID(ctx.audioSystem.PlayMusic(ctx, MusicDesc{ .Asset = m_MainMenuMusic, .Gain = 0.65f, .Loops = -1, .FadeOutMs = 500 }));
+
     return Ok();
 }
 
@@ -28,6 +40,7 @@ Result<EventFlow> MainMenuState::OnEvent(AppCtx& ctx, const Event& event) {
                 return Ok(EventFlow::Consumed);
             case NavigationAction::StartMatch:
             case NavigationAction::ResumeMatch:
+                ctx.audioSystem.StopBus(AudioBus::Music, 2000);
                 return Ok(EventFlow::Passed);
         }
     }
