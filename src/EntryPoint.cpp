@@ -1,8 +1,11 @@
-#include "smashorpass/app/Application.hpp"
-#include "smashorpass/layer/DebugLayer.hpp"
+#include "smashorpass/core/Application.hpp"
 
 int main() {
     sop::Application application;
-    application.PushOverlay<sop::DebugLayer>();
-    return application.Run();
+    auto result = application.Run();
+    if (!result) {
+        spdlog::error("Application failed with error: {}", result.error());
+        return 1;
+    }
+    return 0;
 }

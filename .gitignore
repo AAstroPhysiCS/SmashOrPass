@@ -29,6 +29,7 @@ build.ninja
 # vcpkg
 # =========================
 /vcpkg/
+/.vcpkg/
 !/vcpkg.json
 !/vcpkg-configuration.json
 
@@ -128,3 +129,6 @@ coverage/
 # /assets/processed/
 # /screenshots/
 # /recordings/
+
+# ImGui
+imgui.ini

@@ -2,16 +2,16 @@
 
 #include "smashorpass/core/Base.hpp"
 #include "smashorpass/core/Event.hpp"
-#include "smashorpass/rendering/Renderer.hpp"
 #include "smashorpass/ui/UIWidget.hpp"
 
 namespace sop {
 
+struct AppCtx;
 class UIBuilder;
 
 class UIScreen {
    public:
-    UIScreen(ApplicationState stateToRepresent, EventDispatcher& dispatcher);
+    explicit UIScreen(AppCtx& ctx);
     virtual ~UIScreen() = default;
 
     inline UIWidget& GetWidgetById(UIWidgetId id) {
@@ -30,26 +30,22 @@ class UIScreen {
 
     virtual void Build(UIBuilder& builder) = 0;
 
-    virtual void OnEvent(const Event& event);
-    virtual void OnUpdate();
-    virtual void OnRender(Renderer& renderer);
+    virtual EventFlow OnEvent(AppCtx& ctx, const Event& event);
+    virtual void OnUpdate(AppCtx& ctx);
+    virtual Result<void> OnRender(AppCtx& ctx);
 
     void RebuildUI();
 
-    inline ApplicationState GetApplicationState() const {
-        return m_ApplicationStateToRepresent;
-    }
-
    protected:
-    inline EventDispatcher& GetEventDispatcher() {
-        return m_EventDispatcher;
+    inline AppCtx& GetAppCtx() {
+        return m_Ctx;
     }
 
    private:
-    Vec2 MeasureWidget(UIWidgetId id, Renderer& renderer);
+    Result<Vec2> MeasureWidget(AppCtx& ctx, UIWidgetId id);
     void LayoutWidget(UIWidgetId id, SDL_FRect rect);
 
-    void RenderWidget(Renderer& renderer, const UIWidget& widget);
+    Result<void> RenderWidget(AppCtx& ctx, const UIWidget& widget);
 
     bool PointInRect(const Vec2& point, const SDL_FRect& rect) const;
 
@@ -77,11 +73,9 @@ class UIScreen {
 
     bool m_RebuildRequested = false;
 
-    EventDispatcher& m_EventDispatcher;
     std::vector<UIWidget> m_Widgets;
     UIWidgetId m_Root = g_InvalidWidgetId;
-
-    ApplicationState m_ApplicationStateToRepresent;
+    AppCtx& m_Ctx;
 
     friend class UIBuilder;
 
