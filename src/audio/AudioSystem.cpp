@@ -100,7 +100,7 @@ Result<void> AudioSystem::Play(AppCtx& ctx, const PlayAudioDesc& desc) {
         return Err(std::string{"AudioSystem::Play failed: audio system is not initialized."});
     }
 
-    TRY(audioData, ctx.assets.GetAssetData(desc.Asset));
+    TRY(audioData, ctx.assets.GetAssetData(desc.asset));
 
     MIX_Audio* audio = audioData.get().NativeHandle();
 
@@ -136,7 +136,7 @@ Result<void> AudioSystem::PlayMusic(AppCtx& ctx, const MusicDesc& desc) {
         return Err(std::string{"AudioSystem::PlayMusic failed: audio system is not initialized."});
     }
 
-    TRY(audioData, ctx.assets.GetAssetData(desc.Asset));
+    TRY(audioData, ctx.assets.GetAssetData(desc.asset));
 
     MIX_Audio* audio = audioData.get().NativeHandle();
 

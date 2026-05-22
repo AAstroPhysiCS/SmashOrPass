@@ -25,7 +25,7 @@ enum class AudioBus : std::uint8_t {
 };
 
 struct PlayAudioDesc {
-    Asset<AudioAssetData> Asset;
+    Asset<AudioAssetData> asset;
 
     AudioBus Bus = AudioBus::Sfx;
 
@@ -41,7 +41,7 @@ struct PlayAudioDesc {
 };
 
 struct MusicDesc {
-    Asset<AudioAssetData> Asset;
+    Asset<AudioAssetData> asset;
 
     float Gain = 1.0f;
     int Loops = -1;
