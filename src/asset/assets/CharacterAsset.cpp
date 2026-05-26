@@ -239,15 +239,114 @@ Result<std::vector<CharacterAssetLoadJob>> CharacterAssetDiscoverer::ListAvailab
     return Ok(std::move(jobs));
 }
 
+namespace {
+
+Result<SurfacePtr> ConvertToRgba32(SDL_Surface* surface) {
+    if (surface == nullptr) {
+        return Err(std::string("ConvertToRgba32 failed: surface is null"));
+    }
+
+    SurfacePtr rgbaSurface{SDL_ConvertSurface(surface, SDL_PIXELFORMAT_RGBA32),SDL_DestroySurface};
+
+    if (!rgbaSurface) {
+        return Err(SdlError("SDL_ConvertSurface"));
+    }
+
+    return Ok(std::move(rgbaSurface));
+}
+
+ChannelPlane getFrameChannelFromSurface(
+    const unsigned char* pixels,
+    const int pitch,
+    const SDL_FRect& framePosition,
+    const int channelOffset,
+    const bool isHitbox
+) {
+    const int left = static_cast<int>(framePosition.x);
+    const int top = static_cast<int>(framePosition.y);
+    const int width = static_cast<int>(framePosition.w);
+    const int height = static_cast<int>(framePosition.h);
+
+    ChannelPlane channel(width, std::vector<unsigned char>(height));
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            const int pixelsX = left + x;
+            const int pixelsY = top + y;
+            const uint8_t* p = pixels + pixelsY * pitch + pixelsX * 4;
+
+            channel[x][y] = static_cast<unsigned char>(
+                (static_cast<int>(p[channelOffset]) * p[3]) / 255
+            );
+            
+            // hitboxes are absolute, hurtboxes are grouped by their blue channel value
+            // each group gets the same amount of damage (3=head -> max damage etc.)
+            if (channel[x][y] != 0) {
+                if (isHitbox) {
+                    channel[x][y] = 1;
+                } else {
+                    if (channel[x][y] == 255) {
+                        channel[x][y] = 3;
+                    } else if (channel[x][y] > 127) {
+                        channel[x][y] = 2;
+                    } else {
+                        channel[x][y] = 1;
+                    }
+                }
+            }
+        }
+    }
+
+    return channel;
+}
+
+} // namespace
+
+Result<void> LoadCombatData(
+    SDL_Surface* combatSurface,
+    std::vector<CharacterSpriteSheetFrame>& frames,
+    int gridSize
+) {
+    TRY(rgbaSurface, ConvertToRgba32(combatSurface));
+
+    const bool mustLock = SDL_MUSTLOCK(rgbaSurface.get());
+
+    if (mustLock && !SDL_LockSurface(rgbaSurface.get())) {
+        return Err(SdlError("SDL_LockSurface"));
+    }
+
+    const auto unlockSurface = [&]() {
+        if (mustLock) {
+            SDL_UnlockSurface(rgbaSurface.get());
+        }
+    };
+
+    const auto* pixels = static_cast<const unsigned char*>(rgbaSurface.get()->pixels);
+    const int pitch = rgbaSurface.get()->pitch;
+    
+    for (auto& frame : frames) {
+        const ChannelPlane red = getFrameChannelFromSurface(pixels, pitch, frame.m_Location, 0, true);
+        frame.m_HitBox = setupHitbox(red, gridSize);
+
+        const ChannelPlane blue = getFrameChannelFromSurface(pixels, pitch, frame.m_Location, 2, false);
+        frame.m_HurtBox = setupHurtBox(blue, gridSize);
+    }
+
+    unlockSurface();
+    return Ok();
+}
+
 static Result<RawCharacterSpriteSheet> LoadCharacterSpriteSheet(
     const std::filesystem::path& characterDir, CharacterAnimation animation) {
     const std::string animationName{CharacterAnimationName(animation)};
     TRY(surface, LoadSurface(characterDir / (animationName + ".png"), animationName));
+    TRY(combatSurface, LoadSurface(characterDir / (animationName + "_boxes.png"), animationName));
     TRY(frames, LoadCharacterFrames(characterDir / (animationName + ".json")));
 
     return Ok(RawCharacterSpriteSheet{
         .m_Animation = animation,
         .m_Surface = std::move(surface),
+        .m_CombatSurface = std::move(combatSurface),
         .m_Frames = std::move(frames),
     });
 }
@@ -300,6 +399,16 @@ CharacterAssetData RawCharacterAssetData::ToAssetData(AppCtx& ctx) {
             continue;
         }
 
+        auto combatData = LoadCombatData(rawSheet.m_CombatSurface.get(), rawSheet.m_Frames, 50);
+        if (!combatData) {
+            spdlog::warn(
+                "Failed to build combat data for character asset '{}', animation '{}': {}",
+                m_Id,
+                CharacterAnimationName(animation),
+                combatData.error());
+            continue;
+        }
+        
         CharacterFrameEffectMasks::Factory effectMaskFactory{};
 
         auto effectMasks =

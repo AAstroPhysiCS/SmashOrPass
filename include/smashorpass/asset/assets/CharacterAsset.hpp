@@ -12,6 +12,7 @@
 
 #include "smashorpass/asset/effects/CharacterFrameEffectMask.hpp"
 #include "smashorpass/util.hpp"
+#include "smashorpass/asset/assets/CharacterCombatData.hpp"
 
 namespace sop {
 
@@ -24,6 +25,8 @@ struct CharacterSpriteSheetFrame {
     SDL_FRect m_Location;
     SDL_Point m_Anchor;
     SDL_FRect m_CollisionBox;
+    HitBox m_HitBox;
+    HurtBox m_HurtBox;
 };
 
 struct CharacterSpriteSheet {
@@ -72,6 +75,7 @@ struct CharacterAssetLoadJob {
 struct RawCharacterSpriteSheet {
     CharacterAnimation m_Animation = CharacterAnimation::Idle;
     SurfacePtr m_Surface{nullptr, SDL_DestroySurface};
+    SurfacePtr m_CombatSurface{nullptr, SDL_DestroySurface};
     std::vector<CharacterSpriteSheetFrame> m_Frames;
 };
 
