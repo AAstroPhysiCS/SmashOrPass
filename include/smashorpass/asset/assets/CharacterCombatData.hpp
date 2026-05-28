@@ -43,4 +43,11 @@ struct HurtBox {
 HitBox setupHitbox(const ChannelPlane& redChannel, int targetGridSize);
 HurtBox setupHurtBox(const ChannelPlane& blueChannel, int targetGridSize);
 
+[[nodiscard]] inline bool IsEmpty(const HitBox& hitBox) {
+    return hitBox.m_GridData.bounds.w <= 0.0f || hitBox.m_GridData.bounds.h <= 0.0f;
+}
+[[nodiscard]] inline bool IsEmpty(const HurtBox& hurtBox) {
+    return hurtBox.m_SubHurtBoxes.empty();
+}
+
 } // namespace sop

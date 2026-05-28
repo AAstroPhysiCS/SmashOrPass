@@ -12,6 +12,7 @@
 #include "smashorpass/state/states/in_game/Player.hpp"
 #include "smashorpass/state/states/in_game/ui/GameScreen.hpp"
 #include "smashorpass/state/states/in_game/ui/PauseScreen.hpp"
+#include "smashorpass/state/states/in_game/CombatSystem.hpp"
 
 namespace sop {
 

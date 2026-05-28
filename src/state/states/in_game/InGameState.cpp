@@ -171,6 +171,20 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
     // Effects (every frame)
     TRY_VOID(TickEffects(ctx, dt));
 
+    // TODO: clean up, maybe make viable for multiple players
+    Player& attacker = m_Players[0];
+    Player& defender = m_Players[1];
+    TRY(attackerHitBox, attacker.GetCurrentHitBox(ctx));
+    TRY(defenderHurtBox, defender.GetCurrentHurtBox(ctx));
+    if (attackerHitBox && defenderHurtBox) {
+        const HitResult hitResult = detectOverlap(*attackerHitBox, *defenderHurtBox);
+    }
+    TRY(attacker2HitBox, defender.GetCurrentHitBox(ctx));
+    TRY(defender2HurtBox, attacker.GetCurrentHurtBox(ctx));
+    if (attacker2HitBox && defender2HurtBox) {
+        const HitResult hitResult = detectOverlap(*attacker2HitBox, *defender2HurtBox);
+    }
+
     m_GameScreen.OnUpdate(ctx);
     return Ok();
 }

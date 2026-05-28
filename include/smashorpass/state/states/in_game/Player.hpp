@@ -23,6 +23,18 @@ enum class PlayerState {
     DASHING,
 };
 
+struct WorldHitBox {
+    std::reference_wrapper<const HitBox> hitBox;
+    SDL_FRect spriteRect;
+    bool facingRight;
+};
+
+struct WorldHurtBox {
+    std::reference_wrapper<const HurtBox> hurtBox;
+    SDL_FRect spriteRect;
+    bool facingRight;
+};
+
 class Player {
    public:
     Player(int playerId,
@@ -40,7 +52,11 @@ class Player {
 
     Result<void> Render(AppCtx& ctx, const Arena& arena) const;
     Result<void> RenderCollisionBox(AppCtx& ctx, const Arena& arena) const;
-
+    
+    [[nodiscard]] Result<std::optional<WorldHitBox>> GetCurrentHitBox(
+    AppCtx& ctx) const;
+    [[nodiscard]] Result<std::optional<WorldHurtBox>> GetCurrentHurtBox(
+        AppCtx& ctx) const;
    private:
     [[nodiscard]] static Vec2 LocalFramePointToBaselinePoint(const CharacterSpriteSheetFrame& frame,
                                                              const SDL_FRect& spriteRect,

@@ -157,6 +157,60 @@ Result<std::optional<SDL_FRect>> Player::GetBaselineCollisionBox(AppCtx& ctx) co
     }});
 }
 
+Result<std::optional<WorldHitBox>> Player::GetCurrentHitBox(AppCtx& ctx) const {
+    TRY(asset, ctx.assets.GetAssetData(m_Asset));
+
+    const auto sheet = asset.get().m_SpriteSheets.find(m_CurrentAnimation);
+    if (sheet == asset.get().m_SpriteSheets.end() || sheet->second.m_Frames.empty()) {
+        return Ok(std::nullopt);
+    }
+
+    const std::vector<CharacterSpriteSheetFrame>& frames = sheet->second.m_Frames;
+    const CharacterSpriteSheetFrame& frame =
+        frames[static_cast<std::size_t>(m_CurrentAnimationFrame) % frames.size()];
+    const HitBox& hitBox = frame.m_HitBox;
+    if (IsEmpty(hitBox)) {
+        return Ok(std::nullopt);
+    }
+
+    std::optional<SDL_FRect> spriteRect = GetBaselineSpriteRect(frame);
+    if (!spriteRect) {
+        return Ok(std::nullopt);
+    }
+    // need: facingRight, Position, Hitbox
+    //const int worldX = spriteRect.value().x + hitBox.m_GridData.bounds.x * kPlayerScale;
+    //const int worldY = spriteRect.value().y + hitBox.m_GridData.bounds.y * kPlayerScale;
+    
+    return Ok(WorldHitBox{hitBox, *spriteRect, m_FacingRight});
+}
+
+Result<std::optional<WorldHurtBox>> Player::GetCurrentHurtBox(AppCtx& ctx) const {
+    TRY(asset, ctx.assets.GetAssetData(m_Asset));
+
+    const auto sheet = asset.get().m_SpriteSheets.find(m_CurrentAnimation);
+    if (sheet == asset.get().m_SpriteSheets.end() || sheet->second.m_Frames.empty()) {
+        return Ok(std::nullopt);
+    }
+
+    const std::vector<CharacterSpriteSheetFrame>& frames = sheet->second.m_Frames;
+    const CharacterSpriteSheetFrame& frame =
+        frames[static_cast<std::size_t>(m_CurrentAnimationFrame) % frames.size()];
+    const HurtBox& hurtBox = frame.m_HurtBox;
+    if (IsEmpty(hurtBox)) {
+        return Ok(std::nullopt);
+    }
+
+    std::optional<SDL_FRect> spriteRect = GetBaselineSpriteRect(frame);
+    if (!spriteRect) {
+        return Ok(std::nullopt);
+    }
+    // need: facingRight, Position, Hitbox
+    //const int worldX = spriteRect.value().x + hitBox.m_GridData.bounds.x * kPlayerScale;
+    //const int worldY = spriteRect.value().y + hitBox.m_GridData.bounds.y * kPlayerScale;
+    
+    return Ok(WorldHurtBox{hurtBox, *spriteRect, m_FacingRight});
+}
+
 Result<void> Player::OnEvent(AppCtx& ctx, const Event& event) {
     (void)ctx;
 
