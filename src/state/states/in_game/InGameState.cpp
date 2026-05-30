@@ -16,9 +16,9 @@ using Clock = std::chrono::steady_clock;
 
 namespace sop {
 
-constexpr int kGameLogicTicksPerSecond = 120;
+constexpr int kGameLogicTicksPerSecond = 120; //120
 constexpr int kGameLogicMaxCatchUpTicks = 10;
-constexpr int kAnimationTicksPerSecond = 60;
+constexpr int kAnimationTicksPerSecond = 60; //60
 constexpr int kAnimationMaxCatchUpTicks = 10;
 // Derived from above
 constexpr Clock::duration kGameLogicTickDuration =
@@ -177,12 +177,12 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
     TRY(attackerHitBox, attacker.GetCurrentHitBox(ctx));
     TRY(defenderHurtBox, defender.GetCurrentHurtBox(ctx));
     if (attackerHitBox && defenderHurtBox) {
-        const HitResult hitResult = detectOverlap(*attackerHitBox, *defenderHurtBox);
+        const HitResult hitResult = detectOverlap(*attackerHitBox, *defenderHurtBox, &m_CombatDebugData);
     }
     TRY(attacker2HitBox, defender.GetCurrentHitBox(ctx));
     TRY(defender2HurtBox, attacker.GetCurrentHurtBox(ctx));
     if (attacker2HitBox && defender2HurtBox) {
-        const HitResult hitResult = detectOverlap(*attacker2HitBox, *defender2HurtBox);
+        const HitResult hitResult = detectOverlap(*attacker2HitBox, *defender2HurtBox, &m_CombatDebugData);
     }
 
     m_GameScreen.OnUpdate(ctx);
@@ -264,6 +264,30 @@ Result<void> InGameState::RenderForeground(AppCtx& ctx) {
 }
 
 Result<void> InGameState::RenderCollisionBoxes(AppCtx& ctx) {
+    if (m_ShowCombatDebug) {
+        if (m_CombatDebugData.attackerSpriteRect) {
+            TRY_VOID(ctx.renderer.DrawRect(
+                MapBaselineRectToArena(*m_CombatDebugData.attackerSpriteRect, m_Arena.dimensions),
+                Color{255, 255, 0, 255}));
+        }
+        
+        if (!m_CombatDebugData.attackerHitBoxBounds.empty()) {
+            for (const auto& [value, rect] : m_CombatDebugData.attackerHitBoxBounds) {
+                TRY_VOID(ctx.renderer.DrawRect(
+                    MapBaselineRectToArena(rect, m_Arena.dimensions),
+                    Color{255, 0, 0, 255}));
+            }
+        }
+        if (!m_CombatDebugData.defenderSubHurtBounds.empty()) {
+            for (auto subHurtBound : m_CombatDebugData.defenderSubHurtBounds) {
+                TRY_VOID(ctx.renderer.DrawRect(
+                    MapBaselineRectToArena(subHurtBound, m_Arena.dimensions),
+                    Color{0, 0, 255, 255}));           
+            }
+            
+        }
+        m_CombatDebugData = {};
+    }
     if (!ctx.renderCollisionBoxes) {
         return Ok();
     }

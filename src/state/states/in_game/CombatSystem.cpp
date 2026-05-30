@@ -9,6 +9,7 @@
 
 namespace sop {
 constexpr float kPlayerScaaale = 0.4f;
+
 namespace {
 
 std::uint64_t packPoint(int x, int y) {
@@ -87,7 +88,7 @@ SDL_Point transformPointToWorldSpace(
     return SDL_Point{
         static_cast<int>(std::lround(
             isFacingRight
-                ? worldBounds.x + scaledBoundsX + scaledBoundsW - scaledPointX - kPlayerScaaale
+                ? worldBounds.x + worldBounds.w - scaledBoundsX - scaledPointX - kPlayerScaaale
                 : worldBounds.x + scaledBoundsX + scaledPointX
         )),
         static_cast<int>(std::lround(worldBounds.y + scaledBoundsY + scaledPointY)),
@@ -297,24 +298,12 @@ bool isInHitbox(
     const std::unordered_map<std::uint64_t, bool>& attackPixels,
     const std::vector<SDL_Point>& bucket,
     const SDL_FRect& defenderBounds,
-    const bool defenderFacingRight,
-    const int defenderWorldXInt,
-    const int defenderWorldYInt
+    const SDL_FRect& defenderSpriteRect,
+    const bool defenderFacingRight
 ) {
     for (const SDL_Point& point : bucket) {
-        const int worldX =
-            static_cast<int>(std::lround(
-                defenderFacingRight
-                    ? defenderWorldXInt + defenderBounds.x * kPlayerScaaale + defenderBounds.w * kPlayerScaaale
-                        - point.x * kPlayerScaaale - kPlayerScaaale
-                    : defenderWorldXInt + defenderBounds.x * kPlayerScaaale + point.x * kPlayerScaaale
-            ));
-
-        const int worldY =
-            static_cast<int>(std::lround(
-                defenderWorldYInt + defenderBounds.y * kPlayerScaaale + point.y * kPlayerScaaale
-            ));
-        if (attackPixels.find(packPoint(worldX, worldY)) != attackPixels.end()) {
+        const SDL_Point worldPoint = transformPointToWorldSpace(point, defenderBounds, defenderSpriteRect, defenderFacingRight);
+        if (attackPixels.find(packPoint(worldPoint.x, worldPoint.y)) != attackPixels.end()) {
             return true;
         }
     }
@@ -326,7 +315,8 @@ bool checkIfHurtBoxWasHit(
     const SDL_FRect& hitboxRect,
     const SubHurtBox& defenderSubHurtBox,
     const SDL_FRect& defenderSpriteRect,
-    const bool defenderFacingRight
+    const bool defenderFacingRight,
+    CombatDebugData* debug
 ) {
     const SDL_FRect defenderWorldBounds = transformRectToWorldspace(defenderSubHurtBox.m_GridData.bounds, defenderSpriteRect, defenderFacingRight);
     const int totalBuckets = defenderSubHurtBox.m_GridData.BucketMatrixWidth() * defenderSubHurtBox.m_GridData.BucketMatrixHeight();
@@ -389,15 +379,15 @@ bool checkIfHurtBoxWasHit(
 
     const int defenderWorldXInt = static_cast<int>(std::lround(defenderSpriteRect.x));
     const int defenderWorldYInt = static_cast<int>(std::lround(defenderSpriteRect.y));
+    debug->defenderSubHurtBounds.emplace_back(transformRectToWorldspace(defenderSubHurtBox.m_GridData.bounds, defenderSpriteRect, defenderFacingRight));
     // first check all outer pixels, then also the inner ones
     for (int bucketIndex : orderedBuckets) {
         if (isInHitbox(
                 attackPixels,
                 defenderSubHurtBox.m_OuterBuckets[bucketIndex],
                 defenderSubHurtBox.m_GridData.bounds,
-                defenderFacingRight,
-                defenderWorldXInt,
-                defenderWorldYInt
+                defenderSpriteRect,
+                defenderFacingRight
             )) {
             return true;
         }
@@ -407,9 +397,8 @@ bool checkIfHurtBoxWasHit(
                 attackPixels,
                 defenderSubHurtBox.m_InnerBuckets[bucketIndex],
                 defenderSubHurtBox.m_GridData.bounds,
-                defenderFacingRight,
-                defenderWorldXInt,
-                defenderWorldYInt
+                defenderSpriteRect,
+                defenderFacingRight
             )) {
             return true;
         }
@@ -422,7 +411,8 @@ bool checkIfHurtBoxWasHit(
 
 HitResult detectOverlap(
     const WorldHitBox& attackerHitBox,
-    const WorldHurtBox& defenderHurtBox
+    const WorldHurtBox& defenderHurtBox,
+    CombatDebugData* debug
 ) {
     HitResult result;
     const HitBox& attackerLocalHitBox = attackerHitBox.hitBox.get();
@@ -445,6 +435,14 @@ HitResult detectOverlap(
             defenderSpriteRect,
             defenderFacingRight
         );
+    SDL_FRect fixAttacker = SDL_FRect{
+        attackerSpriteRect.x - attackerSpriteRect.w * kPlayerScaaale,
+        attackerSpriteRect.y - attackerSpriteRect.h * kPlayerScaaale,
+        attackerSpriteRect.w,
+        attackerSpriteRect.h
+    };
+    debug->attackerSpriteRect = attackerSpriteRect;
+    debug->attackerHitBoxBounds = definedHitbox.bucketRectsByHurtValue;
     const auto& attackPixels = definedHitbox.attackPixels;
     const auto& bucketRectsByHurtValue = definedHitbox.bucketRectsByHurtValue;
     (void)bucketRectsByHurtValue;
@@ -470,9 +468,10 @@ HitResult detectOverlap(
                 hitboxRect,
                 subHurtBox,
                 defenderSpriteRect,
-                defenderFacingRight
+                defenderFacingRight,
+                debug
             )) {
-            std::cout << "HIT\n";
+            std::cout << "HIT==============================\n";
             std::cout << attackerFacingRight << "\n";
             return HitResult{true, 1, 0, 0, 0};
         }

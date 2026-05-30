@@ -18,6 +18,9 @@ namespace sop {
 
 class InGameState final : public State {
    public:
+    bool m_ShowCombatDebug = true;
+    CombatDebugData m_CombatDebugData;
+
     explicit InGameState(AppCtx& ctx,
                          Asset<ArenaAssetData> arenaAsset = {},
                          std::vector<Asset<CharacterAssetData>> characterAssets = {});
