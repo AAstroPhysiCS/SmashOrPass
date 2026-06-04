@@ -52,6 +52,8 @@ class Player {
 
     Result<void> Render(AppCtx& ctx, const Arena& arena) const;
     Result<void> RenderCollisionBox(AppCtx& ctx, const Arena& arena) const;
+    Result<void> RenderHitBoxes(AppCtx& ctx, const Arena& arena) const;
+    Result<void> RenderHurtBoxes(AppCtx& ctx, const Arena& arena) const;
     
     [[nodiscard]] Result<std::optional<WorldHitBox>> GetCurrentHitBox(
     AppCtx& ctx) const;

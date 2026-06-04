@@ -518,4 +518,64 @@ Result<void> Player::RenderCollisionBox(AppCtx& ctx, const Arena& arena) const {
                                  Color{255, 230, 0, 255});
 }
 
+namespace {
+
+SDL_FRect TransformRectToWorldspace(const SDL_FRect& localRect,
+                                    const SDL_FRect& spriteRect,
+                                    bool facingRight) {
+    constexpr float kPlayerScale = 0.4f;
+
+    const float scaledX = localRect.x * kPlayerScale;
+    const float scaledY = localRect.y * kPlayerScale;
+    const float scaledW = localRect.w * kPlayerScale;
+    const float scaledH = localRect.h * kPlayerScale;
+
+    return SDL_FRect{
+        .x = facingRight
+                 ? (spriteRect.x + spriteRect.w - scaledX - scaledW)
+                 : (spriteRect.x + scaledX),
+        .y = spriteRect.y + scaledY,
+        .w = scaledW,
+        .h = scaledH,
+    };
+}
+
+}  // namespace
+
+Result<void> Player::RenderHitBoxes(AppCtx& ctx, const Arena& arena) const {
+    TRY(worldHitBox, GetCurrentHitBox(ctx));
+    if (!worldHitBox) {
+        return Ok();
+    }
+
+    const SDL_FRect worldRect =
+        TransformRectToWorldspace(worldHitBox->hitBox.get().m_GridData.bounds,
+                                  worldHitBox->spriteRect,
+                                  worldHitBox->facingRight);
+
+    return ctx.renderer.DrawRect(MapBaselineRectToArena(worldRect, arena.dimensions),
+                                 Color{255, 0, 0, 255});
+}
+
+Result<void> Player::RenderHurtBoxes(AppCtx& ctx, const Arena& arena) const {
+    TRY(worldHurtBox, GetCurrentHurtBox(ctx));
+    if (!worldHurtBox) {
+        return Ok();
+    }
+
+    for (const auto& [value, subHurtBox] : worldHurtBox->hurtBox.get().m_SubHurtBoxes) {
+        (void)value;
+
+        const SDL_FRect worldRect =
+            TransformRectToWorldspace(subHurtBox.m_GridData.bounds,
+                                      worldHurtBox->spriteRect,
+                                      worldHurtBox->facingRight);
+
+        TRY_VOID(ctx.renderer.DrawRect(MapBaselineRectToArena(worldRect, arena.dimensions),
+                                       Color{0, 0, 255, 255}));
+    }
+
+    return Ok();
+}
+
 }  // namespace sop

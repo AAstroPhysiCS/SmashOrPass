@@ -316,7 +316,7 @@ bool checkIfHurtBoxWasHit(
     const SubHurtBox& defenderSubHurtBox,
     const SDL_FRect& defenderSpriteRect,
     const bool defenderFacingRight,
-    CombatDebugData* debug
+    PlayerCombatDebugData* defenderDebugData
 ) {
     const SDL_FRect defenderWorldBounds = transformRectToWorldspace(defenderSubHurtBox.m_GridData.bounds, defenderSpriteRect, defenderFacingRight);
     const int totalBuckets = defenderSubHurtBox.m_GridData.BucketMatrixWidth() * defenderSubHurtBox.m_GridData.BucketMatrixHeight();
@@ -379,7 +379,8 @@ bool checkIfHurtBoxWasHit(
 
     const int defenderWorldXInt = static_cast<int>(std::lround(defenderSpriteRect.x));
     const int defenderWorldYInt = static_cast<int>(std::lround(defenderSpriteRect.y));
-    debug->defenderSubHurtBounds.emplace_back(transformRectToWorldspace(defenderSubHurtBox.m_GridData.bounds, defenderSpriteRect, defenderFacingRight));
+    if (defenderDebugData != nullptr)
+        defenderDebugData->hurtBoxBounds.emplace_back(transformRectToWorldspace(defenderSubHurtBox.m_GridData.bounds, defenderSpriteRect, defenderFacingRight));
     // first check all outer pixels, then also the inner ones
     for (int bucketIndex : orderedBuckets) {
         if (isInHitbox(
@@ -412,7 +413,8 @@ bool checkIfHurtBoxWasHit(
 HitResult detectOverlap(
     const WorldHitBox& attackerHitBox,
     const WorldHurtBox& defenderHurtBox,
-    CombatDebugData* debug
+    PlayerCombatDebugData* attackerDebugData,
+    PlayerCombatDebugData* defenderDebugData
 ) {
     HitResult result;
     const HitBox& attackerLocalHitBox = attackerHitBox.hitBox.get();
@@ -441,8 +443,14 @@ HitResult detectOverlap(
         attackerSpriteRect.w,
         attackerSpriteRect.h
     };
-    debug->attackerSpriteRect = attackerSpriteRect;
-    debug->attackerHitBoxBounds = definedHitbox.bucketRectsByHurtValue;
+    if (attackerDebugData != nullptr)
+        //do I want the whole sprite too? attackerDebugData->hitBoxBounds.push_back(attackerSpriteRect);
+        for (const auto& [value, rect] : definedHitbox.bucketRectsByHurtValue) {
+            (void)value;
+            attackerDebugData->hitBoxBounds.push_back(rect);
+        }
+
+
     const auto& attackPixels = definedHitbox.attackPixels;
     const auto& bucketRectsByHurtValue = definedHitbox.bucketRectsByHurtValue;
     (void)bucketRectsByHurtValue;
@@ -469,7 +477,7 @@ HitResult detectOverlap(
                 subHurtBox,
                 defenderSpriteRect,
                 defenderFacingRight,
-                debug
+                defenderDebugData
             )) {
             std::cout << "HIT==============================\n";
             std::cout << attackerFacingRight << "\n";

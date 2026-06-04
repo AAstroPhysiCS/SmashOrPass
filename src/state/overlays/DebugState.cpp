@@ -9,6 +9,7 @@
 #include "SDL3/SDL.h"
 #include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/core/Base.hpp"
+#include "smashorpass/state/states/in_game/InGameState.hpp"
 
 namespace sop {
 
@@ -85,7 +86,37 @@ void DebugState::Draw(AppCtx& ctx) {
     ImGui::Text("Pixel density: %.2f", static_cast<double>(ctx.displayMetrics.PixelDensity));
 
     ImGui::Separator();
-    ImGui::Checkbox("Render collision boxes", &ctx.renderCollisionBoxes);
+    ImGui::Text("Debug Rendering");
+
+    ImGui::Checkbox("Render Arena collision boxes", &ctx.debugRender.renderArenaCollisionBoxes);
+    ImGui::Checkbox("Render Player boxes", &ctx.debugRender.renderPlayerBoxes);
+
+    if (InGameState* inGame = ctx.stateManager.TopStateAs<InGameState>()) {
+        ImGui::Separator();
+        ImGui::Text("Players");
+
+        for (std::size_t i = 0; i < inGame->GetPlayerCount(); ++i) {
+            PlayerDebugRenderOptions& options = inGame->GetPlayerDebugOptions(i);
+            const std::string label = "Player " + std::to_string(i + 1);
+
+            if (ImGui::CollapsingHeader(label.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+                ImGui::PushID(static_cast<int>(i));
+
+                ImGui::Checkbox("Enabled", &options.enabled);
+
+                ImGui::BeginDisabled(!options.enabled);
+                ImGui::Checkbox("Collision box", &options.collisionBox);
+                ImGui::Checkbox("Hitboxes", &options.hitBoxes);
+                ImGui::Checkbox("Hurtboxes", &options.hurtBoxes);
+                ImGui::Checkbox("Combat Hitboxes", &options.combatHitBoxes);
+                ImGui::Checkbox("Combat Hurtboxes", &options.combatHurtBoxes);
+                ImGui::EndDisabled();
+
+                ImGui::PopID();
+            }
+        }
+    }
+
     ImGui::End();
 }
 

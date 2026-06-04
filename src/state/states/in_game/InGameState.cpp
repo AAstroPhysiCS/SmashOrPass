@@ -69,6 +69,12 @@ Result<void> InGameState::Initialize(AppCtx& ctx) {
                                std::move(input));
     }
 
+    m_PlayerDebugRenderOptions.clear();
+    m_PlayerDebugRenderOptions.resize(m_Players.size());
+
+    m_PlayerCombatDebugData.clear();
+    m_PlayerCombatDebugData.resize(m_Players.size());
+
     m_Paused = false;
     ResetFrameTimer();
     return Ok();
@@ -172,17 +178,24 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
     TRY_VOID(TickEffects(ctx, dt));
 
     // TODO: clean up, maybe make viable for multiple players
+    for (auto& debugData : m_PlayerCombatDebugData) {
+        debugData = {};
+    }
+    int attackerIndex = 0;
+    int defenderIndex = 1;
     Player& attacker = m_Players[0];
     Player& defender = m_Players[1];
     TRY(attackerHitBox, attacker.GetCurrentHitBox(ctx));
     TRY(defenderHurtBox, defender.GetCurrentHurtBox(ctx));
     if (attackerHitBox && defenderHurtBox) {
-        const HitResult hitResult = detectOverlap(*attackerHitBox, *defenderHurtBox, &m_CombatDebugData);
+        const HitResult hitResult = detectOverlap(*attackerHitBox, *defenderHurtBox, &m_PlayerCombatDebugData[attackerIndex], &m_PlayerCombatDebugData[defenderIndex]);
     }
     TRY(attacker2HitBox, defender.GetCurrentHitBox(ctx));
     TRY(defender2HurtBox, attacker.GetCurrentHurtBox(ctx));
     if (attacker2HitBox && defender2HurtBox) {
-        const HitResult hitResult = detectOverlap(*attacker2HitBox, *defender2HurtBox, &m_CombatDebugData);
+        attackerIndex = 1;
+        defenderIndex = 0;
+        const HitResult hitResult = detectOverlap(*attacker2HitBox, *defender2HurtBox, &m_PlayerCombatDebugData[attackerIndex], &m_PlayerCombatDebugData[defenderIndex]);
     }
 
     m_GameScreen.OnUpdate(ctx);
@@ -195,8 +208,65 @@ Result<void> InGameState::OnRender(AppCtx& ctx) {
     TRY_VOID(RenderPlayers(ctx));
     TRY_VOID(RenderEffects(ctx));
     TRY_VOID(RenderForeground(ctx));
-    TRY_VOID(RenderCollisionBoxes(ctx));
+    TRY_VOID(RenderArenaCollisionBoxes(ctx));
+    TRY_VOID(RenderDebugBoxes(ctx));
     TRY_VOID(RenderUi(ctx));
+    return Ok();
+}
+
+Result<void> InGameState::RenderDebugBoxes(AppCtx& ctx) {
+    if (!ctx.debugRender.renderPlayerBoxes) {
+        return Ok();
+    }
+
+    for (std::size_t i = 0; i < m_Players.size(); ++i) {
+        const PlayerDebugRenderOptions& debugOptions = m_PlayerDebugRenderOptions[i];
+        const PlayerCombatDebugData& debugData = m_PlayerCombatDebugData[i];
+
+        if (!debugOptions.enabled) {
+            continue;
+        }
+
+        if (debugOptions.collisionBox) {
+            TRY_VOID(m_Players[i].RenderCollisionBox(ctx, m_Arena));
+        }
+
+        if (debugOptions.hitBoxes) {
+            TRY_VOID(m_Players[i].RenderHitBoxes(ctx, m_Arena));
+        }
+
+        if (debugOptions.hurtBoxes) {
+            TRY_VOID(m_Players[i].RenderHurtBoxes(ctx, m_Arena));
+        }
+
+        if (debugOptions.combatHitBoxes) {
+            for (const SDL_FRect& rect : debugData.hitBoxBounds) {
+                TRY_VOID(ctx.renderer.DrawRect(
+                    MapBaselineRectToArena(rect, m_Arena.dimensions),
+                    Color{255, 0, 0, 255}));
+            }
+        }
+        
+        if (debugOptions.combatHurtBoxes) {
+            for (const SDL_FRect& rect : debugData.hurtBoxBounds) {
+                TRY_VOID(ctx.renderer.DrawRect(
+                    MapBaselineRectToArena(rect, m_Arena.dimensions),
+                    Color{0, 0, 255, 255}));
+            }
+        }
+        
+    }
+
+    for (const PlayerCombatDebugData& debugData : m_PlayerCombatDebugData) {
+        //if (debugData.spriteRect) {
+        //    TRY_VOID(ctx.renderer.DrawRect(
+        //        MapBaselineRectToArena(*debugData.spriteRect, m_Arena.dimensions),
+        //        Color{255, 255, 0, 255}));
+        //}
+
+        
+    }
+    
     return Ok();
 }
 
@@ -263,32 +333,8 @@ Result<void> InGameState::RenderForeground(AppCtx& ctx) {
     return ctx.renderer.DrawTexture(arenaAsset.get().m_Foreground.get(), rect);
 }
 
-Result<void> InGameState::RenderCollisionBoxes(AppCtx& ctx) {
-    if (m_ShowCombatDebug) {
-        if (m_CombatDebugData.attackerSpriteRect) {
-            TRY_VOID(ctx.renderer.DrawRect(
-                MapBaselineRectToArena(*m_CombatDebugData.attackerSpriteRect, m_Arena.dimensions),
-                Color{255, 255, 0, 255}));
-        }
-        
-        if (!m_CombatDebugData.attackerHitBoxBounds.empty()) {
-            for (const auto& [value, rect] : m_CombatDebugData.attackerHitBoxBounds) {
-                TRY_VOID(ctx.renderer.DrawRect(
-                    MapBaselineRectToArena(rect, m_Arena.dimensions),
-                    Color{255, 0, 0, 255}));
-            }
-        }
-        if (!m_CombatDebugData.defenderSubHurtBounds.empty()) {
-            for (auto subHurtBound : m_CombatDebugData.defenderSubHurtBounds) {
-                TRY_VOID(ctx.renderer.DrawRect(
-                    MapBaselineRectToArena(subHurtBound, m_Arena.dimensions),
-                    Color{0, 0, 255, 255}));           
-            }
-            
-        }
-        m_CombatDebugData = {};
-    }
-    if (!ctx.renderCollisionBoxes) {
+Result<void> InGameState::RenderArenaCollisionBoxes(AppCtx& ctx) {
+    if (!ctx.debugRender.renderArenaCollisionBoxes) {
         return Ok();
     }
 
@@ -297,10 +343,6 @@ Result<void> InGameState::RenderCollisionBoxes(AppCtx& ctx) {
     for (const SDL_FRect& collisionBox : arenaAsset.get().m_CollisionBoxes) {
         TRY_VOID(ctx.renderer.DrawRect(MapBaselineRectToArena(collisionBox, m_Arena.dimensions),
                                        Color{0, 255, 0, 255}));
-    }
-
-    for (const Player& player : m_Players) {
-        TRY_VOID(player.RenderCollisionBox(ctx, m_Arena));
     }
 
     return Ok();
