@@ -46,6 +46,7 @@ class Player {
     Result<void> OnEvent(AppCtx& ctx, const Event& event);
 
     Result<void> TickGameLogic(AppCtx& ctx, const Arena& arena);
+    Result<void> Movement(AppCtx& ctx, const Arena& arena);
     Result<void> TickAnimations(AppCtx& ctx, const Arena& arena);
 
     [[nodiscard]] Result<bool> IsOnGround(AppCtx& ctx, const Arena& arena) const;
@@ -59,16 +60,101 @@ class Player {
     AppCtx& ctx) const;
     [[nodiscard]] Result<std::optional<WorldHurtBox>> GetCurrentHurtBox(
         AppCtx& ctx) const;
+    
+    
    private:
     [[nodiscard]] static Vec2 LocalFramePointToBaselinePoint(const CharacterSpriteSheetFrame& frame,
-                                                             const SDL_FRect& spriteRect,
-                                                             Vec2 localPoint,
-                                                             bool facingRight);
+                                                         const SDL_FRect& spriteRect,
+                                                         Vec2 localPoint,
+                                                         bool facingRight);
 
     [[nodiscard]] static Vec2 MapBaselinePointToArenaPoint(Vec2 point,
-                                                           const SDL_Rect& arenaDimensions);
+                                                       const SDL_Rect& arenaDimensions);
+    
+    struct CurrentPlayerInput {
+        bool JumpPressed = false;
+        bool DashPressed = false;
+        bool AttackPressed = false;
+        bool MoveLeftHeld = false;
+        bool MoveRightHeld = false;
+        bool AttackHeld = false;
+    };
 
-    // ---- Mechanical
+    struct GroundInfo {
+        bool OnGround = false;
+    };
+
+    struct HorizontalStepResult {
+        bool DashedThisTick = false;
+        bool MovedHorizontally = false;
+    };
+
+    struct CollisionResolution {
+        bool Collided = false;
+        bool HitFloor = false;
+        bool HitCeiling = false;
+        bool HitLeftWall = false;
+        bool HitRightWall = false;
+    };
+
+    struct AttackState {
+        int TicksRemaining = 0;
+        int MinimumTicksRemaining = 0;
+
+        [[nodiscard]] bool IsActive() const {
+            return TicksRemaining > 0;
+        }
+    };
+
+    struct MovementState {
+        SDL_FPoint Position{};
+        bool isGrounded = false;
+        bool FacingRight = true;
+        PlayerState State = PlayerState::IDLE;
+
+        SDL_FPoint Velocity{0.f, 0.f};
+
+        int DashTicksRemaining = 0;
+        int DashCooldownTicksRemaining = 0;
+        float DashDirection = 1.0f;
+        bool DashJumpAvailable = false;
+        bool AirDashAvailable = true;
+        AttackState AttackInfo{};
+    };
+    
+    
+    [[nodiscard]] CurrentPlayerInput GatherInput(AppCtx& ctx);
+    void TickCooldowns(const CurrentPlayerInput& input);
+
+    [[nodiscard]] Result<GroundInfo> QueryGroundInfo(AppCtx& ctx, const Arena& arena) const;
+    void RefreshAirOptionsFromGround(const GroundInfo& groundInfo);
+    void RefreshPostMoveAirOptions(const GroundInfo& groundInfo,
+                                   const HorizontalStepResult& horizontal);
+
+    void TryStartDash(const CurrentPlayerInput& input);
+    void TryStartAttack(const CurrentPlayerInput& input);
+    [[nodiscard]] HorizontalStepResult ApplyHorizontalIntent(const CurrentPlayerInput& input);
+    void TryApplyJump(const CurrentPlayerInput& input);
+    void ApplyVerticalMotion(const HorizontalStepResult& horizontal);
+
+    [[nodiscard]] Result<CollisionResolution> ResolveArenaCollisions(AppCtx& ctx,
+                                                                     const Arena& arena);
+    void ApplyCollisionResult(const CollisionResolution& resolution);
+
+    void UpdatePlayerState(const CurrentPlayerInput& input);
+
+
+    void Movement_Dash();
+    [[nodiscard]] bool IsDashActive() const {
+        return m_MovementState.DashTicksRemaining > 0;
+    }
+    void RefreshAirOptions();
+    void ApplyMoves(const CurrentPlayerInput& input);
+    void TryApplyMove(const CurrentPlayerInput& input);
+    void ApplyGravity();
+    void ApplyFriction();
+    void ApplyVelocity();
+
     int m_playerId;
     Asset<CharacterAssetData> m_Asset;
 
@@ -79,6 +165,7 @@ class Player {
     SDL_FPoint m_Position;
     bool m_FacingRight;
     PlayerState m_State;
+    MovementState m_MovementState;
 
     // ---- Effect tracking for animation frames
     Result<void> DispatchSwordFrameEffects(AppCtx& ctx,
