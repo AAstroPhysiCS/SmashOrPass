@@ -289,7 +289,7 @@ Result<void> InGameState::AdjustToWindow(AppCtx& ctx) {
 
 Result<void> InGameState::TickGameLogic(AppCtx& ctx) {
     for (Player& player : m_Players) {
-        TRY_VOID(player.Movement(ctx, m_Arena));
+        TRY_VOID(player.TickGameLogic(ctx, m_Arena));
     }
     return Ok();
 }
