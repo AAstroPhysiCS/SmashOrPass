@@ -43,9 +43,9 @@ Result<CharacterAnimation> Player::GetAnimationToShow(AppCtx& ctx, const Arena& 
             break;
     }
 
-    TRY(onGround, IsOnGround(ctx, arena));
-    if (!onGround) {
-        return Ok(m_MovementState.Velocity.y < 0.0f ? CharacterAnimation::Ascending : CharacterAnimation::Falling);
+    if (!m_MovementState.Grounded) {
+        return Ok(m_MovementState.Velocity.y < 0.0f ? CharacterAnimation::Ascending
+                                                    : CharacterAnimation::Falling);
     }
 
     switch (m_State) {

@@ -149,18 +149,7 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
         return Ok();
     }
 
-    // ---- Update Ticks
-    // Animations
-    int animationTicks = 0;
-    while (now - m_PreviousAnimationTick >= kAnimationTickDuration &&
-           animationTicks < kAnimationMaxCatchUpTicks) {
-        TRY_VOID(TickAnimation(ctx));
-        m_PreviousAnimationTick += kAnimationTickDuration;
-        ++animationTicks;
-    }
-    if (animationTicks == kAnimationMaxCatchUpTicks) {
-        m_PreviousAnimationTick = now;
-    }
+    
 
     // Game Logic
     int gameLogicTicks = 0;
@@ -172,6 +161,19 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
     }
     if (gameLogicTicks == kGameLogicMaxCatchUpTicks) {
         m_PreviousGameLogicTick = now;
+    }
+
+    // ---- Update Ticks
+    // Animations
+    int animationTicks = 0;
+    while (now - m_PreviousAnimationTick >= kAnimationTickDuration &&
+           animationTicks < kAnimationMaxCatchUpTicks) {
+        TRY_VOID(TickAnimation(ctx));
+        m_PreviousAnimationTick += kAnimationTickDuration;
+        ++animationTicks;
+    }
+    if (animationTicks == kAnimationMaxCatchUpTicks) {
+        m_PreviousAnimationTick = now;
     }
 
     // Effects (every frame)
@@ -291,6 +293,13 @@ Result<void> InGameState::TickGameLogic(AppCtx& ctx) {
     for (Player& player : m_Players) {
         TRY_VOID(player.TickGameLogic(ctx, m_Arena));
     }
+
+    for (std::size_t first = 0; first < m_Players.size(); ++first) {
+        for (std::size_t second = first + 1; second < m_Players.size(); ++second) {
+            TRY_VOID(m_Players[first].ResolveCollisionWithPlayer(ctx, m_Players[second]));
+        }
+    }
+
     return Ok();
 }
 

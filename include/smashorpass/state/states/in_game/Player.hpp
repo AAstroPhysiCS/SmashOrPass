@@ -41,6 +41,7 @@ class Player {
 
     Result<void> TickGameLogic(AppCtx& ctx, const Arena& arena);
     Result<void> TickAnimations(AppCtx& ctx, const Arena& arena);
+    Result<void> ResolveCollisionWithPlayer(AppCtx& ctx, Player& other);
 
     [[nodiscard]] Result<bool> IsOnGround(AppCtx& ctx, const Arena& arena) const;
 
@@ -68,8 +69,8 @@ class Player {
         bool Collided = false;
         bool HitFloor = false;
         bool HitCeiling = false;
-        bool HitLeftWall = false;
-        bool HitRightWall = false;
+        bool HitWallOnLeft = false;
+        bool HitWallOnRight = false;
     };
     
     Result<bool> QueryGroundInfo(AppCtx& ctx, const Arena& arena) const;
@@ -77,6 +78,7 @@ class Player {
 
     [[nodiscard]] Result<CollisionResolution> ResolveArenaCollisions(AppCtx& ctx,
                                                                      const Arena& arena);
+    void ApplyCollisionBodyRect(const SDL_FRect& previousRect, const SDL_FRect& resolvedRect);
     void ApplyCollisionResult(const CollisionResolution& resolution);
 
     int m_playerId;

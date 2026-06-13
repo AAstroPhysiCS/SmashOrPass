@@ -56,13 +56,16 @@ void TryStartDash(MovementState& state,
     state.FacingRight = state.Dash.Direction > 0.0f;
     state.Dash.TicksRemaining = config.DashTicks;
     state.Dash.CooldownTicksRemaining = config.DashCooldownTicks;
-    state.Velocity.y = 0.0f;
-    state.Velocity.x = state.Dash.Direction * config.DashSpeed;
 
     if (!state.Grounded) {
         state.Dash.AirDashAvailable = false;
         state.DashJumpAvailable = true;
     }
+}
+
+void ApplyActiveDash(MovementState& state, const MovementConfig& config) {
+    state.Velocity.x = state.Dash.Direction * config.DashSpeed;
+    state.Velocity.y = 0.0f;
 }
 
 void TryStartAttack(MovementState& state,
@@ -126,6 +129,7 @@ PlayerActionState ApplyMoves(MovementState& state,
                              const MovementConfig& config) {
     TryStartDash(state, input, config);
     if (state.Dash.IsActive()) {
+        ApplyActiveDash(state, config);
         --state.Dash.TicksRemaining;
         return PlayerActionState::DASHING;
     }
