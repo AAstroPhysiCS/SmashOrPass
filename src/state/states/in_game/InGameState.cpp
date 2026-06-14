@@ -1,15 +1,12 @@
 #include "smashorpass/state/states/in_game/InGameState.hpp"
 
-#include <array>
 #include <chrono>
 #include <cstddef>
 #include <string>
 #include <utility>
-#include <vector>
 
 #include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/core/Base.hpp"
-#include "smashorpass/core/Color.hpp"
 #include "smashorpass/state/states/in_game/Defaults.hpp"
 #include "smashorpass/ui/UIBuilder.hpp"
 #include "smashorpass/util.hpp"
@@ -22,10 +19,6 @@ constexpr int kGameLogicTicksPerSecond = 120; //120
 constexpr int kGameLogicMaxCatchUpTicks = 10;
 constexpr int kAnimationTicksPerSecond = 60; //60
 constexpr int kAnimationMaxCatchUpTicks = 10;
-constexpr float kDefaultPlayerHealth = 100.0f;
-constexpr int kDefaultPlayerStocks = 3;
-constexpr float kBottomBlastZonePadding = 300.0f;
-constexpr float kRespawnHeightAboveArena = 100.0f;
 // Derived from above
 constexpr Clock::duration kGameLogicTickDuration =
     duration_cast<Clock::duration>(std::chrono::duration<double>(1.0 / kGameLogicTicksPerSecond));
@@ -154,8 +147,6 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
         return Ok();
     }
 
-    
-
     // Game Logic
     int gameLogicTicks = 0;
     while (now - m_PreviousGameLogicTick >= kGameLogicTickDuration &&
@@ -187,18 +178,23 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
     TRY_VOID(SolveCombat(ctx));
     TRY_VOID(ResolveDeathsAndRespawns());
 
-    if (m_Players.size() >= 2) {
-        m_GameScreen.SetPlayersStats(m_Players[0].Health(),
-                                     m_Players[0].Stocks(),
-                                     m_Players[0].RoundsWon(),
-                                     m_Players[1].Health(),
-                                     m_Players[1].Stocks(),
-                                     m_Players[1].RoundsWon(),
-                                     m_CurrentRound);
-    }
-
+    SyncGameScreen();
     m_GameScreen.OnUpdate(ctx);
     return Ok();
+}
+
+void InGameState::SyncGameScreen() {
+    if (m_Players.size() < 2) {
+        return;
+    }
+
+    m_GameScreen.SetPlayersStats(m_Players[0].Health(),
+                                 m_Players[0].Stocks(),
+                                 m_Players[0].RoundsWon(),
+                                 m_Players[1].Health(),
+                                 m_Players[1].Stocks(),
+                                 m_Players[1].RoundsWon(),
+                                 m_CurrentRound);
 }
 
 Result<void> InGameState::OnRender(AppCtx& ctx) {
@@ -211,62 +207,6 @@ Result<void> InGameState::OnRender(AppCtx& ctx) {
     TRY_VOID(RenderArenaCollisionBoxes(ctx));
     TRY_VOID(RenderDebugBoxes(ctx));
     TRY_VOID(RenderUi(ctx));
-    return Ok();
-}
-
-Result<void> InGameState::RenderDebugBoxes(AppCtx& ctx) {
-    if (!ctx.debugRender.renderPlayerBoxes) {
-        return Ok();
-    }
-
-    for (std::size_t i = 0; i < m_Players.size(); ++i) {
-        const PlayerDebugRenderOptions& debugOptions = m_PlayerDebugRenderOptions[i];
-        const PlayerCombatDebugData& debugData = m_PlayerCombatDebugData[i];
-
-        if (!debugOptions.enabled) {
-            continue;
-        }
-
-        if (debugOptions.collisionBox) {
-            TRY_VOID(m_Players[i].RenderCollisionBox(ctx, m_Arena));
-        }
-
-        if (debugOptions.hitBoxes) {
-            TRY_VOID(m_Players[i].RenderHitBoxes(ctx, m_Arena));
-        }
-
-        if (debugOptions.hurtBoxes) {
-            TRY_VOID(m_Players[i].RenderHurtBoxes(ctx, m_Arena));
-        }
-
-        if (debugOptions.combatHitBoxes) {
-            for (const SDL_FRect& rect : debugData.hitBoxBounds) {
-                TRY_VOID(ctx.renderer.DrawRect(
-                    MapBaselineRectToArena(rect, m_Arena.dimensions),
-                    Color{255, 0, 0, 255}));
-            }
-        }
-        
-        if (debugOptions.combatHurtBoxes) {
-            for (const SDL_FRect& rect : debugData.hurtBoxBounds) {
-                TRY_VOID(ctx.renderer.DrawRect(
-                    MapBaselineRectToArena(rect, m_Arena.dimensions),
-                    Color{0, 0, 255, 255}));
-            }
-        }
-        
-    }
-
-    for (const PlayerCombatDebugData& debugData : m_PlayerCombatDebugData) {
-        //if (debugData.spriteRect) {
-        //    TRY_VOID(ctx.renderer.DrawRect(
-        //        MapBaselineRectToArena(*debugData.spriteRect, m_Arena.dimensions),
-        //        Color{255, 255, 0, 255}));
-        //}
-
-        
-    }
-    
     return Ok();
 }
 
@@ -330,187 +270,6 @@ Result<void> InGameState::TickAnimation(AppCtx& ctx) {
 
 Result<void> InGameState::TickEffects(AppCtx& ctx, std::chrono::duration<float> dt) {
     ctx.particleSystem.Update(dt.count());
-    return Ok();
-}
-
-Result<void> InGameState::ResolveDeathsAndRespawns() {
-    const float bottomBlastZone =
-        static_cast<float>(m_Arena.dimensions.y + m_Arena.dimensions.h) + kBottomBlastZonePadding;
-
-    std::vector<std::size_t> deadPlayers;
-    for (std::size_t playerIndex = 0; playerIndex < m_Players.size(); ++playerIndex) {
-        if (m_Players[playerIndex].Position().y > bottomBlastZone) {
-            deadPlayers.push_back(playerIndex);
-        }
-    }
-
-    if (deadPlayers.empty()) {
-        return Ok();
-    }
-
-    for (const std::size_t playerIndex : deadPlayers) {
-        m_Players[playerIndex].LoseStock();
-    }
-
-    if (m_Players.size() == 2) {
-        const bool player1Out = m_Players[0].Stocks() == 0;
-        const bool player2Out = m_Players[1].Stocks() == 0;
-        // Allow draws
-        if (player1Out && player2Out) {
-            RestartRound();
-            return Ok();
-        }
-
-        if (player1Out) {
-            StartNextRound(1);
-            return Ok();
-        }
-
-        if (player2Out) {
-            StartNextRound(0);
-            return Ok();
-        }
-    }
-
-    for (const std::size_t playerIndex : deadPlayers) {
-        SDL_FPoint spawnPosition = PlayerStartPosition(playerIndex);
-        spawnPosition.y =
-            static_cast<float>(m_Arena.dimensions.y) - kRespawnHeightAboveArena;
-        const bool facingRight = spawnPosition.x < static_cast<float>(m_Arena.dimensions.w) * 0.5f;
-        m_Players[playerIndex].Respawn(spawnPosition, facingRight, kDefaultPlayerHealth);
-    }
-
-    return Ok();
-}
-
-void InGameState::StartNextRound(const std::size_t winnerIndex) {
-    if (winnerIndex < m_Players.size()) {
-        m_Players[winnerIndex].WinRound();
-    }
-
-    ++m_CurrentRound;
-    RestartRound();
-}
-
-void InGameState::RestartRound() {
-    for (std::size_t playerIndex = 0; playerIndex < m_Players.size(); ++playerIndex) {
-        SDL_FPoint spawnPosition = PlayerStartPosition(playerIndex);
-        const bool facingRight = spawnPosition.x < static_cast<float>(m_Arena.dimensions.w) * 0.5f;
-        m_Players[playerIndex].ResetStocks(kDefaultPlayerStocks);
-        m_Players[playerIndex].Respawn(spawnPosition, facingRight, kDefaultPlayerHealth);
-    }
-}
-
-Result<void> InGameState::RenderBackdrop(AppCtx& ctx) {
-    TRY(arenaAsset, ctx.assets.GetAssetData(m_Arena.asset));
-
-    SDL_FRect rect{};
-    SDL_RectToFRect(&m_Arena.dimensions, &rect);
-    return ctx.renderer.DrawTexture(arenaAsset.get().m_Background.get(), rect);
-}
-
-Result<void> InGameState::RenderPlayers(AppCtx& ctx) {
-    for (const Player& player : m_Players) {
-        TRY_VOID(player.Render(ctx, m_Arena));
-    }
-    return Ok();
-}
-
-Result<void> InGameState::RenderEffects(AppCtx& ctx) {
-    return ctx.particleSystem.Render(ctx);
-}
-
-Result<void> InGameState::RenderForeground(AppCtx& ctx) {
-    TRY(arenaAsset, ctx.assets.GetAssetData(m_Arena.asset));
-
-    SDL_FRect rect{};
-    SDL_RectToFRect(&m_Arena.dimensions, &rect);
-    return ctx.renderer.DrawTexture(arenaAsset.get().m_Foreground.get(), rect);
-}
-
-Result<void> InGameState::RenderPlayerMarkers(AppCtx& ctx) {
-    constexpr float kMarkerHalfWidth = 12.0f;
-    constexpr float kMarkerHeight = 16.0f;
-    constexpr float kMarkerGap = 10.0f;
-    constexpr std::array<Color, 4> kMarkerColors{
-        Color{255, 40, 40, 255},
-        Color{40, 110, 255, 255},
-        Color{45, 210, 95, 255},
-        Color{255, 220, 45, 255},
-    };
-
-    for (std::size_t playerIndex = 0; playerIndex < m_Players.size(); ++playerIndex) {
-        TRY(markerAnchor, m_Players[playerIndex].GetBaselineMarkerAnchor(ctx));
-        if (!markerAnchor) {
-            continue;
-        }
-
-        const SDL_FRect mappedAnchor = MapBaselineRectToArena(
-            SDL_FRect{
-                .x = markerAnchor->x,
-                .y = markerAnchor->y,
-                .w = 0.0f,
-                .h = 0.0f,
-            },
-            m_Arena.dimensions);
-
-        const Color color = kMarkerColors[playerIndex % kMarkerColors.size()];
-        const SDL_FColor vertexColor{
-            static_cast<float>(color.r) / 255.0f,
-            static_cast<float>(color.g) / 255.0f,
-            static_cast<float>(color.b) / 255.0f,
-            static_cast<float>(color.a) / 255.0f,
-        };
-
-        const float tipX = mappedAnchor.x;
-        const float tipY = mappedAnchor.y - kMarkerGap;
-        const float baseY = tipY - kMarkerHeight;
-        const std::array<SDL_Vertex, 3> vertices{
-            SDL_Vertex{
-                .position = SDL_FPoint{.x = tipX - kMarkerHalfWidth, .y = baseY},
-                .color = vertexColor,
-                .tex_coord = SDL_FPoint{.x = 0.0f, .y = 0.0f},
-            },
-            SDL_Vertex{
-                .position = SDL_FPoint{.x = tipX + kMarkerHalfWidth, .y = baseY},
-                .color = vertexColor,
-                .tex_coord = SDL_FPoint{.x = 0.0f, .y = 0.0f},
-            },
-            SDL_Vertex{
-                .position = SDL_FPoint{.x = tipX, .y = tipY},
-                .color = vertexColor,
-                .tex_coord = SDL_FPoint{.x = 0.0f, .y = 0.0f},
-            },
-        };
-
-        TRY_VOID(ctx.renderer.DrawGeometry(nullptr, vertices));
-    }
-
-    return Ok();
-}
-
-Result<void> InGameState::RenderArenaCollisionBoxes(AppCtx& ctx) {
-    if (!ctx.debugRender.renderArenaCollisionBoxes) {
-        return Ok();
-    }
-
-    TRY(arenaAsset, ctx.assets.GetAssetData(m_Arena.asset));
-
-    for (const SDL_FRect& collisionBox : arenaAsset.get().m_CollisionBoxes) {
-        TRY_VOID(ctx.renderer.DrawRect(MapBaselineRectToArena(collisionBox, m_Arena.dimensions),
-                                       Color{0, 255, 0, 255}));
-    }
-
-    return Ok();
-}
-
-Result<void> InGameState::RenderUi(AppCtx& ctx) {
-    TRY_VOID(m_GameScreen.OnRender(ctx));
-
-    if (m_Paused) {
-        TRY_VOID(m_PauseScreen.OnRender(ctx));
-    }
-
     return Ok();
 }
 
