@@ -184,7 +184,10 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
     TRY_VOID(ResolveDeathsAndRespawns());
 
     if (m_Players.size() >= 2) {
-        m_GameScreen.SetPlayersHealth(m_Players[0].Health(), m_Players[1].Health());
+        m_GameScreen.SetPlayersStats(m_Players[0].Health(),
+                                     m_Players[0].Stocks(),
+                                     m_Players[1].Health(),
+                                     m_Players[1].Stocks());
     }
 
     m_GameScreen.OnUpdate(ctx);
@@ -336,6 +339,7 @@ Result<void> InGameState::ResolveDeathsAndRespawns() {
         spawnPosition.y =
             static_cast<float>(m_Arena.dimensions.y) - kRespawnHeightAboveArena;
         const bool facingRight = spawnPosition.x < static_cast<float>(m_Arena.dimensions.w) * 0.5f;
+        player.LoseStock();
         player.Respawn(spawnPosition, facingRight, kDefaultPlayerHealth);
     }
 

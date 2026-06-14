@@ -22,6 +22,10 @@ void Player::ReduceHealth(const float damage) {
     m_Health = std::max(0.0f, m_Health - damage);
 }
 
+void Player::LoseStock() {
+    m_Stocks = std::max(0, m_Stocks - 1);
+}
+
 void Player::ApplyHit(const AttackData& attackData,
                       const HitResult& hitResult,
                       const bool attackerFacingRight) {

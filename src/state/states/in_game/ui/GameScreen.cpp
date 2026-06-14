@@ -60,9 +60,14 @@ Result<void> GameScreen::OnRender(AppCtx& ctx) {
     return UIScreen::OnRender(ctx);
 }
 
-void GameScreen::SetPlayersHealth(const float player1Health, const float player2Health) {
+void GameScreen::SetPlayersStats(const float player1Health,
+                                 const int player1Stocks,
+                                 const float player2Health,
+                                 const int player2Stocks) {
     m_Player1.HP = static_cast<int>(std::lround(player1Health));
+    m_Player1.Stocks = player1Stocks;
     m_Player2.HP = static_cast<int>(std::lround(player2Health));
+    m_Player2.Stocks = player2Stocks;
     UpdateHudText();
 }
 
