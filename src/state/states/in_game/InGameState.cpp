@@ -20,6 +20,9 @@ constexpr int kGameLogicTicksPerSecond = 120; //120
 constexpr int kGameLogicMaxCatchUpTicks = 10;
 constexpr int kAnimationTicksPerSecond = 60; //60
 constexpr int kAnimationMaxCatchUpTicks = 10;
+constexpr float kDefaultPlayerHealth = 100.0f;
+constexpr float kBottomBlastZonePadding = 300.0f;
+constexpr float kRespawnHeightAboveArena = 100.0f;
 // Derived from above
 constexpr Clock::duration kGameLogicTickDuration =
     duration_cast<Clock::duration>(std::chrono::duration<double>(1.0 / kGameLogicTicksPerSecond));
@@ -43,8 +46,6 @@ InGameState::InGameState(AppCtx& ctx,
 }
 
 Result<void> InGameState::Initialize(AppCtx& ctx) {
-    constexpr float kDefaultPlayerHealth = 100.0f;
-
     Arena defaultArena{.asset = m_ArenaAsset, .dimensions = SDL_Rect{}};
     defaultArena.ResizeToWindow(ctx.displayMetrics.LogicalSize());
     m_Arena = defaultArena;
@@ -180,6 +181,7 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
     TRY_VOID(TickEffects(ctx, dt));
 
     TRY_VOID(SolveCombat(ctx));
+    TRY_VOID(ResolveDeathsAndRespawns());
 
     if (m_Players.size() >= 2) {
         m_GameScreen.SetPlayersHealth(m_Players[0].Health(), m_Players[1].Health());
@@ -317,6 +319,26 @@ Result<void> InGameState::TickAnimation(AppCtx& ctx) {
 
 Result<void> InGameState::TickEffects(AppCtx& ctx, std::chrono::duration<float> dt) {
     ctx.particleSystem.Update(dt.count());
+    return Ok();
+}
+
+Result<void> InGameState::ResolveDeathsAndRespawns() {
+    const float bottomBlastZone =
+        static_cast<float>(m_Arena.dimensions.y + m_Arena.dimensions.h) + kBottomBlastZonePadding;
+
+    for (std::size_t playerIndex = 0; playerIndex < m_Players.size(); ++playerIndex) {
+        Player& player = m_Players[playerIndex];
+        if (player.Position().y <= bottomBlastZone) {
+            continue;
+        }
+
+        SDL_FPoint spawnPosition = PlayerStartPosition(playerIndex);
+        spawnPosition.y =
+            static_cast<float>(m_Arena.dimensions.y) - kRespawnHeightAboveArena;
+        const bool facingRight = spawnPosition.x < static_cast<float>(m_Arena.dimensions.w) * 0.5f;
+        player.Respawn(spawnPosition, facingRight, kDefaultPlayerHealth);
+    }
+
     return Ok();
 }
 

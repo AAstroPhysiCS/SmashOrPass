@@ -72,4 +72,18 @@ Result<void> Player::TickGameLogic(AppCtx& ctx, const Arena& arena) {
     return Ok();
 }
 
+void Player::Respawn(const SDL_FPoint position, const bool facingRight, const float health) {
+    m_Position = position;
+    m_FacingRight = facingRight;
+    m_State = PlayerActionState::IDLE;
+    m_MovementState = MovementState{};
+    m_MovementState.FacingRight = facingRight;
+    m_Health = health;
+    m_InputQueue.clear();
+    m_PlayersHitByCurrentAttack.clear();
+    m_CurrentAnimation = CharacterAnimation::Idle;
+    m_CurrentAnimationFrame = 0;
+    SyncCollisionBodyToAnchor();
+}
+
 }  // namespace sop

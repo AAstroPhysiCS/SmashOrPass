@@ -67,6 +67,7 @@ class InGameState final : public State {
     Result<void> TickAnimation(AppCtx& ctx);
     Result<void> TickEffects(AppCtx& ctx, std::chrono::duration<float> dt);
     Result<void> SolveCombat(AppCtx& ctx);
+    Result<void> ResolveDeathsAndRespawns();
 
     Result<void> RenderBackdrop(AppCtx& ctx);
     Result<void> RenderPlayers(AppCtx& ctx);

@@ -51,6 +51,10 @@ class Player {
         return m_Health;
     }
 
+    [[nodiscard]] SDL_FPoint Position() const {
+        return m_Position;
+    }
+
     Result<void> TickGameLogic(AppCtx& ctx, const Arena& arena);
     Result<void> TickAnimations(AppCtx& ctx, const Arena& arena);
     Result<void> SyncCollisionBodyToPosition(AppCtx& ctx);
@@ -64,6 +68,7 @@ class Player {
     void MarkPlayerHitThisAttack(int playerId);
     void ApplyHit(const AttackData& attackData, const HitResult& hitResult, bool attackerFacingRight);
     void ReduceHealth(float damage);
+    void Respawn(SDL_FPoint position, bool facingRight, float health);
 
     Result<void> Render(AppCtx& ctx, const Arena& arena) const;
     Result<void> RenderCollisionBox(AppCtx& ctx, const Arena& arena) const;
