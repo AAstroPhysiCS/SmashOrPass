@@ -11,7 +11,7 @@ void Input::RecordEvent(AppCtx& ctx, const Event& event) {
     if (const auto* keyEvent = std::get_if<KeyEvent>(&event.Payload)) {
         if (keyEvent->Down && !keyEvent->Repeat) {
             m_KeysPressed[keyEvent->Key] = KeyPressInfo{.PressedAt = Clock::now()};
-        } else {
+        } else if (!keyEvent->Down) {
             m_KeysPressed.erase(keyEvent->Key);
         }
         return;
