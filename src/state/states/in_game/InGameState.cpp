@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/core/Base.hpp"
@@ -21,6 +22,7 @@ constexpr int kGameLogicMaxCatchUpTicks = 10;
 constexpr int kAnimationTicksPerSecond = 60; //60
 constexpr int kAnimationMaxCatchUpTicks = 10;
 constexpr float kDefaultPlayerHealth = 100.0f;
+constexpr int kDefaultPlayerStocks = 3;
 constexpr float kBottomBlastZonePadding = 300.0f;
 constexpr float kRespawnHeightAboveArena = 100.0f;
 // Derived from above
@@ -76,6 +78,7 @@ Result<void> InGameState::Initialize(AppCtx& ctx) {
     m_PlayerCombatDebugData.clear();
     m_PlayerCombatDebugData.resize(m_Players.size());
 
+    m_CurrentRound = 1;
     m_Paused = false;
     ResetFrameTimer();
     return Ok();
@@ -186,8 +189,11 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
     if (m_Players.size() >= 2) {
         m_GameScreen.SetPlayersStats(m_Players[0].Health(),
                                      m_Players[0].Stocks(),
+                                     m_Players[0].RoundsWon(),
                                      m_Players[1].Health(),
-                                     m_Players[1].Stocks());
+                                     m_Players[1].Stocks(),
+                                     m_Players[1].RoundsWon(),
+                                     m_CurrentRound);
     }
 
     m_GameScreen.OnUpdate(ctx);
@@ -329,21 +335,68 @@ Result<void> InGameState::ResolveDeathsAndRespawns() {
     const float bottomBlastZone =
         static_cast<float>(m_Arena.dimensions.y + m_Arena.dimensions.h) + kBottomBlastZonePadding;
 
+    std::vector<std::size_t> deadPlayers;
     for (std::size_t playerIndex = 0; playerIndex < m_Players.size(); ++playerIndex) {
-        Player& player = m_Players[playerIndex];
-        if (player.Position().y <= bottomBlastZone) {
-            continue;
+        if (m_Players[playerIndex].Position().y > bottomBlastZone) {
+            deadPlayers.push_back(playerIndex);
+        }
+    }
+
+    if (deadPlayers.empty()) {
+        return Ok();
+    }
+
+    for (const std::size_t playerIndex : deadPlayers) {
+        m_Players[playerIndex].LoseStock();
+    }
+
+    if (m_Players.size() == 2) {
+        const bool player1Out = m_Players[0].Stocks() == 0;
+        const bool player2Out = m_Players[1].Stocks() == 0;
+        // Allow draws
+        if (player1Out && player2Out) {
+            RestartRound();
+            return Ok();
         }
 
+        if (player1Out) {
+            StartNextRound(1);
+            return Ok();
+        }
+
+        if (player2Out) {
+            StartNextRound(0);
+            return Ok();
+        }
+    }
+
+    for (const std::size_t playerIndex : deadPlayers) {
         SDL_FPoint spawnPosition = PlayerStartPosition(playerIndex);
         spawnPosition.y =
             static_cast<float>(m_Arena.dimensions.y) - kRespawnHeightAboveArena;
         const bool facingRight = spawnPosition.x < static_cast<float>(m_Arena.dimensions.w) * 0.5f;
-        player.LoseStock();
-        player.Respawn(spawnPosition, facingRight, kDefaultPlayerHealth);
+        m_Players[playerIndex].Respawn(spawnPosition, facingRight, kDefaultPlayerHealth);
     }
 
     return Ok();
+}
+
+void InGameState::StartNextRound(const std::size_t winnerIndex) {
+    if (winnerIndex < m_Players.size()) {
+        m_Players[winnerIndex].WinRound();
+    }
+
+    ++m_CurrentRound;
+    RestartRound();
+}
+
+void InGameState::RestartRound() {
+    for (std::size_t playerIndex = 0; playerIndex < m_Players.size(); ++playerIndex) {
+        SDL_FPoint spawnPosition = PlayerStartPosition(playerIndex);
+        const bool facingRight = spawnPosition.x < static_cast<float>(m_Arena.dimensions.w) * 0.5f;
+        m_Players[playerIndex].ResetStocks(kDefaultPlayerStocks);
+        m_Players[playerIndex].Respawn(spawnPosition, facingRight, kDefaultPlayerHealth);
+    }
 }
 
 Result<void> InGameState::RenderBackdrop(AppCtx& ctx) {

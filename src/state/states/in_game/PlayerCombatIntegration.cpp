@@ -26,6 +26,14 @@ void Player::LoseStock() {
     m_Stocks = std::max(0, m_Stocks - 1);
 }
 
+void Player::ResetStocks(const int stocks) {
+    m_Stocks = std::max(0, stocks);
+}
+
+void Player::WinRound() {
+    ++m_RoundsWon;
+}
+
 void Player::ApplyHit(const AttackData& attackData,
                       const HitResult& hitResult,
                       const bool attackerFacingRight) {

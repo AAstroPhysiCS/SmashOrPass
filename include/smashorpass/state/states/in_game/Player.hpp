@@ -55,6 +55,10 @@ class Player {
         return m_Stocks;
     }
 
+    [[nodiscard]] int RoundsWon() const {
+        return m_RoundsWon;
+    }
+
     [[nodiscard]] SDL_FPoint Position() const {
         return m_Position;
     }
@@ -73,6 +77,8 @@ class Player {
     void ApplyHit(const AttackData& attackData, const HitResult& hitResult, bool attackerFacingRight);
     void ReduceHealth(float damage);
     void LoseStock();
+    void ResetStocks(int stocks);
+    void WinRound();
     void Respawn(SDL_FPoint position, bool facingRight, float health);
 
     Result<void> Render(AppCtx& ctx, const Arena& arena) const;
@@ -126,6 +132,7 @@ class Player {
     // ---- Stats
     float m_Health;
     int m_Stocks = 3;
+    int m_RoundsWon = 0;
     std::unordered_set<int> m_PlayersHitByCurrentAttack;
 
     // ---- Stable physics collision body

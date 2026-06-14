@@ -62,12 +62,18 @@ Result<void> GameScreen::OnRender(AppCtx& ctx) {
 
 void GameScreen::SetPlayersStats(const float player1Health,
                                  const int player1Stocks,
+                                 const int player1RoundsWon,
                                  const float player2Health,
-                                 const int player2Stocks) {
+                                 const int player2Stocks,
+                                 const int player2RoundsWon,
+                                 const int currentRound) {
     m_Player1.HP = static_cast<int>(std::lround(player1Health));
     m_Player1.Stocks = player1Stocks;
+    m_Player1.RoundsWon = player1RoundsWon;
     m_Player2.HP = static_cast<int>(std::lround(player2Health));
     m_Player2.Stocks = player2Stocks;
+    m_Player2.RoundsWon = player2RoundsWon;
+    m_CurrentRound = currentRound;
     UpdateHudText();
 }
 

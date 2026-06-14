@@ -29,8 +29,11 @@ class GameScreen : public UIScreen {
 
     void SetPlayersStats(float player1Health,
                          int player1Stocks,
+                         int player1RoundsWon,
                          float player2Health,
-                         int player2Stocks);
+                         int player2Stocks,
+                         int player2RoundsWon,
+                         int currentRound);
 
    private:
     void UpdateHudText();

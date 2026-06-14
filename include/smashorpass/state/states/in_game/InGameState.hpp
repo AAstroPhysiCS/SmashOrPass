@@ -68,6 +68,8 @@ class InGameState final : public State {
     Result<void> TickEffects(AppCtx& ctx, std::chrono::duration<float> dt);
     Result<void> SolveCombat(AppCtx& ctx);
     Result<void> ResolveDeathsAndRespawns();
+    void StartNextRound(std::size_t winnerIndex);
+    void RestartRound();
 
     Result<void> RenderBackdrop(AppCtx& ctx);
     Result<void> RenderPlayers(AppCtx& ctx);
@@ -93,6 +95,7 @@ class InGameState final : public State {
     Clock::time_point m_PreviousUpdateTime;
     Clock::time_point m_PreviousGameLogicTick;
     Clock::time_point m_PreviousAnimationTick;
+    int m_CurrentRound = 1;
     bool m_Paused = false;
 };
 
