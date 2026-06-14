@@ -69,17 +69,7 @@ class Player {
     [[nodiscard]] static Vec2 MapBaselinePointToArenaPoint(Vec2 point,
                                                        const SDL_Rect& arenaDimensions);
     
-    struct CollisionResolution {
-        bool Collided = false;
-        bool HitFloor = false;
-        bool HitCeiling = false;
-        bool HitWallOnLeft = false;
-        bool HitWallOnRight = false;
-    };
-    
     [[nodiscard]] MovementInput GatherMovementInput(AppCtx& ctx);
-
-    void ApplyCollisionResult(const CollisionResolution& resolution);
 
     int m_playerId;
     Asset<CharacterAssetData> m_Asset;
@@ -115,8 +105,7 @@ class Player {
     mutable CollisionBody m_CollisionBody{};
     mutable SDL_FPoint m_CollisionAnchorOffset{};
     mutable SDL_FPoint m_FlippedCollisionAnchorOffset{};
-    SDL_FRect m_CollisionBodyBeforeSolve{};
-    CollisionResolution m_CollisionResolutionThisTick{};
+    SDL_FRect m_CollisionBodyAfterMovement{};
 
     [[nodiscard]] Result<CharacterAnimation> GetAnimationToShow(AppCtx& ctx,
                                                                 const Arena& arena) const;
