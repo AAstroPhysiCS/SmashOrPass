@@ -47,6 +47,10 @@ class Player {
         return m_playerId;
     }
 
+    [[nodiscard]] float Health() const {
+        return m_Health;
+    }
+
     Result<void> TickGameLogic(AppCtx& ctx, const Arena& arena);
     Result<void> TickAnimations(AppCtx& ctx, const Arena& arena);
     Result<void> SyncCollisionBodyToPosition(AppCtx& ctx);
