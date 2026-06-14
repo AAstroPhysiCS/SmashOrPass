@@ -1,5 +1,7 @@
 #include "smashorpass/state/states/in_game/Player.hpp"
 
+#include <algorithm>
+
 #include "smashorpass/state/states/in_game/CombatSystem.hpp"
 
 namespace sop {
@@ -16,6 +18,10 @@ void Player::MarkPlayerHitThisAttack(const int playerId) {
     m_PlayersHitByCurrentAttack.insert(playerId);
 }
 
+void Player::ReduceHealth(const float damage) {
+    m_Health = std::max(0.0f, m_Health - damage);
+}
+
 void Player::ApplyHit(const AttackData& attackData,
                       const HitResult& hitResult,
                       const bool attackerFacingRight) {
@@ -23,11 +29,13 @@ void Player::ApplyHit(const AttackData& attackData,
         return;
     }
 
-    m_Health -= attackData.m_Damage;
+    ReduceHealth(attackData.m_Damage);
 
     const float knockbackDirection = attackerFacingRight ? 1.0f : -1.0f;
-    m_MovementState.Velocity.x = attackData.m_Knockback.x * knockbackDirection;
-    m_MovementState.Velocity.y = attackData.m_Knockback.y;
+    const float knockbackMultiplier = 1.0f + (100.0f - m_Health) / 100.0f;
+    m_MovementState.Velocity.x =
+        attackData.m_Knockback.x * knockbackMultiplier * knockbackDirection;
+    m_MovementState.Velocity.y = attackData.m_Knockback.y * knockbackMultiplier;
     m_MovementState.HitstunTicksRemaining = attackData.m_HitstunTicks;
     m_MovementState.Attack = MovementAttackState{};
     m_MovementState.Dash.TicksRemaining = 0;

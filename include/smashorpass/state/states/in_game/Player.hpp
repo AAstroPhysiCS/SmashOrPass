@@ -63,6 +63,7 @@ class Player {
     [[nodiscard]] bool HasHitPlayerThisAttack(int playerId) const;
     void MarkPlayerHitThisAttack(int playerId);
     void ApplyHit(const AttackData& attackData, const HitResult& hitResult, bool attackerFacingRight);
+    void ReduceHealth(float damage);
 
     Result<void> Render(AppCtx& ctx, const Arena& arena) const;
     Result<void> RenderCollisionBox(AppCtx& ctx, const Arena& arena) const;
