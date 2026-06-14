@@ -161,6 +161,13 @@ static Result<std::vector<CharacterSpriteSheetFrame>> LoadCharacterFrames(
                         .w = getFloat(collisionBoxJson, "width"),
                         .h = getFloat(collisionBoxJson, "height"),
                     },
+                .m_HitBox =
+                    HitBox{
+                        .m_GridData = GridData{},
+                        .m_Buckets = {},
+                        .m_AttackData = loadAttackData(frameJson),
+                    },
+                .m_HurtBox = HurtBox{},
             });
         }
 
@@ -212,6 +219,8 @@ static CharacterSpriteSheet CreateDefaultCharacterSpriteSheet(AppCtx& ctx,
         .m_Location = SDL_FRect{.x = 0.0f, .y = 0.0f, .w = 292.0f, .h = 315.0f},
         .m_Anchor = SDL_Point{.x = 93, .y = -77},
         .m_CollisionBox = SDL_FRect{.x = 0.0f, .y = 0.0f, .w = 262.0f, .h = 285.0f},
+        .m_HitBox = HitBox{},
+        .m_HurtBox = HurtBox{},
     });
     return sheet;
 }
@@ -326,7 +335,7 @@ Result<void> LoadCombatData(
     
     for (auto& frame : frames) {
         const ChannelPlane red = getFrameChannelFromSurface(pixels, pitch, frame.m_Location, 0, true);
-        frame.m_HitBox = setupHitbox(red, gridSize);
+        frame.m_HitBox = setupHitbox(red, gridSize, frame.m_HitBox.m_AttackData);
 
         const ChannelPlane blue = getFrameChannelFromSurface(pixels, pitch, frame.m_Location, 2, false);
         frame.m_HurtBox = setupHurtBox(blue, gridSize);

@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <utility>
 
+#include <nlohmann/json.hpp>
+
 #include "smashorpass/asset/assets/CharacterCombatData.hpp"
 
 namespace sop {
@@ -267,7 +269,7 @@ SubHurtBox setupSubHurtBox(
 
 } // namespace
 
-HitBox setupHitbox(const ChannelPlane& redChannel, int targetGridSize) {
+HitBox setupHitbox(const ChannelPlane& redChannel, int targetGridSize, AttackData attackData) {
     const SDL_FRect boundingBox = getBounds(redChannel, 1);
 
     const int gridSize = std::max(1, targetGridSize);
@@ -285,8 +287,9 @@ HitBox setupHitbox(const ChannelPlane& redChannel, int targetGridSize) {
                     .matrixHeight = 0,
                     .cellSize = gridSize,
                     .m_GridMatrix = {},
-                },
+            },
             .m_Buckets = {},
+            .m_AttackData = attackData,
         };
     }
 
@@ -306,6 +309,29 @@ HitBox setupHitbox(const ChannelPlane& redChannel, int targetGridSize) {
                 .m_GridMatrix = std::move(matrix),
             },
         .m_Buckets = std::move(buckets),
+        .m_AttackData = attackData,
+    };
+}
+
+AttackData loadAttackData(const nlohmann::json& frameJson) {
+    const auto attackIt = frameJson.find("attack");
+    if (attackIt == frameJson.end() || attackIt->is_null()) {
+        return AttackData{};
+    }
+
+    const nlohmann::json& attackJson = *attackIt;
+    const nlohmann::json& knockbackJson = attackJson.at("knockback");
+
+    return AttackData{
+        .m_Id = attackJson.at("id").get<int>(),
+        .m_Damage = attackJson.at("damage").get<float>(),
+        .m_Knockback =
+            SDL_FPoint{
+                .x = knockbackJson.at("x").get<float>(),
+                .y = knockbackJson.at("y").get<float>(),
+            },
+        .m_HitstunTicks = attackJson.at("hitstunTicks").get<int>(),
+        .m_HitCooldownTicks = attackJson.at("hitCooldownTicks").get<int>(),
     };
 }
 
