@@ -113,9 +113,12 @@ void ApplyGravity(MovementState& state, const MovementConfig& config) {
     state.Velocity.y += config.Gravity;
 }
 
-void ApplyFriction(MovementState& state, const MovementConfig& config) {
+void ApplyFallSpeedClamp(MovementState& state, const MovementConfig& config) {
     state.Velocity.y = std::min(state.Velocity.y, config.MaxFallSpeed);
+}
 
+void ApplyFriction(MovementState& state, const MovementConfig& config) {
+    ApplyFallSpeedClamp(state, config);
     const float friction = state.Grounded ? config.GroundFriction : config.AirFriction;
     if (state.Velocity.x > 0.0f) {
         state.Velocity.x = std::clamp(state.Velocity.x - friction, 0.0f, config.WalkSpeed);
@@ -127,6 +130,13 @@ void ApplyFriction(MovementState& state, const MovementConfig& config) {
 PlayerActionState ApplyMoves(MovementState& state,
                              const MovementInput& input,
                              const MovementConfig& config) {
+    if (state.HitstunTicksRemaining > 0) {
+        --state.HitstunTicksRemaining;
+        ApplyGravity(state, config);
+        ApplyFallSpeedClamp(state, config);
+        return PlayerActionState::HITSTUN;
+    }
+
     TryStartDash(state, input, config);
     if (state.Dash.IsActive()) {
         ApplyActiveDash(state, config);

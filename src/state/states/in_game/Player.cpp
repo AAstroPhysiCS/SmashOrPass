@@ -40,6 +40,8 @@ Result<CharacterAnimation> Player::GetAnimationToShow(AppCtx& ctx, const Arena& 
             return Ok(CharacterAnimation::Attacks);
         case PlayerActionState::DASHING:
             return Ok(CharacterAnimation::Dash);
+        case PlayerActionState::HITSTUN:
+            return Ok(CharacterAnimation::Idle);
         case PlayerActionState::IDLE:
         case PlayerActionState::RUNNING:
             break;
@@ -56,6 +58,7 @@ Result<CharacterAnimation> Player::GetAnimationToShow(AppCtx& ctx, const Arena& 
         case PlayerActionState::IDLE:
         case PlayerActionState::ATTACKING:
         case PlayerActionState::DASHING:
+        case PlayerActionState::HITSTUN:
             return Ok(CharacterAnimation::Idle);
     }
 

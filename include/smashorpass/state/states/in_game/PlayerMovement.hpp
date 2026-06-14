@@ -9,6 +9,7 @@ enum class PlayerActionState {
     RUNNING,
     ATTACKING,
     DASHING,
+    HITSTUN,
 };
 
 struct MovementInput {
@@ -71,6 +72,7 @@ struct MovementState {
     bool Grounded = false;
     bool FacingRight = true;
     bool DashJumpAvailable = false;
+    int HitstunTicksRemaining = 0;
 
     MovementDashState Dash{};
     MovementAttackState Attack{};

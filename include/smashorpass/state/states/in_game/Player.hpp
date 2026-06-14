@@ -4,6 +4,7 @@
 
 #include <optional>
 #include <random>
+#include <unordered_set>
 #include <vector>
 
 #include "smashorpass/asset/AssetManager.hpp"
@@ -15,6 +16,8 @@
 #include "smashorpass/util.hpp"
 
 namespace sop {
+
+struct HitResult;
 
 enum class InputAction { MOVE_LEFT, MOVE_RIGHT, JUMP, DASH, ATTACK };
 
@@ -40,6 +43,10 @@ class Player {
            InputTranslationHelper<InputAction> inputTranslationHelper);
     Result<void> OnEvent(AppCtx& ctx, const Event& event);
 
+    [[nodiscard]] int Id() const {
+        return m_playerId;
+    }
+
     Result<void> TickGameLogic(AppCtx& ctx, const Arena& arena);
     Result<void> TickAnimations(AppCtx& ctx, const Arena& arena);
     Result<void> SyncCollisionBodyToPosition(AppCtx& ctx);
@@ -48,6 +55,10 @@ class Player {
     Result<void> ResolveCollisionWithPlayerForTick(Player& other);
     void ApplyCollisionBodyToPosition();
     void ApplyCollisionResult();
+    void InitAttack();
+    [[nodiscard]] bool HasHitPlayerThisAttack(int playerId) const;
+    void MarkPlayerHitThisAttack(int playerId);
+    void ApplyHit(const AttackData& attackData, const HitResult& hitResult, bool attackerFacingRight);
 
     Result<void> Render(AppCtx& ctx, const Arena& arena) const;
     Result<void> RenderCollisionBox(AppCtx& ctx, const Arena& arena) const;
@@ -99,6 +110,7 @@ class Player {
 
     // ---- Stats
     float m_Health;
+    std::unordered_set<int> m_PlayersHitByCurrentAttack;
 
     // ---- Stable physics collision body
     mutable bool m_CollisionProfileInitialized = false;

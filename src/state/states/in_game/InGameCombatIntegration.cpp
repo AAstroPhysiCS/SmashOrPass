@@ -7,6 +7,24 @@
 
 namespace sop {
 
+namespace {
+
+void ApplyHitResult(const HitResult& hitResult,
+                    const WorldHitBox& attackerHitBox,
+                    Player& attacker,
+                    Player& defender) {
+    if (!hitResult.hit) {
+        return;
+    }
+
+    const AttackData& attackData = attackerHitBox.hitBox.get().m_AttackData;
+
+    defender.ApplyHit(attackData, hitResult, attackerHitBox.facingRight);
+    attacker.MarkPlayerHitThisAttack(defender.Id());
+}
+
+}  // namespace
+
 Result<void> InGameState::SolveCombat(AppCtx& ctx) {
     for (auto& debugData : m_PlayerCombatDebugData) {
         debugData = {};
@@ -25,6 +43,9 @@ Result<void> InGameState::SolveCombat(AppCtx& ctx) {
             }
 
             Player& defender = m_Players[defenderIndex];
+            if (attacker.HasHitPlayerThisAttack(defender.Id())) {
+                continue;
+            }
             TRY(defenderHurtBox, defender.GetCurrentHurtBox(ctx));
             if (!defenderHurtBox) {
                 continue;
@@ -35,7 +56,7 @@ Result<void> InGameState::SolveCombat(AppCtx& ctx) {
                               *defenderHurtBox,
                               &m_PlayerCombatDebugData[attackerIndex],
                               &m_PlayerCombatDebugData[defenderIndex]);
-            (void)hitResult;
+            ApplyHitResult(hitResult, *attackerHitBox, attacker, defender);
         }
     }
 

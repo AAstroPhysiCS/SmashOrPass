@@ -54,9 +54,13 @@ Result<void> Player::TickGameLogic(AppCtx& ctx, const Arena& arena) {
     const MovementInput input = GatherMovementInput(ctx);
 
     m_MovementState.FacingRight = m_FacingRight;
+    const bool wasAttacking = m_MovementState.Attack.IsActive();
 
     const MovementResult movement =
         PlayerMovement::Tick(m_MovementState, input, m_MovementConfig);
+    if (!wasAttacking && m_MovementState.Attack.IsActive()) {
+        InitAttack();
+    }
 
     m_Position.x += movement.PositionDelta.x;
     m_Position.y += movement.PositionDelta.y;
