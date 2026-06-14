@@ -10,6 +10,7 @@
 #include "smashorpass/asset/assets/CharacterAsset.hpp"
 #include "smashorpass/core/InputHelper.hpp"
 #include "smashorpass/state/states/in_game/Arena.hpp"
+#include "smashorpass/state/states/in_game/CollisionSystem.hpp"
 #include "smashorpass/state/states/in_game/PlayerMovement.hpp"
 #include "smashorpass/util.hpp"
 
@@ -41,9 +42,12 @@ class Player {
 
     Result<void> TickGameLogic(AppCtx& ctx, const Arena& arena);
     Result<void> TickAnimations(AppCtx& ctx, const Arena& arena);
-    Result<void> ResolveCollisionWithPlayer(AppCtx& ctx, Player& other);
-
-    [[nodiscard]] Result<bool> IsOnGround(AppCtx& ctx, const Arena& arena) const;
+    Result<void> SyncCollisionBodyToPosition(AppCtx& ctx);
+    void ResetCollisionForTick();
+    Result<void> ResolveArenaCollisionsForTick(AppCtx& ctx, const Arena& arena);
+    Result<void> ResolveCollisionWithPlayerForTick(Player& other);
+    void ApplyCollisionBodyToPosition();
+    void ApplyCollisionResult();
 
     Result<void> Render(AppCtx& ctx, const Arena& arena) const;
     Result<void> RenderCollisionBox(AppCtx& ctx, const Arena& arena) const;
@@ -73,12 +77,8 @@ class Player {
         bool HitWallOnRight = false;
     };
     
-    Result<bool> QueryGroundInfo(AppCtx& ctx, const Arena& arena) const;
     [[nodiscard]] MovementInput GatherMovementInput(AppCtx& ctx);
 
-    [[nodiscard]] Result<CollisionResolution> ResolveArenaCollisions(AppCtx& ctx,
-                                                                     const Arena& arena);
-    void ApplyCollisionBodyRect(const SDL_FRect& previousRect, const SDL_FRect& resolvedRect);
     void ApplyCollisionResult(const CollisionResolution& resolution);
 
     int m_playerId;
@@ -110,10 +110,21 @@ class Player {
     // ---- Stats
     float m_Health;
 
+    // ---- Stable physics collision body
+    mutable bool m_CollisionProfileInitialized = false;
+    mutable CollisionBody m_CollisionBody{};
+    mutable SDL_FPoint m_CollisionAnchorOffset{};
+    mutable SDL_FPoint m_FlippedCollisionAnchorOffset{};
+    SDL_FRect m_CollisionBodyBeforeSolve{};
+    CollisionResolution m_CollisionResolutionThisTick{};
+
     [[nodiscard]] Result<CharacterAnimation> GetAnimationToShow(AppCtx& ctx,
                                                                 const Arena& arena) const;
     [[nodiscard]] std::optional<SDL_FRect> GetBaselineSpriteRect(
         const CharacterSpriteSheetFrame& frame) const;
+    [[nodiscard]] SDL_FPoint CollisionAnchorOffsetForFacing() const;
+    [[nodiscard]] Result<void> EnsureCollisionProfile(AppCtx& ctx) const;
+    void SyncCollisionBodyToAnchor() const;
     [[nodiscard]] Result<std::optional<SDL_FRect>> GetBaselineCollisionBox(AppCtx& ctx) const;
 };
 

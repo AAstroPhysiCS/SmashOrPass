@@ -39,25 +39,28 @@ namespace {
 
 }  // namespace
 
-Result<Player::CollisionResolution> Player::ResolveArenaCollisions(AppCtx& ctx,
-                                                                   const Arena& arena) {
-    CollisionResolution resolution{};
-
-    TRY(arenaAsset, ctx.assets.GetAssetData(arena.asset));
-    TRY(playerCollisionBox, GetBaselineCollisionBox(ctx));
-    if (!playerCollisionBox) {
-        return Ok(resolution);
+Result<void> Player::SyncCollisionBodyToPosition(AppCtx& ctx) {
+    TRY_VOID(EnsureCollisionProfile(ctx));
+    if (!m_CollisionProfileInitialized) {
+        return Ok();
     }
 
-    CollisionBody playerBody{
-        .Rect = *playerCollisionBox,
-        .Push = PushState{.canPushLeft = true,
-                          .canPushRight = true,
-                          .canPushUp = true,
-                          .canPushDown = false},
-        .Dynamic = true,
-        .Weight = 100.0f,
-    };
+    SyncCollisionBodyToAnchor();
+    m_CollisionBodyBeforeSolve = m_CollisionBody.Rect;
+    return Ok();
+}
+
+void Player::ResetCollisionForTick() {
+    ResetPushState(m_CollisionBody);
+    m_CollisionResolutionThisTick = {};
+}
+
+Result<void> Player::ResolveArenaCollisionsForTick(AppCtx& ctx, const Arena& arena) {
+    if (!m_CollisionProfileInitialized) {
+        return Ok();
+    }
+
+    TRY(arenaAsset, ctx.assets.GetAssetData(arena.asset));
 
     const std::vector<SDL_FRect>& solidBoxes = arenaAsset.get().m_CollisionBoxes;
     const std::size_t maxPasses = solidBoxes.size() * 2;
@@ -67,21 +70,20 @@ Result<Player::CollisionResolution> Player::ResolveArenaCollisions(AppCtx& ctx,
 
         for (const SDL_FRect& solidBox : solidBoxes) {
             const CollisionSolveResult collision =
-                pushBoxes(playerBody, solidBox, m_MovementState.Velocity.y);
+                pushBoxes(m_CollisionBody, solidBox, m_MovementState.Velocity.y);
             if (!collision.Collided) {
                 continue;
             }
 
-            m_Position.x += collision.Push.x;
-            m_Position.y += collision.Push.y;
-            playerCollisionBox->x = playerBody.Rect.x;
-            playerCollisionBox->y = playerBody.Rect.y;
-
-            resolution.Collided = true;
-            resolution.HitFloor = resolution.HitFloor || collision.HitFloor;
-            resolution.HitCeiling = resolution.HitCeiling || collision.HitCeiling;
-            resolution.HitWallOnLeft = resolution.HitWallOnLeft || collision.HitWallOnLeft;
-            resolution.HitWallOnRight = resolution.HitWallOnRight || collision.HitWallOnRight;
+            m_CollisionResolutionThisTick.Collided = true;
+            m_CollisionResolutionThisTick.HitFloor =
+                m_CollisionResolutionThisTick.HitFloor || collision.HitFloor;
+            m_CollisionResolutionThisTick.HitCeiling =
+                m_CollisionResolutionThisTick.HitCeiling || collision.HitCeiling;
+            m_CollisionResolutionThisTick.HitWallOnLeft =
+                m_CollisionResolutionThisTick.HitWallOnLeft || collision.HitWallOnLeft;
+            m_CollisionResolutionThisTick.HitWallOnRight =
+                m_CollisionResolutionThisTick.HitWallOnRight || collision.HitWallOnRight;
             moved = true;
         }
 
@@ -90,12 +92,73 @@ Result<Player::CollisionResolution> Player::ResolveArenaCollisions(AppCtx& ctx,
         }
     }
 
-    return Ok(resolution);
+    return Ok();
 }
 
-Result<bool> Player::QueryGroundInfo(AppCtx& ctx, const Arena& arena) const {
-    TRY(onGround, IsOnGround(ctx, arena));
-    return Ok(onGround);
+Result<void> Player::ResolveCollisionWithPlayerForTick(Player& other) {
+    if (!m_CollisionProfileInitialized || !other.m_CollisionProfileInitialized) {
+        return Ok();
+    }
+
+    const SDL_FRect firstBodyBefore = m_CollisionBody.Rect;
+    const SDL_FRect secondBodyBefore = other.m_CollisionBody.Rect;
+
+    const CollisionSolveResult collision = pushBoxes(m_CollisionBody,
+                                                     other.m_CollisionBody,
+                                                     m_MovementState.Velocity.y,
+                                                     other.m_MovementState.Velocity.y);
+    if (!collision.Collided) {
+        return Ok();
+    }
+
+    const auto accumulateDelta = [](CollisionResolution& resolution,
+                                    const SDL_FRect& previousRect,
+                                    const SDL_FRect& resolvedRect) {
+        constexpr float kCollisionEpsilon = 0.00001f;
+
+        const float dx = resolvedRect.x - previousRect.x;
+        const float dy = resolvedRect.y - previousRect.y;
+        if (std::abs(dx) <= kCollisionEpsilon && std::abs(dy) <= kCollisionEpsilon) {
+            return;
+        }
+
+        resolution.Collided = true;
+        if (dy < -kCollisionEpsilon) {
+            resolution.HitFloor = true;
+        } else if (dy > kCollisionEpsilon) {
+            resolution.HitCeiling = true;
+        } else if (dx > kCollisionEpsilon) {
+            resolution.HitWallOnLeft = true;
+        } else if (dx < -kCollisionEpsilon) {
+            resolution.HitWallOnRight = true;
+        }
+    };
+
+    accumulateDelta(m_CollisionResolutionThisTick, firstBodyBefore, m_CollisionBody.Rect);
+    accumulateDelta(other.m_CollisionResolutionThisTick,
+                    secondBodyBefore,
+                    other.m_CollisionBody.Rect);
+    return Ok();
+}
+
+void Player::ApplyCollisionBodyToPosition() {
+    if (!m_CollisionProfileInitialized) {
+        return;
+    }
+
+    constexpr float kCollisionEpsilon = 0.00001f;
+    const float dx = m_CollisionBody.Rect.x - m_CollisionBodyBeforeSolve.x;
+    const float dy = m_CollisionBody.Rect.y - m_CollisionBodyBeforeSolve.y;
+    if (std::abs(dx) <= kCollisionEpsilon && std::abs(dy) <= kCollisionEpsilon) {
+        return;
+    }
+
+    m_Position.x += dx;
+    m_Position.y += dy;
+}
+
+void Player::ApplyCollisionResult() {
+    ApplyCollisionResult(m_CollisionResolutionThisTick);
 }
 
 void Player::ApplyCollisionResult(const CollisionResolution& resolution) {
@@ -119,70 +182,6 @@ void Player::ApplyCollisionResult(const CollisionResolution& resolution) {
     }
 }
 
-void Player::ApplyCollisionBodyRect(const SDL_FRect& previousRect, const SDL_FRect& resolvedRect) {
-    constexpr float kCollisionEpsilon = 0.00001f;
-
-    const float dx = resolvedRect.x - previousRect.x;
-    const float dy = resolvedRect.y - previousRect.y;
-    if (std::abs(dx) <= kCollisionEpsilon && std::abs(dy) <= kCollisionEpsilon) {
-        return;
-    }
-
-    m_Position.x += dx;
-    m_Position.y += dy;
-
-    CollisionResolution resolution{.Collided = true};
-    if (dy < -kCollisionEpsilon) {
-        resolution.HitFloor = true;
-    } else if (dy > kCollisionEpsilon) {
-        resolution.HitCeiling = true;
-    } else if (dx > kCollisionEpsilon) {
-        resolution.HitWallOnLeft = true;
-    } else if (dx < -kCollisionEpsilon) {
-        resolution.HitWallOnRight = true;
-    }
-    ApplyCollisionResult(resolution);
-}
-
-Result<void> Player::ResolveCollisionWithPlayer(AppCtx& ctx, Player& other) {
-    TRY(firstCollisionBox, GetBaselineCollisionBox(ctx));
-    TRY(secondCollisionBox, other.GetBaselineCollisionBox(ctx));
-    if (!firstCollisionBox || !secondCollisionBox) {
-        return Ok();
-    }
-
-    CollisionBody firstBody{
-        .Rect = *firstCollisionBox,
-        .Push = PushState{.canPushLeft = true,
-                          .canPushRight = true,
-                          .canPushUp = true,
-                          .canPushDown = false},
-        .Dynamic = true,
-        .Weight = 100.0f,
-    };
-    CollisionBody secondBody{
-        .Rect = *secondCollisionBox,
-        .Push = PushState{.canPushLeft = true,
-                          .canPushRight = true,
-                          .canPushUp = true,
-                          .canPushDown = false},
-        .Dynamic = true,
-        .Weight = 100.0f,
-    };
-
-    const CollisionSolveResult collision = pushBoxes(firstBody,
-                                                     secondBody,
-                                                     m_MovementState.Velocity.y,
-                                                     other.m_MovementState.Velocity.y);
-    if (!collision.Collided) {
-        return Ok();
-    }
-
-    ApplyCollisionBodyRect(*firstCollisionBox, firstBody.Rect);
-    other.ApplyCollisionBodyRect(*secondCollisionBox, secondBody.Rect);
-    return Ok();
-}
-
 MovementInput Player::GatherMovementInput(AppCtx& ctx) {
     MovementInput input{};
     input.JumpPressed = HasQueuedAction(m_InputQueue, InputAction::JUMP);
@@ -197,6 +196,8 @@ MovementInput Player::GatherMovementInput(AppCtx& ctx) {
 }
 
 Result<void> Player::TickGameLogic(AppCtx& ctx, const Arena& arena) {
+    (void)arena;
+
     const MovementInput input = GatherMovementInput(ctx);
 
     //TRY(grounded, QueryGroundInfo(ctx, arena));
@@ -211,9 +212,6 @@ Result<void> Player::TickGameLogic(AppCtx& ctx, const Arena& arena) {
     m_FacingRight = m_MovementState.FacingRight;
 
     m_MovementState.Grounded = false;
-
-    TRY(collision, ResolveArenaCollisions(ctx, arena));
-    ApplyCollisionResult(collision);
 
     m_State = movement.ActionState;
     return Ok();

@@ -12,7 +12,6 @@
 namespace sop {
 
 constexpr float kPlayerScale = 0.4f;
-constexpr float kGroundProbeDistance = 5.0f;
 
 Player::Player(int playerId,
                Asset<CharacterAssetData> asset,
@@ -33,6 +32,9 @@ Player::Player(int playerId,
 }
 
 Result<CharacterAnimation> Player::GetAnimationToShow(AppCtx& ctx, const Arena& arena) const {
+    (void)ctx;
+    (void)arena;
+
     switch (m_State) {
         case PlayerActionState::ATTACKING:
             return Ok(CharacterAnimation::Attacks);
@@ -80,36 +82,68 @@ std::optional<SDL_FRect> Player::GetBaselineSpriteRect(
     };
 }
 
-Result<std::optional<SDL_FRect>> Player::GetBaselineCollisionBox(AppCtx& ctx) const {
+SDL_FPoint Player::CollisionAnchorOffsetForFacing() const {
+    return m_FacingRight ? m_FlippedCollisionAnchorOffset : m_CollisionAnchorOffset;
+}
+
+Result<void> Player::EnsureCollisionProfile(AppCtx& ctx) const {
+    // Collision Body is currently only initialized once
+    if (m_CollisionProfileInitialized) {
+        return Ok();
+    }
+
     TRY(asset, ctx.assets.GetAssetData(m_Asset));
 
-    const auto sheet = asset.get().m_SpriteSheets.find(m_CurrentAnimation);
+    const auto sheet = asset.get().m_SpriteSheets.find(CharacterAnimation::Idle);
     if (sheet == asset.get().m_SpriteSheets.end() || sheet->second.m_Frames.empty()) {
-        return Ok(std::optional<SDL_FRect>{});
+        return Ok();
     }
 
-    const std::vector<CharacterSpriteSheetFrame>& frames = sheet->second.m_Frames;
-    const CharacterSpriteSheetFrame& frame =
-        frames[static_cast<std::size_t>(m_CurrentAnimationFrame) % frames.size()];
+    const CharacterSpriteSheetFrame& frame = sheet->second.m_Frames.front();
     const SDL_FRect collisionBox = frame.m_CollisionBox;
     if (collisionBox.w <= 0.0f || collisionBox.h <= 0.0f) {
+        return Ok();
+    }
+
+    const float anchorX = static_cast<float>(frame.m_Anchor.x);
+    const float anchorY = static_cast<float>(frame.m_Anchor.y);
+
+    m_CollisionBody.Rect.w = collisionBox.w * kPlayerScale;
+    m_CollisionBody.Rect.h = collisionBox.h * kPlayerScale;
+    m_CollisionBody.Dynamic = true;
+    m_CollisionBody.Weight = 100.0f;
+    m_CollisionAnchorOffset = SDL_FPoint{
+        .x = (anchorX - collisionBox.x) * kPlayerScale,
+        .y = (anchorY - collisionBox.y) * kPlayerScale,
+    };
+    m_FlippedCollisionAnchorOffset = SDL_FPoint{
+        .x = (collisionBox.x + collisionBox.w - anchorX) * kPlayerScale,
+        .y = m_CollisionAnchorOffset.y,
+    };
+    m_CollisionProfileInitialized = true;
+    SyncCollisionBodyToAnchor();
+
+    return Ok();
+}
+
+void Player::SyncCollisionBodyToAnchor() const {
+    if (!m_CollisionProfileInitialized) {
+        return;
+    }
+
+    const SDL_FPoint offset = CollisionAnchorOffsetForFacing();
+    m_CollisionBody.Rect.x = m_Position.x - offset.x;
+    m_CollisionBody.Rect.y = m_Position.y - offset.y;
+}
+
+Result<std::optional<SDL_FRect>> Player::GetBaselineCollisionBox(AppCtx& ctx) const {
+    TRY_VOID(EnsureCollisionProfile(ctx));
+    if (!m_CollisionProfileInitialized) {
         return Ok(std::optional<SDL_FRect>{});
     }
 
-    std::optional<SDL_FRect> spriteRect = GetBaselineSpriteRect(frame);
-    if (!spriteRect) {
-        return Ok(std::optional<SDL_FRect>{});
-    }
-
-    const float collisionX =
-        m_FacingRight ? frame.m_Location.w - collisionBox.x - collisionBox.w : collisionBox.x;
-
-    return Ok(std::optional<SDL_FRect>{SDL_FRect{
-        .x = spriteRect->x + collisionX * kPlayerScale,
-        .y = spriteRect->y + collisionBox.y * kPlayerScale,
-        .w = collisionBox.w * kPlayerScale,
-        .h = collisionBox.h * kPlayerScale,
-    }});
+    SyncCollisionBodyToAnchor();
+    return Ok(std::optional<SDL_FRect>{m_CollisionBody.Rect});
 }
 
 Result<std::optional<WorldHitBox>> Player::GetCurrentHitBox(AppCtx& ctx) const {
@@ -296,25 +330,6 @@ Result<void> Player::TickAnimations(AppCtx& ctx, const Arena& arena) {
     TRY_VOID(DispatchSwordFrameEffects(ctx, arena, frame, swordFireMasks));
 
     return Ok();
-}
-
-Result<bool> Player::IsOnGround(AppCtx& ctx, const Arena& arena) const {
-    TRY(arenaAsset, ctx.assets.GetAssetData(arena.asset));
-
-    TRY(playerCollisionBox, GetBaselineCollisionBox(ctx));
-    if (!playerCollisionBox) {
-        return Ok(false);
-    }
-
-    playerCollisionBox->y += kGroundProbeDistance;
-
-    for (const SDL_FRect& solidBox : arenaAsset.get().m_CollisionBoxes) {
-        if (SDL_HasRectIntersectionFloat(&*playerCollisionBox, &solidBox)) {
-            return Ok(true);
-        }
-    }
-
-    return Ok(false);
 }
 
 Result<void> Player::Render(AppCtx& ctx, const Arena& arena) const {

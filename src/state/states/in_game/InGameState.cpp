@@ -294,10 +294,30 @@ Result<void> InGameState::TickGameLogic(AppCtx& ctx) {
         TRY_VOID(player.TickGameLogic(ctx, m_Arena));
     }
 
+    TRY_VOID(SolveCollisions(ctx));
+
+    return Ok();
+}
+
+Result<void> InGameState::SolveCollisions(AppCtx& ctx) {
+    for (Player& player : m_Players) {
+        TRY_VOID(player.SyncCollisionBodyToPosition(ctx));
+        player.ResetCollisionForTick();
+    }
+
+    for (Player& player : m_Players) {
+        TRY_VOID(player.ResolveArenaCollisionsForTick(ctx, m_Arena));
+    }
+
     for (std::size_t first = 0; first < m_Players.size(); ++first) {
         for (std::size_t second = first + 1; second < m_Players.size(); ++second) {
-            TRY_VOID(m_Players[first].ResolveCollisionWithPlayer(ctx, m_Players[second]));
+            TRY_VOID(m_Players[first].ResolveCollisionWithPlayerForTick(m_Players[second]));
         }
+    }
+
+    for (Player& player : m_Players) {
+        player.ApplyCollisionBodyToPosition();
+        player.ApplyCollisionResult();
     }
 
     return Ok();

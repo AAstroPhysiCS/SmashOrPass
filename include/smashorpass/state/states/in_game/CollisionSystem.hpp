@@ -5,10 +5,12 @@
 namespace sop {
 
 struct PushState {
-    bool canPushLeft = true;
-    bool canPushRight = true;
-    bool canPushUp = true;
-    bool canPushDown = false;
+    bool hitWallLeft = false;
+    bool hitWallRight = false;
+    bool hitPlayerLeft = false;
+    bool hitPlayerRight = false;
+    bool hitCeiling = false;
+    bool hitGround = false;
 };
 
 struct CollisionBody {
@@ -20,7 +22,7 @@ struct CollisionBody {
 
 struct CollisionSolveConfig {
     float Epsilon = 0.00001f;
-    float VerticalSnapRatio = 0.4f;
+    float VerticalSnapRatio = 0.1f;
 };
 
 struct CollisionSolveResult {
@@ -31,8 +33,6 @@ struct CollisionSolveResult {
     bool HitWallOnRight = false;
     SDL_FPoint Push{0.0f, 0.0f};
 };
-
-[[nodiscard]] SDL_FPoint getOverlap(const SDL_FRect& rect1, const SDL_FRect& rect2);
 
 [[nodiscard]] CollisionSolveResult pushBoxes(
     CollisionBody& player,

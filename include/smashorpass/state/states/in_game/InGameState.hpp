@@ -64,6 +64,7 @@ class InGameState final : public State {
     Result<void> AdjustToWindow(AppCtx& ctx);
 
     Result<void> TickGameLogic(AppCtx& ctx);
+    Result<void> SolveCollisions(AppCtx& ctx);
     Result<void> TickAnimation(AppCtx& ctx);
     Result<void> TickEffects(AppCtx& ctx, std::chrono::duration<float> dt);
 

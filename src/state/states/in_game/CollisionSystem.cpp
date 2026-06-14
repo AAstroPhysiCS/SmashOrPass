@@ -6,6 +6,14 @@ namespace sop {
 
 namespace {
 
+[[nodiscard]] bool CanMoveLeft(const CollisionBody& body) {
+    return !body.Push.hitWallLeft;
+}
+
+[[nodiscard]] bool CanMoveRight(const CollisionBody& body) {
+    return !body.Push.hitWallRight;
+}
+
 void MoveBody(CollisionBody& body, float dx, float dy) {
     body.Rect.x += dx;
     body.Rect.y += dy;
@@ -26,11 +34,17 @@ void MarkPushResult(CollisionSolveResult& result, SDL_FPoint push, float epsilon
     }
 }
 
+[[nodiscard]] SDL_FPoint InvertOverlap(SDL_FPoint overlap) {
+    return SDL_FPoint{.x = -overlap.x, .y = -overlap.y};
+}
+
 [[nodiscard]] bool ShouldResolveAsFloor(const CollisionBody& player,
                                         SDL_FPoint overlap,
                                         float verticalVelocity,
                                         const CollisionSolveConfig& config) {
-    return overlap.y > config.Epsilon && player.Push.canPushUp &&
+    // Epsilon is to prevent some glitching (noticable when player stands on top of another player and the bottom player jumps)
+    // push player up, if <10% of his body are inside the bottom collision box and he is moving downwards
+    return overlap.y > config.Epsilon && !player.Push.hitGround &&
            overlap.y < player.Rect.h * config.VerticalSnapRatio && verticalVelocity >= 0.0f;
 }
 
@@ -38,8 +52,9 @@ void MarkPushResult(CollisionSolveResult& result, SDL_FPoint push, float epsilon
                                           SDL_FPoint overlap,
                                           float verticalVelocity,
                                           const CollisionSolveConfig& config) {
-    (void)player;
-    return overlap.y < -config.Epsilon &&
+    // Epsilon is to prevent some glitching (noticable when player stands on top of another player and the bottom player jumps)
+    // push player up, if <10% of his body are inside the top collision box and he is moving upwards
+    return overlap.y < -config.Epsilon && !player.Push.hitCeiling &&
            overlap.y > player.Rect.h * -config.VerticalSnapRatio && verticalVelocity <= 0.0f;
 }
 
@@ -60,9 +75,7 @@ void pushPlayer(CollisionBody& player,
     }
 }
 
-}  // namespace
-
-SDL_FPoint getOverlap(const SDL_FRect& rect1, const SDL_FRect& rect2) {
+[[nodiscard]] SDL_FPoint getOverlap(const SDL_FRect& rect1, const SDL_FRect& rect2) {
     const float center1X = rect1.x + rect1.w * 0.5f;
     const float center1Y = rect1.y + rect1.h * 0.5f;
     const float center2X = rect2.x + rect2.w * 0.5f;
@@ -84,10 +97,14 @@ SDL_FPoint getOverlap(const SDL_FRect& rect1, const SDL_FRect& rect2) {
     };
 }
 
+}  // namespace
+
 CollisionSolveResult pushBoxes(CollisionBody& player,
                                const SDL_FRect& platformRect,
                                float verticalVelocity,
                                const CollisionSolveConfig& config) {
+    // between platform Boxes and Player Collision Boxes
+    // get Overlap and then determine in which direction the player should be pushed
     CollisionSolveResult result{};
     const SDL_FPoint overlap = getOverlap(player.Rect, platformRect);
     if (overlap.x == 0.0f && overlap.y == 0.0f) {
@@ -96,21 +113,23 @@ CollisionSolveResult pushBoxes(CollisionBody& player,
 
     if (ShouldResolveAsFloor(player, overlap, verticalVelocity, config)) {
         pushPlayer(player, overlap, -1.0f, true, result, config);
+        player.Push.hitGround = true;
     } else if (ShouldResolveAsCeiling(player, overlap, verticalVelocity, config)) {
         pushPlayer(player, overlap, -1.0f, true, result, config);
+        player.Push.hitCeiling = true;
     } else {
         const bool playerNeedsToMoveLeft = overlap.x > 0.0f;
-        const bool playerCanMoveX = playerNeedsToMoveLeft ? player.Push.canPushLeft
-                                                          : player.Push.canPushRight;
+        const bool playerCanMoveX = playerNeedsToMoveLeft ? CanMoveLeft(player)
+                                                          : CanMoveRight(player);
         if (!playerCanMoveX) {
             return result;
         }
 
         pushPlayer(player, overlap, -1.0f, false, result, config);
         if (overlap.x > 0.0f) {
-            player.Push.canPushRight = false;
+            player.Push.hitWallRight = true;
         } else {
-            player.Push.canPushLeft = false;
+            player.Push.hitWallLeft = true;
         }
     }
 
@@ -122,24 +141,28 @@ CollisionSolveResult pushBoxes(CollisionBody& player1,
                                float player1VerticalVelocity,
                                float player2VerticalVelocity,
                                const CollisionSolveConfig& config) {
+    // between 2 Player Collision Boxes
+    // get Overlap and then determine in which direction the player should be pushed
     CollisionSolveResult result{};
     const SDL_FPoint overlap = getOverlap(player1.Rect, player2.Rect);
     if (overlap.x == 0.0f && overlap.y == 0.0f) {
         return result;
     }
 
+    // when one player stands on top of the other, only the top one is pushed up, the bottom player is not pushed down
+    // when players are next to each other they are both pushed out
     if (ShouldResolveAsFloor(player1, overlap, player1VerticalVelocity, config)) {
         pushPlayer(player1, overlap, -1.0f, true, result, config);
-    } else if (overlap.y < -config.Epsilon && player2.Push.canPushUp &&
-               overlap.y > player2.Rect.h * -config.VerticalSnapRatio &&
-               player2VerticalVelocity >= 0.0f) {
+        player1.Push.hitGround = true;
+    } else if (ShouldResolveAsFloor(player2, InvertOverlap(overlap), player2VerticalVelocity, config)) {
         pushPlayer(player2, overlap, 1.0f, true, result, config);
+        player2.Push.hitGround = true;
     } else {
         const bool player1NeedsToMoveLeft = overlap.x > 0.0f;
         const bool player1CanMoveX =
-            player1NeedsToMoveLeft ? player1.Push.canPushLeft : player1.Push.canPushRight;
+            player1NeedsToMoveLeft ? CanMoveLeft(player1) : CanMoveRight(player1);
         const bool player2CanMoveX =
-            player1NeedsToMoveLeft ? player2.Push.canPushRight : player2.Push.canPushLeft;
+            player1NeedsToMoveLeft ? CanMoveRight(player2) : CanMoveLeft(player2);
         if (!player1CanMoveX && !player2CanMoveX) {
             return result;
         }
@@ -159,6 +182,14 @@ CollisionSolveResult pushBoxes(CollisionBody& player1,
             pushPlayer(player1, overlap, -1.0f, false, result, config);
         } else {
             pushPlayer(player2, overlap, 1.0f, false, result, config);
+        }
+
+        if (player1NeedsToMoveLeft) {
+            player1.Push.hitPlayerRight = true;
+            player2.Push.hitPlayerLeft = true;
+        } else {
+            player1.Push.hitPlayerLeft = true;
+            player2.Push.hitPlayerRight = true;
         }
     }
 
