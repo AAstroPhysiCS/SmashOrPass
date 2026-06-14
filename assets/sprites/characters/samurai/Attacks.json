@@ -23,7 +23,7 @@
         "damage": 10,
         "knockback": {
           "x": 10,
-          "y": 2
+          "y": -2
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -48,7 +48,7 @@
         "damage": 10,
         "knockback": {
           "x": 10,
-          "y": 3
+          "y": -3
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -73,7 +73,7 @@
         "damage": 10,
         "knockback": {
           "x": 9,
-          "y": 4
+          "y": -4
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -98,7 +98,7 @@
         "damage": 10,
         "knockback": {
           "x": 9,
-          "y": 4
+          "y": -4
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -138,7 +138,7 @@
         "damage": 10,
         "knockback": {
           "x": 8,
-          "y": 5
+          "y": -5
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -163,7 +163,7 @@
         "damage": 10,
         "knockback": {
           "x": 8,
-          "y": 6
+          "y": -6
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -188,7 +188,7 @@
         "damage": 10,
         "knockback": {
           "x": 7,
-          "y": 7
+          "y": -7
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -213,7 +213,7 @@
         "damage": 10,
         "knockback": {
           "x": 7,
-          "y": 8
+          "y": -8
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -238,7 +238,7 @@
         "damage": 10,
         "knockback": {
           "x": 6,
-          "y": 8
+          "y": -8
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -263,7 +263,7 @@
         "damage": 10,
         "knockback": {
           "x": 6,
-          "y": 9
+          "y": -9
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -288,7 +288,7 @@
         "damage": 10,
         "knockback": {
           "x": 5,
-          "y": 10
+          "y": -10
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -313,7 +313,7 @@
         "damage": 10,
         "knockback": {
           "x": 5,
-          "y": 10
+          "y": -10
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -338,7 +338,7 @@
         "damage": 10,
         "knockback": {
           "x": 4,
-          "y": 10
+          "y": -10
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -363,7 +363,7 @@
         "damage": 10,
         "knockback": {
           "x": 4,
-          "y": 9
+          "y": -9
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -388,7 +388,7 @@
         "damage": 10,
         "knockback": {
           "x": 3,
-          "y": 9
+          "y": -9
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -413,7 +413,7 @@
         "damage": 10,
         "knockback": {
           "x": 2,
-          "y": 8
+          "y": -8
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -438,7 +438,7 @@
         "damage": 10,
         "knockback": {
           "x": 1,
-          "y": 8
+          "y": -8
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -463,7 +463,7 @@
         "damage": 10,
         "knockback": {
           "x": 1,
-          "y": 7
+          "y": -7
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -488,7 +488,7 @@
         "damage": 10,
         "knockback": {
           "x": 0,
-          "y": 7
+          "y": -7
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -513,7 +513,7 @@
         "damage": 10,
         "knockback": {
           "x": -1,
-          "y": 6
+          "y": -6
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -538,7 +538,7 @@
         "damage": 10,
         "knockback": {
           "x": -1,
-          "y": 6
+          "y": -6
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -563,7 +563,7 @@
         "damage": 10,
         "knockback": {
           "x": -2,
-          "y": 5
+          "y": -5
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -588,7 +588,7 @@
         "damage": 10,
         "knockback": {
           "x": -3,
-          "y": 5
+          "y": -5
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -613,7 +613,7 @@
         "damage": 10,
         "knockback": {
           "x": -4,
-          "y": 4
+          "y": -4
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -638,7 +638,7 @@
         "damage": 10,
         "knockback": {
           "x": -4,
-          "y": 4
+          "y": -4
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -663,7 +663,7 @@
         "damage": 10,
         "knockback": {
           "x": -5,
-          "y": 3
+          "y": -3
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -688,7 +688,7 @@
         "damage": 10,
         "knockback": {
           "x": -6,
-          "y": 3
+          "y": -3
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -713,7 +713,7 @@
         "damage": 10,
         "knockback": {
           "x": -6,
-          "y": 2
+          "y": -2
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -738,7 +738,7 @@
         "damage": 10,
         "knockback": {
           "x": -7,
-          "y": 2
+          "y": -2
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -778,7 +778,7 @@
         "damage": 10,
         "knockback": {
           "x": -8,
-          "y": 1
+          "y": -1
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -803,7 +803,7 @@
         "damage": 10,
         "knockback": {
           "x": -9,
-          "y": 1
+          "y": -1
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
