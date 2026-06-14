@@ -207,11 +207,11 @@ static CharacterSpriteSheet CreateDefaultCharacterSpriteSheet(AppCtx& ctx,
                                                               CharacterAnimation animation) {
     CharacterSpriteSheet sheet{};
     sheet.m_Texture = CreateFilledTexture(
-        ctx, 60, 400, 0, 0, 0, 255, std::format("fallback {}", CharacterAnimationName(animation)));
+        ctx, 292, 315, 0, 0, 0, 255, std::format("fallback {}", CharacterAnimationName(animation)));
     sheet.m_Frames.push_back(CharacterSpriteSheetFrame{
-        .m_Location = SDL_FRect{.x = 0.0f, .y = 0.0f, .w = 60.0f, .h = 400.0f},
-        .m_Anchor = SDL_Point{.x = 30, .y = 133},
-        .m_CollisionBox = SDL_FRect{.x = 0.0f, .y = 0.0f, .w = 60.0f, .h = 400.0f},
+        .m_Location = SDL_FRect{.x = 0.0f, .y = 0.0f, .w = 292.0f, .h = 315.0f},
+        .m_Anchor = SDL_Point{.x = 93, .y = -77},
+        .m_CollisionBox = SDL_FRect{.x = 0.0f, .y = 0.0f, .w = 262.0f, .h = 285.0f},
     });
     return sheet;
 }
