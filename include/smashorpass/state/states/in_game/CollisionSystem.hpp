@@ -23,6 +23,7 @@ struct CollisionBody {
 struct CollisionSolveConfig {
     float Epsilon = 0.00001f;
     float VerticalSnapRatio = 0.1f;
+    float FloorSnapVelocityMultiplier = 1.1f;
 };
 
 [[nodiscard]] bool ResolveCollision(

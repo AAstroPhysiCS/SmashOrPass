@@ -1,5 +1,6 @@
 #include "smashorpass/state/states/in_game/CollisionSystem.hpp"
 
+#include <algorithm>
 #include <cmath>
 
 namespace sop {
@@ -31,8 +32,13 @@ void MoveBody(CollisionBody& body, const float dx, const float dy) {
     // Epsilon is to prevent some glitching (noticable when player stands on top of another player and the bottom player jumps)
     // push player up, if <10% of his body are inside the bottom collision box and he is moving downwards
     // If the lower body moves upward faster, push the top player up even if the top player is moving upward too.
+    const float heightBasedSnap = player.Rect.h * config.VerticalSnapRatio;
+    const float velocityBasedSnap =
+        std::max(0.0f, verticalVelocity) * config.FloorSnapVelocityMultiplier;
+    const float maxFloorSnap = std::max(heightBasedSnap, velocityBasedSnap);
+
     const bool overlapIsBelowPlayer = overlap.y > config.Epsilon;
-    const bool shallowEnoughToSnap = overlap.y < player.Rect.h * config.VerticalSnapRatio;
+    const bool shallowEnoughToSnap = overlap.y < maxFloorSnap;
     const bool playerIsFalling = verticalVelocity >= 0.0f;
     const bool lowerBodyIsMovingUpIntoPlayer = otherVerticalVelocity <= verticalVelocity;
 
