@@ -9,11 +9,10 @@
 #include "smashorpass/core/InputHelper.hpp"
 #include "smashorpass/state/State.hpp"
 #include "smashorpass/state/states/in_game/Arena.hpp"
+#include "smashorpass/state/states/in_game/DebugData.hpp"
 #include "smashorpass/state/states/in_game/Player.hpp"
 #include "smashorpass/state/states/in_game/ui/GameScreen.hpp"
 #include "smashorpass/state/states/in_game/ui/PauseScreen.hpp"
-#include "smashorpass/state/states/in_game/CombatSystem.hpp"
-#include "smashorpass/state/states/in_game/DebugData.hpp"
 
 namespace sop {
 
@@ -67,6 +66,7 @@ class InGameState final : public State {
     Result<void> SolveCollisions(AppCtx& ctx);
     Result<void> TickAnimation(AppCtx& ctx);
     Result<void> TickEffects(AppCtx& ctx, std::chrono::duration<float> dt);
+    Result<void> SolveCombat(AppCtx& ctx);
 
     Result<void> RenderBackdrop(AppCtx& ctx);
     Result<void> RenderPlayers(AppCtx& ctx);

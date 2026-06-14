@@ -9,9 +9,6 @@ namespace sop {
 struct HitResult {
     bool hit = false;
     int bestValue = 0;
-    int overlapCount = 0;
-    int outerOverlapCount = 0;
-    int innerOverlapCount = 0;
 };
 
 HitResult detectOverlap(

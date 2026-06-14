@@ -179,26 +179,7 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
     // Effects (every frame)
     TRY_VOID(TickEffects(ctx, dt));
 
-    // TODO: clean up, maybe make viable for multiple players
-    for (auto& debugData : m_PlayerCombatDebugData) {
-        debugData = {};
-    }
-    int attackerIndex = 0;
-    int defenderIndex = 1;
-    Player& attacker = m_Players[0];
-    Player& defender = m_Players[1];
-    TRY(attackerHitBox, attacker.GetCurrentHitBox(ctx));
-    TRY(defenderHurtBox, defender.GetCurrentHurtBox(ctx));
-    if (attackerHitBox && defenderHurtBox) {
-        const HitResult hitResult = detectOverlap(*attackerHitBox, *defenderHurtBox, &m_PlayerCombatDebugData[attackerIndex], &m_PlayerCombatDebugData[defenderIndex]);
-    }
-    TRY(attacker2HitBox, defender.GetCurrentHitBox(ctx));
-    TRY(defender2HurtBox, attacker.GetCurrentHurtBox(ctx));
-    if (attacker2HitBox && defender2HurtBox) {
-        attackerIndex = 1;
-        defenderIndex = 0;
-        const HitResult hitResult = detectOverlap(*attacker2HitBox, *defender2HurtBox, &m_PlayerCombatDebugData[attackerIndex], &m_PlayerCombatDebugData[defenderIndex]);
-    }
+    TRY_VOID(SolveCombat(ctx));
 
     m_GameScreen.OnUpdate(ctx);
     return Ok();
@@ -308,7 +289,7 @@ Result<void> InGameState::SolveCollisions(AppCtx& ctx) {
     for (Player& player : m_Players) {
         TRY_VOID(player.ResolveArenaCollisionsForTick(ctx, m_Arena));
     }
-
+    // for >2 players you may want to run this 2-3 times
     for (std::size_t first = 0; first < m_Players.size(); ++first) {
         for (std::size_t second = first + 1; second < m_Players.size(); ++second) {
             TRY_VOID(m_Players[first].ResolveCollisionWithPlayerForTick(m_Players[second]));

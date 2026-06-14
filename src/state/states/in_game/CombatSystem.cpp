@@ -481,11 +481,11 @@ HitResult detectOverlap(
             )) {
             std::cout << "HIT==============================\n";
             std::cout << attackerFacingRight << "\n";
-            return HitResult{true, 1, 0, 0, 0};
+            return HitResult{.hit = true, .bestValue = i};
         }
     }
     
-    return HitResult{false, 0, 0, 0, 0};
+    return HitResult{};
 }
 
 } // namespace sop
