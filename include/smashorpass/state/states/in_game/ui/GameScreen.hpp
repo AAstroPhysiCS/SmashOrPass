@@ -27,6 +27,8 @@ class GameScreen : public UIScreen {
     void OnUpdate(AppCtx& ctx) final override;
     Result<void> OnRender(AppCtx& ctx) final override;
 
+    void SetPlayersHealth(float player1Health, float player2Health);
+
    private:
     void UpdateHudText();
 

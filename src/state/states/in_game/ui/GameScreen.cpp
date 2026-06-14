@@ -1,6 +1,7 @@
 #include "smashorpass/state/states/in_game/ui/GameScreen.hpp"
 
 #include <format>
+#include <cmath>
 
 #include "smashorpass/core/Event.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
@@ -59,6 +60,12 @@ Result<void> GameScreen::OnRender(AppCtx& ctx) {
     return UIScreen::OnRender(ctx);
 }
 
+void GameScreen::SetPlayersHealth(const float player1Health, const float player2Health) {
+    m_Player1.HP = static_cast<int>(std::lround(player1Health));
+    m_Player2.HP = static_cast<int>(std::lround(player2Health));
+    UpdateHudText();
+}
+
 void GameScreen::UpdateHudText() {
     if (m_P1Label != g_InvalidWidgetId) {
         auto& data = std::get<LabelData>(GetWidgetById(m_P1Label).Data);
@@ -86,7 +93,11 @@ std::string GameScreen::MakePlayerText(const PlayerMatchState& player) const {
         return std::format("{}  HP:{}  Rounds:{}", player.Name, player.HP, player.RoundsWon);
     }
 
-    return std::format("{}  Stocks:{}  Rounds:{}", player.Name, player.Stocks, player.RoundsWon);
+    return std::format("{}  HP:{}  Stocks:{}  Rounds:{}",
+                       player.Name,
+                       player.HP,
+                       player.Stocks,
+                       player.RoundsWon);
 }
 
 std::string GameScreen::MakeCenterText() const {

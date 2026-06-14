@@ -181,6 +181,10 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
 
     TRY_VOID(SolveCombat(ctx));
 
+    if (m_Players.size() >= 2) {
+        m_GameScreen.SetPlayersHealth(m_Players[0].Health(), m_Players[1].Health());
+    }
+
     m_GameScreen.OnUpdate(ctx);
     return Ok();
 }
