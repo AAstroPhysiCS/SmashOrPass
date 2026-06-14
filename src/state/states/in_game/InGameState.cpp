@@ -1,5 +1,6 @@
 #include "smashorpass/state/states/in_game/InGameState.hpp"
 
+#include <array>
 #include <chrono>
 #include <cstddef>
 #include <string>
@@ -206,6 +207,7 @@ Result<void> InGameState::OnRender(AppCtx& ctx) {
     TRY_VOID(RenderPlayers(ctx));
     TRY_VOID(RenderEffects(ctx));
     TRY_VOID(RenderForeground(ctx));
+    TRY_VOID(RenderPlayerMarkers(ctx));
     TRY_VOID(RenderArenaCollisionBoxes(ctx));
     TRY_VOID(RenderDebugBoxes(ctx));
     TRY_VOID(RenderUi(ctx));
@@ -424,6 +426,67 @@ Result<void> InGameState::RenderForeground(AppCtx& ctx) {
     SDL_FRect rect{};
     SDL_RectToFRect(&m_Arena.dimensions, &rect);
     return ctx.renderer.DrawTexture(arenaAsset.get().m_Foreground.get(), rect);
+}
+
+Result<void> InGameState::RenderPlayerMarkers(AppCtx& ctx) {
+    constexpr float kMarkerHalfWidth = 12.0f;
+    constexpr float kMarkerHeight = 16.0f;
+    constexpr float kMarkerGap = 10.0f;
+    constexpr std::array<Color, 4> kMarkerColors{
+        Color{255, 40, 40, 255},
+        Color{40, 110, 255, 255},
+        Color{45, 210, 95, 255},
+        Color{255, 220, 45, 255},
+    };
+
+    for (std::size_t playerIndex = 0; playerIndex < m_Players.size(); ++playerIndex) {
+        TRY(markerAnchor, m_Players[playerIndex].GetBaselineMarkerAnchor(ctx));
+        if (!markerAnchor) {
+            continue;
+        }
+
+        const SDL_FRect mappedAnchor = MapBaselineRectToArena(
+            SDL_FRect{
+                .x = markerAnchor->x,
+                .y = markerAnchor->y,
+                .w = 0.0f,
+                .h = 0.0f,
+            },
+            m_Arena.dimensions);
+
+        const Color color = kMarkerColors[playerIndex % kMarkerColors.size()];
+        const SDL_FColor vertexColor{
+            static_cast<float>(color.r) / 255.0f,
+            static_cast<float>(color.g) / 255.0f,
+            static_cast<float>(color.b) / 255.0f,
+            static_cast<float>(color.a) / 255.0f,
+        };
+
+        const float tipX = mappedAnchor.x;
+        const float tipY = mappedAnchor.y - kMarkerGap;
+        const float baseY = tipY - kMarkerHeight;
+        const std::array<SDL_Vertex, 3> vertices{
+            SDL_Vertex{
+                .position = SDL_FPoint{.x = tipX - kMarkerHalfWidth, .y = baseY},
+                .color = vertexColor,
+                .tex_coord = SDL_FPoint{.x = 0.0f, .y = 0.0f},
+            },
+            SDL_Vertex{
+                .position = SDL_FPoint{.x = tipX + kMarkerHalfWidth, .y = baseY},
+                .color = vertexColor,
+                .tex_coord = SDL_FPoint{.x = 0.0f, .y = 0.0f},
+            },
+            SDL_Vertex{
+                .position = SDL_FPoint{.x = tipX, .y = tipY},
+                .color = vertexColor,
+                .tex_coord = SDL_FPoint{.x = 0.0f, .y = 0.0f},
+            },
+        };
+
+        TRY_VOID(ctx.renderer.DrawGeometry(nullptr, vertices));
+    }
+
+    return Ok();
 }
 
 Result<void> InGameState::RenderArenaCollisionBoxes(AppCtx& ctx) {

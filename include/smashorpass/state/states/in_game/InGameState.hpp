@@ -73,6 +73,7 @@ class InGameState final : public State {
 
     Result<void> RenderBackdrop(AppCtx& ctx);
     Result<void> RenderPlayers(AppCtx& ctx);
+    Result<void> RenderPlayerMarkers(AppCtx& ctx);
     Result<void> RenderEffects(AppCtx& ctx);
     Result<void> RenderForeground(AppCtx& ctx);
     Result<void> RenderArenaCollisionBoxes(AppCtx& ctx);

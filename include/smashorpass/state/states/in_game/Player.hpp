@@ -63,6 +63,8 @@ class Player {
         return m_Position;
     }
 
+    [[nodiscard]] Result<std::optional<SDL_FPoint>> GetBaselineMarkerAnchor(AppCtx& ctx) const;
+
     Result<void> TickGameLogic(AppCtx& ctx, const Arena& arena);
     Result<void> TickAnimations(AppCtx& ctx, const Arena& arena);
     Result<void> SyncCollisionBodyToPosition(AppCtx& ctx);

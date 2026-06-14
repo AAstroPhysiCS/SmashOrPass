@@ -149,6 +149,18 @@ Result<std::optional<SDL_FRect>> Player::GetBaselineCollisionBox(AppCtx& ctx) co
     return Ok(std::optional<SDL_FRect>{m_CollisionBody.Rect});
 }
 
+Result<std::optional<SDL_FPoint>> Player::GetBaselineMarkerAnchor(AppCtx& ctx) const {
+    TRY(collisionBox, GetBaselineCollisionBox(ctx));
+    if (!collisionBox) {
+        return Ok(std::optional<SDL_FPoint>{});
+    }
+
+    return Ok(SDL_FPoint{
+        .x = collisionBox->x + collisionBox->w * 0.5f,
+        .y = collisionBox->y,
+    });
+}
+
 Result<std::optional<WorldHitBox>> Player::GetCurrentHitBox(AppCtx& ctx) const {
     TRY(asset, ctx.assets.GetAssetData(m_Asset));
 
