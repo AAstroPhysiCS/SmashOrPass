@@ -17,7 +17,7 @@ inline constexpr int kDefaultPlayerStocks = 3;
 inline constexpr float kBottomBlastZonePadding = 300.0f;
 inline constexpr float kRespawnHeightAboveArena = 100.0f;
 
-inline SDL_FPoint PlayerStartPosition(std::size_t playerIndex) {
+inline SDL_FPoint PlayerStartPosition(const std::size_t playerIndex) {
     switch (playerIndex) {
         case 0:
             return SDL_FPoint{508.0f, 300.0f};
@@ -33,7 +33,7 @@ inline SDL_FPoint PlayerStartPosition(std::size_t playerIndex) {
 }
 
 inline Result<void> FillDefaultInputTranslation(InputTranslationHelper<InputAction>& helper,
-                                                int player) {
+                                                const int player) {
     if (player == 0) {
         // Player 1: WASD
         helper.BindKey(SDLK_A, InputAction::MOVE_LEFT);

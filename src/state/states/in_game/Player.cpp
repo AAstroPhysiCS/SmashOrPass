@@ -177,7 +177,7 @@ Result<std::optional<WorldHitBox>> Player::GetCurrentHitBox(AppCtx& ctx) const {
         return Ok(std::nullopt);
     }
 
-    std::optional<SDL_FRect> spriteRect = GetBaselineSpriteRect(frame);
+    const std::optional<SDL_FRect> spriteRect = GetBaselineSpriteRect(frame);
     if (!spriteRect) {
         return Ok(std::nullopt);
     }
@@ -204,7 +204,7 @@ Result<std::optional<WorldHurtBox>> Player::GetCurrentHurtBox(AppCtx& ctx) const
         return Ok(std::nullopt);
     }
 
-    std::optional<SDL_FRect> spriteRect = GetBaselineSpriteRect(frame);
+    const std::optional<SDL_FRect> spriteRect = GetBaselineSpriteRect(frame);
     if (!spriteRect) {
         return Ok(std::nullopt);
     }
@@ -232,8 +232,8 @@ Result<void> Player::OnEvent(AppCtx& ctx, const Event& event) {
 
 Vec2 Player::LocalFramePointToBaselinePoint(const CharacterSpriteSheetFrame& frame,
                                             const SDL_FRect& spriteRect,
-                                            Vec2 localPoint,
-                                            bool facingRight) {
+                                            const Vec2 localPoint,
+                                            const bool facingRight) {
     const float localX = facingRight ? frame.m_Location.w - localPoint.x : localPoint.x;
 
     return Vec2{
@@ -242,7 +242,7 @@ Vec2 Player::LocalFramePointToBaselinePoint(const CharacterSpriteSheetFrame& fra
     };
 }
 
-Vec2 Player::MapBaselinePointToArenaPoint(Vec2 point, const SDL_Rect& arenaDimensions) {
+Vec2 Player::MapBaselinePointToArenaPoint(const Vec2 point, const SDL_Rect& arenaDimensions) {
     const SDL_FRect mapped = MapBaselineRectToArena(
         SDL_FRect{
             .x = point.x,
@@ -360,7 +360,7 @@ Result<void> Player::Render(AppCtx& ctx, const Arena& arena) const {
     const CharacterSpriteSheetFrame& frame =
         frames[static_cast<std::size_t>(m_CurrentAnimationFrame) % frames.size()];
     const SDL_FRect src = frame.m_Location;
-    std::optional<SDL_FRect> spriteRect = GetBaselineSpriteRect(frame);
+    const std::optional<SDL_FRect> spriteRect = GetBaselineSpriteRect(frame);
     if (!spriteRect) {
         return Ok();
     }
