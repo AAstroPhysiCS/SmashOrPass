@@ -76,7 +76,9 @@ class Player {
     void InitAttack();
     [[nodiscard]] bool HasHitPlayerThisAttack(int playerId) const;
     void MarkPlayerHitThisAttack(int playerId);
-    void ApplyHit(const AttackData& attackData, const HitResult& hitResult, bool attackerFacingRight);
+    void ApplyHit(const AttackData& attackData,
+                  const HitResult& hitResult,
+                  bool attackerFacingRight);
     void ReduceHealth(float damage);
     void LoseStock();
     void ResetStocks(int stocks);
@@ -87,22 +89,19 @@ class Player {
     Result<void> RenderCollisionBox(AppCtx& ctx, const Arena& arena) const;
     Result<void> RenderHitBoxes(AppCtx& ctx, const Arena& arena) const;
     Result<void> RenderHurtBoxes(AppCtx& ctx, const Arena& arena) const;
-    
-    [[nodiscard]] Result<std::optional<WorldHitBox>> GetCurrentHitBox(
-    AppCtx& ctx) const;
-    [[nodiscard]] Result<std::optional<WorldHurtBox>> GetCurrentHurtBox(
-        AppCtx& ctx) const;
-    
-    
+
+    [[nodiscard]] Result<std::optional<WorldHitBox>> GetCurrentHitBox(AppCtx& ctx) const;
+    [[nodiscard]] Result<std::optional<WorldHurtBox>> GetCurrentHurtBox(AppCtx& ctx) const;
+
    private:
     [[nodiscard]] static Vec2 LocalFramePointToBaselinePoint(const CharacterSpriteSheetFrame& frame,
-                                                         const SDL_FRect& spriteRect,
-                                                         Vec2 localPoint,
-                                                         bool facingRight);
+                                                             const SDL_FRect& spriteRect,
+                                                             Vec2 localPoint,
+                                                             bool facingRight);
 
     [[nodiscard]] static Vec2 MapBaselinePointToArenaPoint(Vec2 point,
-                                                       const SDL_Rect& arenaDimensions);
-    
+                                                           const SDL_Rect& arenaDimensions);
+
     [[nodiscard]] MovementInput GatherMovementInput(AppCtx& ctx);
 
     int m_playerId;

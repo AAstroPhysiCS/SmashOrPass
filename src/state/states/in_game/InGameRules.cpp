@@ -1,9 +1,8 @@
-#include "smashorpass/state/states/in_game/InGameState.hpp"
-
 #include <cstddef>
 #include <vector>
 
 #include "smashorpass/state/states/in_game/Defaults.hpp"
+#include "smashorpass/state/states/in_game/InGameState.hpp"
 #include "smashorpass/util.hpp"
 
 namespace sop {

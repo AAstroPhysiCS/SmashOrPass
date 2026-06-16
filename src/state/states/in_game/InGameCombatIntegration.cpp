@@ -1,9 +1,8 @@
-#include "smashorpass/state/states/in_game/InGameState.hpp"
-
 #include <cstddef>
 
 #include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/state/states/in_game/CombatSystem.hpp"
+#include "smashorpass/state/states/in_game/InGameState.hpp"
 
 namespace sop {
 
@@ -51,11 +50,10 @@ Result<void> InGameState::SolveCombat(AppCtx& ctx) {
                 continue;
             }
 
-            const HitResult hitResult =
-                detectOverlap(*attackerHitBox,
-                              *defenderHurtBox,
-                              &m_PlayerCombatDebugData[attackerIndex],
-                              &m_PlayerCombatDebugData[defenderIndex]);
+            const HitResult hitResult = detectOverlap(*attackerHitBox,
+                                                      *defenderHurtBox,
+                                                      &m_PlayerCombatDebugData[attackerIndex],
+                                                      &m_PlayerCombatDebugData[defenderIndex]);
             ApplyHitResult(hitResult, *attackerHitBox, attacker, defender);
         }
     }

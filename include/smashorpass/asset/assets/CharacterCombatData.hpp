@@ -1,10 +1,10 @@
 #pragma once
 
+#include <SDL3/SDL.h>
+
+#include <nlohmann/json_fwd.hpp>
 #include <unordered_map>
 #include <vector>
-
-#include <SDL3/SDL.h>
-#include <nlohmann/json_fwd.hpp>
 
 namespace sop {
 
@@ -17,9 +17,13 @@ struct GridData {
     int matrixHeight = 0;
 
     int cellSize = 0;
-    [[nodiscard]] int BucketMatrixWidth() const { return matrixWidth - 1; }
-    [[nodiscard]] int BucketMatrixHeight() const { return matrixHeight - 1; }
-    
+    [[nodiscard]] int BucketMatrixWidth() const {
+        return matrixWidth - 1;
+    }
+    [[nodiscard]] int BucketMatrixHeight() const {
+        return matrixHeight - 1;
+    }
+
     std::vector<SDL_Point> m_GridMatrix;
 };
 
@@ -61,4 +65,4 @@ AttackData loadAttackData(const nlohmann::json& frameJson);
     return hurtBox.m_SubHurtBoxes.empty();
 }
 
-} // namespace sop
+}  // namespace sop

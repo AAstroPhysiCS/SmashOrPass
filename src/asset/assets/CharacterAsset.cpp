@@ -255,7 +255,7 @@ Result<SurfacePtr> ConvertToRgba32(SDL_Surface* surface) {
         return Err(std::string("ConvertToRgba32 failed: surface is null"));
     }
 
-    SurfacePtr rgbaSurface{SDL_ConvertSurface(surface, SDL_PIXELFORMAT_RGBA32),SDL_DestroySurface};
+    SurfacePtr rgbaSurface{SDL_ConvertSurface(surface, SDL_PIXELFORMAT_RGBA32), SDL_DestroySurface};
 
     if (!rgbaSurface) {
         return Err(SdlError("SDL_ConvertSurface"));
@@ -264,13 +264,11 @@ Result<SurfacePtr> ConvertToRgba32(SDL_Surface* surface) {
     return Ok(std::move(rgbaSurface));
 }
 
-ChannelPlane getFrameChannelFromSurface(
-    const unsigned char* pixels,
-    const int pitch,
-    const SDL_FRect& framePosition,
-    const int channelOffset,
-    const bool isHitbox
-) {
+ChannelPlane getFrameChannelFromSurface(const unsigned char* pixels,
+                                        const int pitch,
+                                        const SDL_FRect& framePosition,
+                                        const int channelOffset,
+                                        const bool isHitbox) {
     const int left = static_cast<int>(framePosition.x);
     const int top = static_cast<int>(framePosition.y);
     const int width = static_cast<int>(framePosition.w);
@@ -284,10 +282,9 @@ ChannelPlane getFrameChannelFromSurface(
             const int pixelsY = top + y;
             const uint8_t* p = pixels + pixelsY * pitch + pixelsX * 4;
 
-            channel[x][y] = static_cast<unsigned char>(
-                (static_cast<int>(p[channelOffset]) * p[3]) / 255
-            );
-            
+            channel[x][y] =
+                static_cast<unsigned char>((static_cast<int>(p[channelOffset]) * p[3]) / 255);
+
             // hitboxes are absolute, hurtboxes are grouped by their blue channel value
             // each group gets the same amount of damage (3=head -> max damage etc.)
             if (channel[x][y] != 0) {
@@ -309,13 +306,11 @@ ChannelPlane getFrameChannelFromSurface(
     return channel;
 }
 
-} // namespace
+}  // namespace
 
-Result<void> LoadCombatData(
-    SDL_Surface* combatSurface,
-    std::vector<CharacterSpriteSheetFrame>& frames,
-    int gridSize
-) {
+Result<void> LoadCombatData(SDL_Surface* combatSurface,
+                            std::vector<CharacterSpriteSheetFrame>& frames,
+                            int gridSize) {
     TRY(rgbaSurface, ConvertToRgba32(combatSurface));
 
     const bool mustLock = SDL_MUSTLOCK(rgbaSurface.get());
@@ -332,12 +327,14 @@ Result<void> LoadCombatData(
 
     const auto* pixels = static_cast<const unsigned char*>(rgbaSurface.get()->pixels);
     const int pitch = rgbaSurface.get()->pitch;
-    
+
     for (auto& frame : frames) {
-        const ChannelPlane red = getFrameChannelFromSurface(pixels, pitch, frame.m_Location, 0, true);
+        const ChannelPlane red =
+            getFrameChannelFromSurface(pixels, pitch, frame.m_Location, 0, true);
         frame.m_HitBox = setupHitbox(red, gridSize, frame.m_HitBox.m_AttackData);
 
-        const ChannelPlane blue = getFrameChannelFromSurface(pixels, pitch, frame.m_Location, 2, false);
+        const ChannelPlane blue =
+            getFrameChannelFromSurface(pixels, pitch, frame.m_Location, 2, false);
         frame.m_HurtBox = setupHurtBox(blue, gridSize);
     }
 
@@ -410,14 +407,13 @@ CharacterAssetData RawCharacterAssetData::ToAssetData(AppCtx& ctx) {
 
         auto combatData = LoadCombatData(rawSheet.m_CombatSurface.get(), rawSheet.m_Frames, 50);
         if (!combatData) {
-            spdlog::warn(
-                "Failed to build combat data for character asset '{}', animation '{}': {}",
-                m_Id,
-                CharacterAnimationName(animation),
-                combatData.error());
+            spdlog::warn("Failed to build combat data for character asset '{}', animation '{}': {}",
+                         m_Id,
+                         CharacterAnimationName(animation),
+                         combatData.error());
             continue;
         }
-        
+
         CharacterFrameEffectMasks::Factory effectMaskFactory{};
 
         auto effectMasks =

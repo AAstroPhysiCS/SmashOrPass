@@ -7,8 +7,8 @@
 
 #include "smashorpass/asset/effects/CharacterFrameEffectMask.hpp"
 #include "smashorpass/core/AppCtx.hpp"
-#include "smashorpass/util.hpp"
 #include "smashorpass/state/states/in_game/Defaults.hpp"
+#include "smashorpass/util.hpp"
 
 namespace sop {
 
@@ -181,9 +181,9 @@ Result<std::optional<WorldHitBox>> Player::GetCurrentHitBox(AppCtx& ctx) const {
         return Ok(std::nullopt);
     }
     // need: facingRight, Position, Hitbox
-    //const int worldX = spriteRect.value().x + hitBox.m_GridData.bounds.x * kPlayerScale;
-    //const int worldY = spriteRect.value().y + hitBox.m_GridData.bounds.y * kPlayerScale;
-    
+    // const int worldX = spriteRect.value().x + hitBox.m_GridData.bounds.x * kPlayerScale;
+    // const int worldY = spriteRect.value().y + hitBox.m_GridData.bounds.y * kPlayerScale;
+
     return Ok(WorldHitBox{hitBox, *spriteRect, m_FacingRight});
 }
 
@@ -208,9 +208,9 @@ Result<std::optional<WorldHurtBox>> Player::GetCurrentHurtBox(AppCtx& ctx) const
         return Ok(std::nullopt);
     }
     // need: facingRight, Position, Hitbox
-    //const int worldX = spriteRect.value().x + hitBox.m_GridData.bounds.x * kPlayerScale;
-    //const int worldY = spriteRect.value().y + hitBox.m_GridData.bounds.y * kPlayerScale;
-    
+    // const int worldX = spriteRect.value().x + hitBox.m_GridData.bounds.x * kPlayerScale;
+    // const int worldY = spriteRect.value().y + hitBox.m_GridData.bounds.y * kPlayerScale;
+
     return Ok(WorldHurtBox{hurtBox, *spriteRect, m_FacingRight});
 }
 
@@ -393,9 +393,8 @@ SDL_FRect TransformRectToWorldspace(const SDL_FRect& localRect,
     const float scaledH = localRect.h * kPlayerScale;
 
     return SDL_FRect{
-        .x = facingRight
-                 ? (spriteRect.x + spriteRect.w - scaledX - scaledW)
-                 : (spriteRect.x + scaledX),
+        .x = facingRight ? (spriteRect.x + spriteRect.w - scaledX - scaledW)
+                         : (spriteRect.x + scaledX),
         .y = spriteRect.y + scaledY,
         .w = scaledW,
         .h = scaledH,
@@ -428,10 +427,8 @@ Result<void> Player::RenderHurtBoxes(AppCtx& ctx, const Arena& arena) const {
     for (const auto& [value, subHurtBox] : worldHurtBox->hurtBox.get().m_SubHurtBoxes) {
         (void)value;
 
-        const SDL_FRect worldRect =
-            TransformRectToWorldspace(subHurtBox.m_GridData.bounds,
-                                      worldHurtBox->spriteRect,
-                                      worldHurtBox->facingRight);
+        const SDL_FRect worldRect = TransformRectToWorldspace(
+            subHurtBox.m_GridData.bounds, worldHurtBox->spriteRect, worldHurtBox->facingRight);
 
         TRY_VOID(ctx.renderer.DrawRect(MapBaselineRectToArena(worldRect, arena.dimensions),
                                        Color{0, 0, 255, 255}));

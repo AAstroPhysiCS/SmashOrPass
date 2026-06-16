@@ -1,11 +1,10 @@
-#include "smashorpass/state/states/in_game/Player.hpp"
-
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 
 #include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/state/states/in_game/CollisionSystem.hpp"
+#include "smashorpass/state/states/in_game/Player.hpp"
 
 namespace sop {
 
@@ -105,13 +104,11 @@ void Player::ApplyCollisionResult() {
     }
 
     if (collision.hitPlayerLeft && m_MovementState.Velocity.x < 0.0f) {
-        m_MovementState.Velocity.x =
-            std::clamp(actualVelocityX, m_MovementState.Velocity.x, 0.0f);
+        m_MovementState.Velocity.x = std::clamp(actualVelocityX, m_MovementState.Velocity.x, 0.0f);
     }
 
     if (collision.hitPlayerRight && m_MovementState.Velocity.x > 0.0f) {
-        m_MovementState.Velocity.x =
-            std::clamp(actualVelocityX, 0.0f, m_MovementState.Velocity.x);
+        m_MovementState.Velocity.x = std::clamp(actualVelocityX, 0.0f, m_MovementState.Velocity.x);
     }
 }
 

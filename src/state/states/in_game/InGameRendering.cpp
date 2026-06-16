@@ -1,9 +1,8 @@
-#include "smashorpass/state/states/in_game/InGameState.hpp"
-
 #include <array>
 #include <cstddef>
 
 #include "smashorpass/core/Color.hpp"
+#include "smashorpass/state/states/in_game/InGameState.hpp"
 #include "smashorpass/util.hpp"
 
 namespace sop {
@@ -145,8 +144,7 @@ Result<void> InGameState::RenderPlayerMarkers(AppCtx& ctx) {
         const float tipY = mappedAnchor.y - kMarkerGap;
         const Color markerColor = kMarkerColors[playerIndex % kMarkerColors.size()];
         const SDL_FColor vertexColor = ToVertexColor(markerColor);
-        const std::array<SDL_Vertex, 3> vertices =
-            MakeMarkerTriangle(tipX, tipY, vertexColor);
+        const std::array<SDL_Vertex, 3> vertices = MakeMarkerTriangle(tipX, tipY, vertexColor);
 
         TRY_VOID(ctx.renderer.DrawGeometry(nullptr, vertices));
     }

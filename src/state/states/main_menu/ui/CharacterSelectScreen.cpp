@@ -78,8 +78,9 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
         if (m_Player1Character == m_Player2Character) {
             player2Asset = *player1Asset;
         } else {
-            auto loadedPlayer2Asset = ctx.assets.LoadAsset<CharacterAssetLoadJob, CharacterAssetData>(
-                selectedCharacterJob(m_Player2Character));
+            auto loadedPlayer2Asset =
+                ctx.assets.LoadAsset<CharacterAssetLoadJob, CharacterAssetData>(
+                    selectedCharacterJob(m_Player2Character));
             if (!loadedPlayer2Asset) {
                 spdlog::warn("Failed to load player 2 character '{}': {}",
                              m_Player2Character,

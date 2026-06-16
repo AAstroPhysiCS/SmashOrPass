@@ -1,6 +1,5 @@
-#include "smashorpass/state/states/in_game/Player.hpp"
-
 #include "smashorpass/core/AppCtx.hpp"
+#include "smashorpass/state/states/in_game/Player.hpp"
 
 namespace sop {
 
@@ -56,8 +55,7 @@ Result<void> Player::TickGameLogic(AppCtx& ctx, const Arena& arena) {
     m_MovementState.FacingRight = m_FacingRight;
     const bool wasAttacking = m_MovementState.Attack.IsActive();
 
-    const MovementResult movement =
-        PlayerMovement::Tick(m_MovementState, input, m_MovementConfig);
+    const MovementResult movement = PlayerMovement::Tick(m_MovementState, input, m_MovementConfig);
     if (!wasAttacking && m_MovementState.Attack.IsActive()) {
         InitAttack();
     }

@@ -1,6 +1,6 @@
-#include <algorithm>
-
 #include "smashorpass/state/states/in_game/PlayerMovement.hpp"
+
+#include <algorithm>
 
 namespace sop {
 
@@ -31,9 +31,7 @@ void RefreshAirOptions(MovementState& state) {
     state.DashJumpAvailable = false;
 }
 
-void TryStartDash(MovementState& state,
-                  const MovementInput& input,
-                  const MovementConfig& config) {
+void TryStartDash(MovementState& state, const MovementInput& input, const MovementConfig& config) {
     if (!input.DashPressed) {
         return;
     }
@@ -81,9 +79,7 @@ void TryStartAttack(MovementState& state,
     state.Velocity.x = 0.0f;
 }
 
-void TryApplyJump(MovementState& state,
-                  const MovementInput& input,
-                  const MovementConfig& config) {
+void TryApplyJump(MovementState& state, const MovementInput& input, const MovementConfig& config) {
     if (!input.JumpPressed) {
         return;
     }
@@ -96,9 +92,7 @@ void TryApplyJump(MovementState& state,
     }
 }
 
-void TryApplyMove(MovementState& state,
-                  const MovementInput& input,
-                  const MovementConfig& config) {
+void TryApplyMove(MovementState& state, const MovementInput& input, const MovementConfig& config) {
     const float horizontalIntent = input.HorizontalIntent();
     if (horizontalIntent == 0.0f) {
         return;
@@ -183,4 +177,4 @@ MovementResult PlayerMovement::Tick(MovementState& state,
     };
 }
 
-}
+}  // namespace sop

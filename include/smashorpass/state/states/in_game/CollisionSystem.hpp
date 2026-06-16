@@ -26,18 +26,16 @@ struct CollisionSolveConfig {
     float FloorSnapVelocityMultiplier = 1.1f;
 };
 
-[[nodiscard]] bool ResolveCollision(
-    CollisionBody& player,
-    const SDL_FRect& platformRect,
-    float verticalVelocity,
-    const CollisionSolveConfig& config = {});
+[[nodiscard]] bool ResolveCollision(CollisionBody& player,
+                                    const SDL_FRect& platformRect,
+                                    float verticalVelocity,
+                                    const CollisionSolveConfig& config = {});
 
-[[nodiscard]] bool ResolveCollision(
-    CollisionBody& player1,
-    CollisionBody& player2,
-    float player1VerticalVelocity,
-    float player2VerticalVelocity,
-    const CollisionSolveConfig& config = {});
+[[nodiscard]] bool ResolveCollision(CollisionBody& player1,
+                                    CollisionBody& player2,
+                                    float player1VerticalVelocity,
+                                    float player2VerticalVelocity,
+                                    const CollisionSolveConfig& config = {});
 
 void ResetCollisionContacts(CollisionBody& body);
 

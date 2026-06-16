@@ -1,8 +1,8 @@
-#include "smashorpass/state/states/in_game/Player.hpp"
-
 #include <algorithm>
 #include <cmath>
+
 #include "smashorpass/state/states/in_game/CombatSystem.hpp"
+#include "smashorpass/state/states/in_game/Player.hpp"
 
 namespace sop {
 
@@ -47,8 +47,7 @@ void Player::ApplyHit(const AttackData& attackData,
     const float knockbackMultiplier = 1.0f + (100.0f - m_Health) / 100.0f;
     const float hitstunMultiplier = 1.0f + (100.0f - m_Health) / 200.0f;
     const int hitstunTicks = static_cast<int>(
-        std::ceil(static_cast<float>(attackData.m_HitstunTicks) * hitstunMultiplier)
-    );
+        std::ceil(static_cast<float>(attackData.m_HitstunTicks) * hitstunMultiplier));
 
     m_MovementState.Velocity.x =
         attackData.m_Knockback.x * knockbackMultiplier * knockbackDirection;

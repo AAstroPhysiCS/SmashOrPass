@@ -1,7 +1,7 @@
 #include "smashorpass/state/states/in_game/ui/GameScreen.hpp"
 
-#include <format>
 #include <cmath>
+#include <format>
 
 #include "smashorpass/core/Event.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
@@ -104,11 +104,8 @@ std::string GameScreen::MakePlayerText(const PlayerMatchState& player) const {
         return std::format("{}  HP:{}  Rounds:{}", player.Name, player.HP, player.RoundsWon);
     }
 
-    return std::format("{}  HP:{}  Stocks:{}  Rounds:{}",
-                       player.Name,
-                       player.HP,
-                       player.Stocks,
-                       player.RoundsWon);
+    return std::format(
+        "{}  HP:{}  Stocks:{}  Rounds:{}", player.Name, player.HP, player.Stocks, player.RoundsWon);
 }
 
 std::string GameScreen::MakeCenterText() const {

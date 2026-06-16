@@ -29,9 +29,10 @@ void MoveBody(CollisionBody& body, const float dx, const float dy) {
                                         const float verticalVelocity,
                                         const float otherVerticalVelocity,
                                         const CollisionSolveConfig& config) {
-    // Epsilon is to prevent some glitching (noticable when player stands on top of another player and the bottom player jumps)
-    // push player up, if <10% of his body are inside the bottom collision box and he is moving downwards
-    // If the lower body moves upward faster, push the top player up even if the top player is moving upward too.
+    // Epsilon is to prevent some glitching (noticable when player stands on top of another player
+    // and the bottom player jumps) push player up, if <10% of his body are inside the bottom
+    // collision box and he is moving downwards If the lower body moves upward faster, push the top
+    // player up even if the top player is moving upward too.
     const float heightBasedSnap = player.Rect.h * config.VerticalSnapRatio;
     const float velocityBasedSnap =
         std::max(0.0f, verticalVelocity) * config.FloorSnapVelocityMultiplier;
@@ -50,8 +51,9 @@ void MoveBody(CollisionBody& body, const float dx, const float dy) {
                                           const SDL_FPoint overlap,
                                           const float verticalVelocity,
                                           const CollisionSolveConfig& config) {
-    // Epsilon is to prevent some glitching (noticable when player stands on top of another player and the bottom player jumps)
-    // push player up, if <10% of his body are inside the top collision box and he is moving upwards
+    // Epsilon is to prevent some glitching (noticable when player stands on top of another player
+    // and the bottom player jumps) push player up, if <10% of his body are inside the top collision
+    // box and he is moving upwards
     const bool overlapIsAbovePlayer = overlap.y < -config.Epsilon;
     const bool shallowEnoughToSnap = overlap.y > player.Rect.h * -config.VerticalSnapRatio;
     const bool playerIsMovingUp = verticalVelocity <= 0.0f;
@@ -115,8 +117,8 @@ bool ResolveCollision(CollisionBody& player,
         player.Contacts.hitCeiling = true;
     } else {
         const bool playerNeedsToMoveLeft = overlap.x > 0.0f;
-        const bool playerCanMoveX = playerNeedsToMoveLeft ? CanMoveLeft(player)
-                                                          : CanMoveRight(player);
+        const bool playerCanMoveX =
+            playerNeedsToMoveLeft ? CanMoveLeft(player) : CanMoveRight(player);
         if (!playerCanMoveX) {
             return false;
         }
@@ -144,12 +146,17 @@ bool ResolveCollision(CollisionBody& player1,
         return false;
     }
 
-    // when one player stands on top of the other, only the top one is pushed up, the bottom player is not pushed down
-    // when players are next to each other they are both pushed out
-    if (ShouldResolveAsFloor(player1, overlap, player1VerticalVelocity, player2VerticalVelocity, config)) {
+    // when one player stands on top of the other, only the top one is pushed up, the bottom player
+    // is not pushed down when players are next to each other they are both pushed out
+    if (ShouldResolveAsFloor(
+            player1, overlap, player1VerticalVelocity, player2VerticalVelocity, config)) {
         pushPlayer(player1, overlap, -1.0f, true);
         player1.Contacts.hitGround = true;
-    } else if (ShouldResolveAsFloor(player2, InvertOverlap(overlap), player2VerticalVelocity, player1VerticalVelocity, config)) {
+    } else if (ShouldResolveAsFloor(player2,
+                                    InvertOverlap(overlap),
+                                    player2VerticalVelocity,
+                                    player1VerticalVelocity,
+                                    config)) {
         pushPlayer(player2, overlap, 1.0f, true);
         player2.Contacts.hitGround = true;
     } else {

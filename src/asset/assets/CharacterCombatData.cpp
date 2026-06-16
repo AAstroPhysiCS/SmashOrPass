@@ -1,9 +1,8 @@
-#include <algorithm>
-#include <utility>
-
-#include <nlohmann/json.hpp>
-
 #include "smashorpass/asset/assets/CharacterCombatData.hpp"
+
+#include <algorithm>
+#include <nlohmann/json.hpp>
+#include <utility>
 
 namespace sop {
 
@@ -34,12 +33,7 @@ void reorderBucketsByStride(std::vector<std::vector<SDL_Point>>& buckets, int st
     }
 }
 
-bool isOuterPixel(
-    const ChannelPlane& channel,
-    int x,
-    int y,
-    int channelValue
-) {
+bool isOuterPixel(const ChannelPlane& channel, int x, int y, int channelValue) {
     const int width = static_cast<int>(channel.size());
     const int height = static_cast<int>(channel[0].size());
 
@@ -65,14 +59,13 @@ bool isOuterPixel(
     return false;
 }
 
-std::pair<std::vector<std::vector<SDL_Point>>, std::vector<std::vector<SDL_Point>>> createInnerOuterBuckets(
-    const ChannelPlane& channel,
-    const SDL_FRect& boundingBox,
-    int gridSize,
-    int bucketMatrixWidth,
-    int bucketMatrixHeight,
-    int channelValue
-) {
+std::pair<std::vector<std::vector<SDL_Point>>, std::vector<std::vector<SDL_Point>>>
+createInnerOuterBuckets(const ChannelPlane& channel,
+                        const SDL_FRect& boundingBox,
+                        int gridSize,
+                        int bucketMatrixWidth,
+                        int bucketMatrixHeight,
+                        int channelValue) {
     std::vector<std::vector<SDL_Point>> innerBuckets(bucketMatrixWidth * bucketMatrixHeight);
     std::vector<std::vector<SDL_Point>> outerBuckets(bucketMatrixWidth * bucketMatrixHeight);
 
@@ -93,8 +86,10 @@ std::pair<std::vector<std::vector<SDL_Point>>, std::vector<std::vector<SDL_Point
             int cellX = localX / gridSize;
             int cellY = localY / gridSize;
 
-            if (cellX >= bucketMatrixWidth) cellX = bucketMatrixWidth - 1;
-            if (cellY >= bucketMatrixHeight) cellY = bucketMatrixHeight - 1;
+            if (cellX >= bucketMatrixWidth)
+                cellX = bucketMatrixWidth - 1;
+            if (cellY >= bucketMatrixHeight)
+                cellY = bucketMatrixHeight - 1;
 
             const int bucketIndex = cellY * bucketMatrixWidth + cellX;
             if (isOuterPixel(channel, x, y, channelValue)) {
@@ -130,10 +125,14 @@ SDL_FRect getBounds(const ChannelPlane& channel, int channelValue) {
                 continue;
             }
 
-            if (x < minX) minX = x;
-            if (y < minY) minY = y;
-            if (x > maxX) maxX = x;
-            if (y > maxY) maxY = y;
+            if (x < minX)
+                minX = x;
+            if (y < minY)
+                minY = y;
+            if (x > maxX)
+                maxX = x;
+            if (y > maxY)
+                maxY = y;
         }
     }
 
@@ -141,20 +140,16 @@ SDL_FRect getBounds(const ChannelPlane& channel, int channelValue) {
         return SDL_FRect{0.0f, 0.0f, 0.0f, 0.0f};
     }
 
-    return SDL_FRect{
-        static_cast<float>(minX),
-        static_cast<float>(minY),
-        static_cast<float>(maxX - minX + 1),
-        static_cast<float>(maxY - minY + 1)
-    };
+    return SDL_FRect{static_cast<float>(minX),
+                     static_cast<float>(minY),
+                     static_cast<float>(maxX - minX + 1),
+                     static_cast<float>(maxY - minY + 1)};
 }
 
-std::vector<SDL_Point> createMatrix(
-    int matrixHeight,
-    int matrixWidth,
-    int gridSize,
-    const SDL_FRect& boundingBox
-) {
+std::vector<SDL_Point> createMatrix(int matrixHeight,
+                                    int matrixWidth,
+                                    int gridSize,
+                                    const SDL_FRect& boundingBox) {
     std::vector<SDL_Point> matrix(matrixHeight * matrixWidth);
 
     const int maxX = static_cast<int>(boundingBox.w) - 1;
@@ -165,8 +160,10 @@ std::vector<SDL_Point> createMatrix(
             int pointX = x * gridSize;
             int pointY = y * gridSize;
 
-            if (pointX > maxX) pointX = maxX;
-            if (pointY > maxY) pointY = maxY;
+            if (pointX > maxX)
+                pointX = maxX;
+            if (pointY > maxY)
+                pointY = maxY;
 
             matrix[y * matrixWidth + x] = SDL_Point{pointX, pointY};
         }
@@ -175,14 +172,12 @@ std::vector<SDL_Point> createMatrix(
     return matrix;
 }
 
-std::vector<std::vector<SDL_Point>> createBuckets(
-    const ChannelPlane& channel,
-    const SDL_FRect& boundingBox,
-    int gridSize,
-    int bucketMatrixWidth,
-    int bucketMatrixHeight,
-    int channelValue
-) {
+std::vector<std::vector<SDL_Point>> createBuckets(const ChannelPlane& channel,
+                                                  const SDL_FRect& boundingBox,
+                                                  int gridSize,
+                                                  int bucketMatrixWidth,
+                                                  int bucketMatrixHeight,
+                                                  int channelValue) {
     std::vector<std::vector<SDL_Point>> buckets(bucketMatrixWidth * bucketMatrixHeight);
 
     const int left = static_cast<int>(boundingBox.x);
@@ -202,8 +197,10 @@ std::vector<std::vector<SDL_Point>> createBuckets(
             int cellX = localX / gridSize;
             int cellY = localY / gridSize;
 
-            if (cellX >= bucketMatrixWidth) cellX = bucketMatrixWidth - 1;
-            if (cellY >= bucketMatrixHeight) cellY = bucketMatrixHeight - 1;
+            if (cellX >= bucketMatrixWidth)
+                cellX = bucketMatrixWidth - 1;
+            if (cellY >= bucketMatrixHeight)
+                cellY = bucketMatrixHeight - 1;
 
             const int bucketIndex = cellY * bucketMatrixWidth + cellX;
             buckets[bucketIndex].push_back(SDL_Point{localX, localY});
@@ -213,11 +210,9 @@ std::vector<std::vector<SDL_Point>> createBuckets(
     return buckets;
 }
 
-SubHurtBox setupSubHurtBox(
-    const ChannelPlane& blueChannel,
-    int targetGridSize,
-    int blueChannelValue
-) {
+SubHurtBox setupSubHurtBox(const ChannelPlane& blueChannel,
+                           int targetGridSize,
+                           int blueChannelValue) {
     const SDL_FRect boundingBox = getBounds(blueChannel, blueChannelValue);
 
     const int gridSize = std::max(1, targetGridSize);
@@ -241,17 +236,14 @@ SubHurtBox setupSubHurtBox(
         };
     }
 
-    std::vector<SDL_Point> matrix =
-        createMatrix(matrixHeight, matrixWidth, gridSize, boundingBox);
+    std::vector<SDL_Point> matrix = createMatrix(matrixHeight, matrixWidth, gridSize, boundingBox);
 
-    auto [innerBuckets, outerBuckets] = createInnerOuterBuckets(
-        blueChannel,
-        boundingBox,
-        gridSize,
-        bucketMatrixWidth,
-        bucketMatrixHeight,
-        blueChannelValue
-    );
+    auto [innerBuckets, outerBuckets] = createInnerOuterBuckets(blueChannel,
+                                                                boundingBox,
+                                                                gridSize,
+                                                                bucketMatrixWidth,
+                                                                bucketMatrixHeight,
+                                                                blueChannelValue);
 
     return SubHurtBox{
         .m_GridData =
@@ -267,7 +259,7 @@ SubHurtBox setupSubHurtBox(
     };
 }
 
-} // namespace
+}  // namespace
 
 HitBox setupHitbox(const ChannelPlane& redChannel, int targetGridSize, AttackData attackData) {
     const SDL_FRect boundingBox = getBounds(redChannel, 1);
@@ -287,14 +279,13 @@ HitBox setupHitbox(const ChannelPlane& redChannel, int targetGridSize, AttackDat
                     .matrixHeight = 0,
                     .cellSize = gridSize,
                     .m_GridMatrix = {},
-            },
+                },
             .m_Buckets = {},
             .m_AttackData = attackData,
         };
     }
 
-    std::vector<SDL_Point> matrix =
-        createMatrix(matrixHeight, matrixWidth, gridSize, boundingBox);
+    std::vector<SDL_Point> matrix = createMatrix(matrixHeight, matrixWidth, gridSize, boundingBox);
 
     std::vector<std::vector<SDL_Point>> buckets =
         createBuckets(redChannel, boundingBox, gridSize, bucketMatrixWidth, bucketMatrixHeight, 1);
@@ -350,4 +341,4 @@ HurtBox setupHurtBox(const ChannelPlane& blueChannel, int targetGridSize) {
     return hurtBox;
 }
 
-} // namespace sop
+}  // namespace sop
