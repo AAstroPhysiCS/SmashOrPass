@@ -479,8 +479,6 @@ HitResult detectOverlap(
                 defenderFacingRight,
                 defenderDebugData
             )) {
-            std::cout << "HIT==============================\n";
-            std::cout << attackerFacingRight << "\n";
             return HitResult{.hit = true, .bestValue = i};
         }
     }
