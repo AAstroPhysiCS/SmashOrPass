@@ -346,7 +346,7 @@ static Result<RawCharacterSpriteSheet> LoadCharacterSpriteSheet(
     const std::filesystem::path& characterDir, CharacterAnimation animation) {
     const std::string animationName{CharacterAnimationName(animation)};
     TRY(surface, LoadSurface(characterDir / (animationName + ".png"), animationName));
-    TRY(combatSurface, LoadSurface(characterDir / (animationName + "_boxs.png"), animationName));
+    TRY(combatSurface, LoadSurface(characterDir / (animationName + "_boxes.png"), animationName));
     TRY(frames, LoadCharacterFrames(characterDir / (animationName + ".json")));
 
     return Ok(RawCharacterSpriteSheet{
