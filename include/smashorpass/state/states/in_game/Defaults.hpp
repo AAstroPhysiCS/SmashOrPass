@@ -14,7 +14,7 @@ namespace sop {
 
 inline constexpr float kDefaultPlayerHealth = 100.0f;
 inline constexpr int kDefaultPlayerStocks = 3;
-inline constexpr float kBottomBlastZonePadding = 300.0f;
+inline constexpr float kBottomBlastZonePadding = 150.0f;
 inline constexpr float kRespawnHeightAboveArena = 100.0f;
 inline constexpr float kPlayerScale = 0.4f;
 
