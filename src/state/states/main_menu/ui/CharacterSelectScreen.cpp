@@ -74,19 +74,26 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
             return;
         }
 
-        auto player2Asset = ctx.assets.LoadAsset<CharacterAssetLoadJob, CharacterAssetData>(
-            selectedCharacterJob(m_Player2Character));
-        if (!player2Asset) {
-            spdlog::warn("Failed to load player 2 character '{}': {}",
-                         m_Player2Character,
-                         player2Asset.error());
-            return;
+        Asset<CharacterAssetData> player2Asset;
+        if (m_Player1Character == m_Player2Character) {
+            player2Asset = *player1Asset;
+        } else {
+            auto loadedPlayer2Asset =
+                ctx.assets.LoadAsset<CharacterAssetLoadJob, CharacterAssetData>(
+                    selectedCharacterJob(m_Player2Character));
+            if (!loadedPlayer2Asset) {
+                spdlog::warn("Failed to load player 2 character '{}': {}",
+                             m_Player2Character,
+                             loadedPlayer2Asset.error());
+                return;
+            }
+            player2Asset = *loadedPlayer2Asset;
         }
 
         ctx.eventDispatcher.Enqueue(NavigationEvent{
             .Action = NavigationAction::StartMatch,
             .ArenaAsset = *arenaAsset,
-            .CharacterAssets = {*player1Asset, *player2Asset},
+            .CharacterAssets = {*player1Asset, player2Asset},
         });
     };
 

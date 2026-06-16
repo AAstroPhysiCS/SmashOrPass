@@ -9,11 +9,10 @@
 #include "smashorpass/core/InputHelper.hpp"
 #include "smashorpass/state/State.hpp"
 #include "smashorpass/state/states/in_game/Arena.hpp"
+#include "smashorpass/state/states/in_game/DebugData.hpp"
 #include "smashorpass/state/states/in_game/Player.hpp"
 #include "smashorpass/state/states/in_game/ui/GameScreen.hpp"
 #include "smashorpass/state/states/in_game/ui/PauseScreen.hpp"
-#include "smashorpass/state/states/in_game/CombatSystem.hpp"
-#include "smashorpass/state/states/in_game/DebugData.hpp"
 
 namespace sop {
 
@@ -64,11 +63,18 @@ class InGameState final : public State {
     Result<void> AdjustToWindow(AppCtx& ctx);
 
     Result<void> TickGameLogic(AppCtx& ctx);
+    Result<void> SolveCollisions(AppCtx& ctx);
     Result<void> TickAnimation(AppCtx& ctx);
     Result<void> TickEffects(AppCtx& ctx, std::chrono::duration<float> dt);
+    Result<void> SolveCombat(AppCtx& ctx);
+    void SyncGameScreen();
+    Result<void> ResolveDeathsAndRespawns();
+    void StartNextRound(std::size_t winnerIndex);
+    void RestartRound();
 
     Result<void> RenderBackdrop(AppCtx& ctx);
     Result<void> RenderPlayers(AppCtx& ctx);
+    Result<void> RenderPlayerMarkers(AppCtx& ctx);
     Result<void> RenderEffects(AppCtx& ctx);
     Result<void> RenderForeground(AppCtx& ctx);
     Result<void> RenderArenaCollisionBoxes(AppCtx& ctx);
@@ -91,6 +97,7 @@ class InGameState final : public State {
     Clock::time_point m_PreviousUpdateTime;
     Clock::time_point m_PreviousGameLogicTick;
     Clock::time_point m_PreviousAnimationTick;
+    int m_CurrentRound = 1;
     bool m_Paused = false;
 };
 

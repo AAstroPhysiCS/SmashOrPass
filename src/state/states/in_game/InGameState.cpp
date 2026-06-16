@@ -7,7 +7,6 @@
 
 #include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/core/Base.hpp"
-#include "smashorpass/core/Color.hpp"
 #include "smashorpass/state/states/in_game/Defaults.hpp"
 #include "smashorpass/ui/UIBuilder.hpp"
 #include "smashorpass/util.hpp"
@@ -16,9 +15,9 @@ using Clock = std::chrono::steady_clock;
 
 namespace sop {
 
-constexpr int kGameLogicTicksPerSecond = 120; //120
+constexpr int kGameLogicTicksPerSecond = 120;  // 120
 constexpr int kGameLogicMaxCatchUpTicks = 10;
-constexpr int kAnimationTicksPerSecond = 60; //60
+constexpr int kAnimationTicksPerSecond = 60;  // 60
 constexpr int kAnimationMaxCatchUpTicks = 10;
 // Derived from above
 constexpr Clock::duration kGameLogicTickDuration =
@@ -43,8 +42,6 @@ InGameState::InGameState(AppCtx& ctx,
 }
 
 Result<void> InGameState::Initialize(AppCtx& ctx) {
-    constexpr float kDefaultPlayerHealth = 100.0f;
-
     Arena defaultArena{.asset = m_ArenaAsset, .dimensions = SDL_Rect{}};
     defaultArena.ResizeToWindow(ctx.displayMetrics.LogicalSize());
     m_Arena = defaultArena;
@@ -75,6 +72,7 @@ Result<void> InGameState::Initialize(AppCtx& ctx) {
     m_PlayerCombatDebugData.clear();
     m_PlayerCombatDebugData.resize(m_Players.size());
 
+    m_CurrentRound = 1;
     m_Paused = false;
     ResetFrameTimer();
     return Ok();
@@ -149,6 +147,18 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
         return Ok();
     }
 
+    // Game Logic
+    int gameLogicTicks = 0;
+    while (now - m_PreviousGameLogicTick >= kGameLogicTickDuration &&
+           gameLogicTicks < kGameLogicMaxCatchUpTicks) {
+        TRY_VOID(TickGameLogic(ctx));
+        m_PreviousGameLogicTick += kGameLogicTickDuration;
+        ++gameLogicTicks;
+    }
+    if (gameLogicTicks == kGameLogicMaxCatchUpTicks) {
+        m_PreviousGameLogicTick = now;
+    }
+
     // ---- Update Ticks
     // Animations
     int animationTicks = 0;
@@ -162,44 +172,29 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
         m_PreviousAnimationTick = now;
     }
 
-    // Game Logic
-    int gameLogicTicks = 0;
-    while (now - m_PreviousGameLogicTick >= kGameLogicTickDuration &&
-           gameLogicTicks < kGameLogicMaxCatchUpTicks) {
-        TRY_VOID(TickGameLogic(ctx));
-        m_PreviousGameLogicTick += kGameLogicTickDuration;
-        ++gameLogicTicks;
-    }
-    if (gameLogicTicks == kGameLogicMaxCatchUpTicks) {
-        m_PreviousGameLogicTick = now;
-    }
-
     // Effects (every frame)
     TRY_VOID(TickEffects(ctx, dt));
 
-    // TODO: clean up, maybe make viable for multiple players
-    for (auto& debugData : m_PlayerCombatDebugData) {
-        debugData = {};
-    }
-    int attackerIndex = 0;
-    int defenderIndex = 1;
-    Player& attacker = m_Players[0];
-    Player& defender = m_Players[1];
-    TRY(attackerHitBox, attacker.GetCurrentHitBox(ctx));
-    TRY(defenderHurtBox, defender.GetCurrentHurtBox(ctx));
-    if (attackerHitBox && defenderHurtBox) {
-        const HitResult hitResult = detectOverlap(*attackerHitBox, *defenderHurtBox, &m_PlayerCombatDebugData[attackerIndex], &m_PlayerCombatDebugData[defenderIndex]);
-    }
-    TRY(attacker2HitBox, defender.GetCurrentHitBox(ctx));
-    TRY(defender2HurtBox, attacker.GetCurrentHurtBox(ctx));
-    if (attacker2HitBox && defender2HurtBox) {
-        attackerIndex = 1;
-        defenderIndex = 0;
-        const HitResult hitResult = detectOverlap(*attacker2HitBox, *defender2HurtBox, &m_PlayerCombatDebugData[attackerIndex], &m_PlayerCombatDebugData[defenderIndex]);
-    }
+    TRY_VOID(SolveCombat(ctx));
+    TRY_VOID(ResolveDeathsAndRespawns());
 
+    SyncGameScreen();
     m_GameScreen.OnUpdate(ctx);
     return Ok();
+}
+
+void InGameState::SyncGameScreen() {
+    if (m_Players.size() < 2) {
+        return;
+    }
+
+    m_GameScreen.SetPlayersStats(m_Players[0].Health(),
+                                 m_Players[0].Stocks(),
+                                 m_Players[0].RoundsWon(),
+                                 m_Players[1].Health(),
+                                 m_Players[1].Stocks(),
+                                 m_Players[1].RoundsWon(),
+                                 m_CurrentRound);
 }
 
 Result<void> InGameState::OnRender(AppCtx& ctx) {
@@ -208,65 +203,10 @@ Result<void> InGameState::OnRender(AppCtx& ctx) {
     TRY_VOID(RenderPlayers(ctx));
     TRY_VOID(RenderEffects(ctx));
     TRY_VOID(RenderForeground(ctx));
+    TRY_VOID(RenderPlayerMarkers(ctx));
     TRY_VOID(RenderArenaCollisionBoxes(ctx));
     TRY_VOID(RenderDebugBoxes(ctx));
     TRY_VOID(RenderUi(ctx));
-    return Ok();
-}
-
-Result<void> InGameState::RenderDebugBoxes(AppCtx& ctx) {
-    if (!ctx.debugRender.renderPlayerBoxes) {
-        return Ok();
-    }
-
-    for (std::size_t i = 0; i < m_Players.size(); ++i) {
-        const PlayerDebugRenderOptions& debugOptions = m_PlayerDebugRenderOptions[i];
-        const PlayerCombatDebugData& debugData = m_PlayerCombatDebugData[i];
-
-        if (!debugOptions.enabled) {
-            continue;
-        }
-
-        if (debugOptions.collisionBox) {
-            TRY_VOID(m_Players[i].RenderCollisionBox(ctx, m_Arena));
-        }
-
-        if (debugOptions.hitBoxes) {
-            TRY_VOID(m_Players[i].RenderHitBoxes(ctx, m_Arena));
-        }
-
-        if (debugOptions.hurtBoxes) {
-            TRY_VOID(m_Players[i].RenderHurtBoxes(ctx, m_Arena));
-        }
-
-        if (debugOptions.combatHitBoxes) {
-            for (const SDL_FRect& rect : debugData.hitBoxBounds) {
-                TRY_VOID(ctx.renderer.DrawRect(
-                    MapBaselineRectToArena(rect, m_Arena.dimensions),
-                    Color{255, 0, 0, 255}));
-            }
-        }
-        
-        if (debugOptions.combatHurtBoxes) {
-            for (const SDL_FRect& rect : debugData.hurtBoxBounds) {
-                TRY_VOID(ctx.renderer.DrawRect(
-                    MapBaselineRectToArena(rect, m_Arena.dimensions),
-                    Color{0, 0, 255, 255}));
-            }
-        }
-        
-    }
-
-    for (const PlayerCombatDebugData& debugData : m_PlayerCombatDebugData) {
-        //if (debugData.spriteRect) {
-        //    TRY_VOID(ctx.renderer.DrawRect(
-        //        MapBaselineRectToArena(*debugData.spriteRect, m_Arena.dimensions),
-        //        Color{255, 255, 0, 255}));
-        //}
-
-        
-    }
-    
     return Ok();
 }
 
@@ -291,6 +231,33 @@ Result<void> InGameState::TickGameLogic(AppCtx& ctx) {
     for (Player& player : m_Players) {
         TRY_VOID(player.TickGameLogic(ctx, m_Arena));
     }
+
+    TRY_VOID(SolveCollisions(ctx));
+
+    return Ok();
+}
+
+Result<void> InGameState::SolveCollisions(AppCtx& ctx) {
+    for (Player& player : m_Players) {
+        TRY_VOID(player.SyncCollisionBodyToPosition(ctx));
+        player.ResetCollisionForTick();
+    }
+
+    for (Player& player : m_Players) {
+        TRY_VOID(player.ResolveArenaCollisionsForTick(ctx, m_Arena));
+    }
+    // for >2 players you may want to run this 2-3 times
+    for (std::size_t first = 0; first < m_Players.size(); ++first) {
+        for (std::size_t second = first + 1; second < m_Players.size(); ++second) {
+            TRY_VOID(m_Players[first].ResolveCollisionWithPlayerForTick(m_Players[second]));
+        }
+    }
+
+    for (Player& player : m_Players) {
+        player.ApplyCollisionBodyToPosition();
+        player.ApplyCollisionResult();
+    }
+
     return Ok();
 }
 
@@ -303,58 +270,6 @@ Result<void> InGameState::TickAnimation(AppCtx& ctx) {
 
 Result<void> InGameState::TickEffects(AppCtx& ctx, std::chrono::duration<float> dt) {
     ctx.particleSystem.Update(dt.count());
-    return Ok();
-}
-
-Result<void> InGameState::RenderBackdrop(AppCtx& ctx) {
-    TRY(arenaAsset, ctx.assets.GetAssetData(m_Arena.asset));
-
-    SDL_FRect rect{};
-    SDL_RectToFRect(&m_Arena.dimensions, &rect);
-    return ctx.renderer.DrawTexture(arenaAsset.get().m_Background.get(), rect);
-}
-
-Result<void> InGameState::RenderPlayers(AppCtx& ctx) {
-    for (const Player& player : m_Players) {
-        TRY_VOID(player.Render(ctx, m_Arena));
-    }
-    return Ok();
-}
-
-Result<void> InGameState::RenderEffects(AppCtx& ctx) {
-    return ctx.particleSystem.Render(ctx);
-}
-
-Result<void> InGameState::RenderForeground(AppCtx& ctx) {
-    TRY(arenaAsset, ctx.assets.GetAssetData(m_Arena.asset));
-
-    SDL_FRect rect{};
-    SDL_RectToFRect(&m_Arena.dimensions, &rect);
-    return ctx.renderer.DrawTexture(arenaAsset.get().m_Foreground.get(), rect);
-}
-
-Result<void> InGameState::RenderArenaCollisionBoxes(AppCtx& ctx) {
-    if (!ctx.debugRender.renderArenaCollisionBoxes) {
-        return Ok();
-    }
-
-    TRY(arenaAsset, ctx.assets.GetAssetData(m_Arena.asset));
-
-    for (const SDL_FRect& collisionBox : arenaAsset.get().m_CollisionBoxes) {
-        TRY_VOID(ctx.renderer.DrawRect(MapBaselineRectToArena(collisionBox, m_Arena.dimensions),
-                                       Color{0, 255, 0, 255}));
-    }
-
-    return Ok();
-}
-
-Result<void> InGameState::RenderUi(AppCtx& ctx) {
-    TRY_VOID(m_GameScreen.OnRender(ctx));
-
-    if (m_Paused) {
-        TRY_VOID(m_PauseScreen.OnRender(ctx));
-    }
-
     return Ok();
 }
 

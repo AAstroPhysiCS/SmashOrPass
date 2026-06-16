@@ -10,9 +10,9 @@
 #include <unordered_map>
 #include <vector>
 
+#include "smashorpass/asset/assets/CharacterCombatData.hpp"
 #include "smashorpass/asset/effects/CharacterFrameEffectMask.hpp"
 #include "smashorpass/util.hpp"
-#include "smashorpass/asset/assets/CharacterCombatData.hpp"
 
 namespace sop {
 
