@@ -6,9 +6,9 @@
 #include <SDL3/SDL.h>
 
 #include "smashorpass/state/states/in_game/CombatSystem.hpp"
+#include "smashorpass/state/states/in_game/Defaults.hpp"
 
 namespace sop {
-constexpr float kPlayerScaaale = 0.4f;
 
 namespace {
 
@@ -58,10 +58,10 @@ IntersectionInfo intersects(const SDL_FRect& hitbox, const SDL_FRect& hurtbox) {
 }
 
 SDL_FRect transformRectToWorldspace(const SDL_FRect& localRect, const SDL_FRect& spriteRect, const bool isFacingRight) {
-    const float scaledX = localRect.x * kPlayerScaaale;
-    const float scaledY = localRect.y * kPlayerScaaale;
-    const float scaledW = localRect.w * kPlayerScaaale;
-    const float scaledH = localRect.h * kPlayerScaaale;
+    const float scaledX = localRect.x * kPlayerScale;
+    const float scaledY = localRect.y * kPlayerScale;
+    const float scaledW = localRect.w * kPlayerScale;
+    const float scaledH = localRect.h * kPlayerScale;
     
     return SDL_FRect{
         isFacingRight 
@@ -79,16 +79,16 @@ SDL_Point transformPointToWorldSpace(
     const SDL_FRect& worldBounds,
     const bool isFacingRight
 ) {
-    const float scaledBoundsX = localBounds.x * kPlayerScaaale;
-    const float scaledBoundsY = localBounds.y * kPlayerScaaale;
-    const float scaledBoundsW = localBounds.w * kPlayerScaaale;
-    const float scaledPointX = static_cast<float>(localPoint.x) * kPlayerScaaale;
-    const float scaledPointY = static_cast<float>(localPoint.y) * kPlayerScaaale;
+    const float scaledBoundsX = localBounds.x * kPlayerScale;
+    const float scaledBoundsY = localBounds.y * kPlayerScale;
+    const float scaledBoundsW = localBounds.w * kPlayerScale;
+    const float scaledPointX = static_cast<float>(localPoint.x) * kPlayerScale;
+    const float scaledPointY = static_cast<float>(localPoint.y) * kPlayerScale;
 
     return SDL_Point{
         static_cast<int>(std::lround(
             isFacingRight
-                ? worldBounds.x + worldBounds.w - scaledBoundsX - scaledPointX - kPlayerScaaale
+                ? worldBounds.x + worldBounds.w - scaledBoundsX - scaledPointX - kPlayerScale
                 : worldBounds.x + scaledBoundsX + scaledPointX
         )),
         static_cast<int>(std::lround(worldBounds.y + scaledBoundsY + scaledPointY)),
@@ -112,16 +112,16 @@ SDL_FRect getHitboxRect(
     int endBucketY
 ) {
     const float bucketLocalLeft =
-    static_cast<float>(startBucketX * attackHitBox.m_GridData.cellSize) * kPlayerScaaale;
+    static_cast<float>(startBucketX * attackHitBox.m_GridData.cellSize) * kPlayerScale;
     const float bucketLocalTop =
-        static_cast<float>(startBucketY * attackHitBox.m_GridData.cellSize) * kPlayerScaaale;
+        static_cast<float>(startBucketY * attackHitBox.m_GridData.cellSize) * kPlayerScale;
     const float bucketLocalRight = std::min(
-        static_cast<float>((endBucketX + 1) * attackHitBox.m_GridData.cellSize) * kPlayerScaaale,
-        attackHitBox.m_GridData.bounds.w * kPlayerScaaale
+        static_cast<float>((endBucketX + 1) * attackHitBox.m_GridData.cellSize) * kPlayerScale,
+        attackHitBox.m_GridData.bounds.w * kPlayerScale
     );
     const float bucketLocalBottom = std::min(
-        static_cast<float>((endBucketY + 1) * attackHitBox.m_GridData.cellSize) * kPlayerScaaale,
-        attackHitBox.m_GridData.bounds.h * kPlayerScaaale
+        static_cast<float>((endBucketY + 1) * attackHitBox.m_GridData.cellSize) * kPlayerScale,
+        attackHitBox.m_GridData.bounds.h * kPlayerScale
     );
 
     return SDL_FRect{
@@ -153,7 +153,7 @@ std::vector<int> getOrderedBuckets(
     orderedBuckets.reserve((endBucketX - startBucketX + 1) * (endBucketY - startBucketY + 1));
 
     const float cellSize =
-        static_cast<float>(defenderSubHurtBox.m_GridData.cellSize) * kPlayerScaaale;
+        static_cast<float>(defenderSubHurtBox.m_GridData.cellSize) * kPlayerScale;
 
     for (int bucketY = startBucketY; bucketY <= endBucketY; bucketY++) {
         for (int bucketX = startBucketX; bucketX <= endBucketX; bucketX++) {
@@ -214,7 +214,7 @@ DefinedHitbox defineHitbox(
     std::vector<uint8_t> neededBuckets(totalBuckets, 0);
     std::unordered_map<int, SDL_FRect> bucketRectsByHurtValue;
     const float scaledCellSize =
-        static_cast<float>(attackerHitBox.m_GridData.cellSize) * kPlayerScaaale;
+        static_cast<float>(attackerHitBox.m_GridData.cellSize) * kPlayerScale;
 
     for (const auto& [value, subHurtBox] : defenderHurtBox.m_SubHurtBoxes) {
         const SDL_FRect subWorldBounds = transformRectToWorldspace(subHurtBox.m_GridData.bounds, defenderSpriteRect, defenderFacingRight);
@@ -323,7 +323,7 @@ bool checkIfHurtBoxWasHit(
     std::vector<uint8_t> neededBuckets(totalBuckets, 0);
 
     const float scaledCellSize =
-        static_cast<float>(defenderSubHurtBox.m_GridData.cellSize) * kPlayerScaaale;
+        static_cast<float>(defenderSubHurtBox.m_GridData.cellSize) * kPlayerScale;
     //hitboxRect
     const IntersectionInfo intersection = intersects(defenderWorldBounds, hitboxRect);
     if (!intersection.overlaps) {
@@ -438,8 +438,8 @@ HitResult detectOverlap(
             defenderFacingRight
         );
     SDL_FRect fixAttacker = SDL_FRect{
-        attackerSpriteRect.x - attackerSpriteRect.w * kPlayerScaaale,
-        attackerSpriteRect.y - attackerSpriteRect.h * kPlayerScaaale,
+        attackerSpriteRect.x - attackerSpriteRect.w * kPlayerScale,
+        attackerSpriteRect.y - attackerSpriteRect.h * kPlayerScale,
         attackerSpriteRect.w,
         attackerSpriteRect.h
     };

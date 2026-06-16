@@ -8,10 +8,9 @@
 #include "smashorpass/asset/effects/CharacterFrameEffectMask.hpp"
 #include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/util.hpp"
+#include "smashorpass/state/states/in_game/Defaults.hpp"
 
 namespace sop {
-
-constexpr float kPlayerScale = 0.4f;
 
 Player::Player(int playerId,
                Asset<CharacterAssetData> asset,
@@ -388,8 +387,6 @@ namespace {
 SDL_FRect TransformRectToWorldspace(const SDL_FRect& localRect,
                                     const SDL_FRect& spriteRect,
                                     bool facingRight) {
-    constexpr float kPlayerScale = 0.4f;
-
     const float scaledX = localRect.x * kPlayerScale;
     const float scaledY = localRect.y * kPlayerScale;
     const float scaledW = localRect.w * kPlayerScale;
