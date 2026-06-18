@@ -222,16 +222,36 @@ class AssetManager {
 
     template <typename AssetData>
     Result<void> WaitUntilActuallyLoaded(const Asset<AssetData>& asset) {
-        // TODO: just do something else than waiting... temporarily only!!!!!!
         while (true) {
-            Update();
-
+            // Check if asset is loaded
             TRY(loaded, IsAssetActuallyLoaded(asset));
             if (loaded) {
                 return Ok();
             }
 
-            std::this_thread::yield();
+            // Get next raw asset data
+            auto rawAsset = m_QueueRawAssets.Recv();
+            if (!rawAsset)
+                continue;
+
+            // Fill in asset data
+            if (rawAsset->assetType == nullptr) {
+                continue;
+            }
+
+            auto storedAssetIt = m_StoredAssets.find(rawAsset->id);
+            if (storedAssetIt == m_StoredAssets.end()) {
+                continue;
+            }
+
+            StoredAsset& storedAsset = storedAssetIt->second;
+            if (storedAsset.typeInfo != rawAsset->assetType->assetDataType) {
+                continue;
+            }
+
+            storedAsset.data =
+                rawAsset->assetType->toAssetData(m_Ctx, rawAsset->rawAssetData.get());
+            storedAsset.actuallyLoaded = true;
         }
     }
 

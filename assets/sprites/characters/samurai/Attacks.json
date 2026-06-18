@@ -17,6 +17,16 @@
         "y": 0,
         "width": 371,
         "height": 285
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 10,
+          "y": -2
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -32,6 +42,16 @@
         "y": 0,
         "width": 372,
         "height": 285
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 10,
+          "y": -3
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -47,6 +67,16 @@
         "y": 0,
         "width": 362,
         "height": 283
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 9,
+          "y": -4
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -62,6 +92,16 @@
         "y": 0,
         "width": 310,
         "height": 277
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 9,
+          "y": -4
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -92,6 +132,16 @@
         "y": 0,
         "width": 250,
         "height": 262
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 8,
+          "y": -5
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -107,6 +157,16 @@
         "y": 0,
         "width": 390,
         "height": 292
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 8,
+          "y": -6
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -122,6 +182,16 @@
         "y": 0,
         "width": 446,
         "height": 297
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 7,
+          "y": -7
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -137,6 +207,16 @@
         "y": 0,
         "width": 539,
         "height": 384
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 7,
+          "y": -8
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -152,6 +232,16 @@
         "y": 0,
         "width": 612,
         "height": 463
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 6,
+          "y": -8
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -167,6 +257,16 @@
         "y": 0,
         "width": 640,
         "height": 503
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 6,
+          "y": -9
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -182,6 +282,16 @@
         "y": 0,
         "width": 640,
         "height": 510
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 5,
+          "y": -10
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -197,6 +307,16 @@
         "y": 0,
         "width": 632,
         "height": 503
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 5,
+          "y": -10
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -212,6 +332,16 @@
         "y": 0,
         "width": 560,
         "height": 504
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 4,
+          "y": -10
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -227,6 +357,16 @@
         "y": 0,
         "width": 454,
         "height": 517
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 4,
+          "y": -9
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -242,6 +382,16 @@
         "y": 0,
         "width": 356,
         "height": 534
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 3,
+          "y": -9
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -257,6 +407,16 @@
         "y": 0,
         "width": 295,
         "height": 535
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 2,
+          "y": -8
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -272,6 +432,16 @@
         "y": 0,
         "width": 247,
         "height": 522
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 1,
+          "y": -8
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -287,6 +457,16 @@
         "y": 0,
         "width": 256,
         "height": 505
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 1,
+          "y": -7
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -302,6 +482,16 @@
         "y": 0,
         "width": 255,
         "height": 501
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": 0,
+          "y": -7
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -317,6 +507,16 @@
         "y": 0,
         "width": 242,
         "height": 491
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": -1,
+          "y": -6
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -332,6 +532,16 @@
         "y": 0,
         "width": 234,
         "height": 480
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": -1,
+          "y": -6
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -347,6 +557,16 @@
         "y": 0,
         "width": 247,
         "height": 486
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": -2,
+          "y": -5
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -362,6 +582,16 @@
         "y": 0,
         "width": 316,
         "height": 478
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": -3,
+          "y": -5
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -377,6 +607,16 @@
         "y": 0,
         "width": 448,
         "height": 440
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": -4,
+          "y": -4
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -392,6 +632,16 @@
         "y": 0,
         "width": 508,
         "height": 404
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": -4,
+          "y": -4
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -407,6 +657,16 @@
         "y": 0,
         "width": 386,
         "height": 445
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": -5,
+          "y": -3
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -422,6 +682,16 @@
         "y": 0,
         "width": 382,
         "height": 447
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": -6,
+          "y": -3
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -437,6 +707,16 @@
         "y": 0,
         "width": 324,
         "height": 442
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": -6,
+          "y": -2
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -452,6 +732,16 @@
         "y": 0,
         "width": 432,
         "height": 413
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": -7,
+          "y": -2
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -482,6 +772,16 @@
         "y": 0,
         "width": 352,
         "height": 286
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": -8,
+          "y": -1
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -497,6 +797,16 @@
         "y": 0,
         "width": 412,
         "height": 277
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": -9,
+          "y": -1
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -512,6 +822,16 @@
         "y": 0,
         "width": 568,
         "height": 279
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": -9,
+          "y": 0
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {
@@ -527,6 +847,16 @@
         "y": 0,
         "width": 666,
         "height": 286
+      },
+      "attack": {
+        "id": 1,
+        "damage": 3,
+        "knockback": {
+          "x": -10,
+          "y": 0
+        },
+        "hitstunTicks": 18,
+        "hitCooldownTicks": 20
       }
     },
     {

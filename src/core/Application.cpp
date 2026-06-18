@@ -148,11 +148,15 @@ Result<void> Application::OnEvent(const Event& event) {
 
                             TRY(inGameState,
                                 ctx.stateManager.ResetToState<InGameState>(
-                                    ctx, navigation.ArenaAsset, navigation.CharacterAssets));
+                                    ctx,
+                                    navigation.ArenaAsset,
+                                    navigation.CharacterAssets,
+                                    navigation.Mode));
                             (void)inGameState;
 
                             return Ok();
                         }
+                        case NavigationAction::ShowGameModeSelect:
                         case NavigationAction::ShowCharacterSelect:
                         case NavigationAction::ResumeMatch:
                             return Ok();

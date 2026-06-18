@@ -7,61 +7,10 @@
 
 #include "smashorpass/asset/effects/CharacterFrameEffectMask.hpp"
 #include "smashorpass/core/AppCtx.hpp"
+#include "smashorpass/state/states/in_game/Defaults.hpp"
 #include "smashorpass/util.hpp"
 
 namespace sop {
-
-constexpr float kPlayerScale = 0.4f;
-constexpr float kGravity = 0.28f;
-constexpr float kJumpVelocity = -10.0f;
-constexpr float kGroundProbeDistance = 5.0f;
-constexpr float kWalkSpeed = 5.0f;
-constexpr int kDashTicks = 20;
-constexpr int kDashCooldownTicks = 54;
-constexpr float kDashSpeed = 11.0f;
-
-[[nodiscard]] bool IsActionHeld(const Input& input,
-                                const InputTranslationHelper<InputAction>& translation,
-                                InputAction action) {
-    const auto* keys = translation.GetKeysForAction(action);
-    if (keys == nullptr) {
-        return false;
-    }
-
-    for (SDL_Keycode key : *keys) {
-        if (input.GetKeyPressInfo(key)) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-[[nodiscard]] bool HasQueuedAction(const std::vector<InputAction>& inputQueue, InputAction action) {
-    for (const InputAction queuedAction : inputQueue) {
-        if (queuedAction == action) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-[[nodiscard]] SDL_FPoint SmallestPushOutOf(const SDL_FRect& player, const SDL_FRect& solid) {
-    const float pushLeft = solid.x - (player.x + player.w);
-    const float pushRight = solid.x + solid.w - player.x;
-    const float pushUp = solid.y - (player.y + player.h);
-    const float pushDown = solid.y + solid.h - player.y;
-
-    const float horizontalPush = std::abs(pushLeft) < std::abs(pushRight) ? pushLeft : pushRight;
-    const float verticalPush = std::abs(pushUp) < std::abs(pushDown) ? pushUp : pushDown;
-
-    if (std::abs(verticalPush) <= std::abs(horizontalPush)) {
-        return SDL_FPoint{.x = 0.0f, .y = verticalPush};
-    }
-
-    return SDL_FPoint{.x = horizontalPush, .y = 0.0f};
-}
 
 Player::Player(int playerId,
                Asset<CharacterAssetData> asset,
@@ -74,31 +23,41 @@ Player::Player(int playerId,
       m_InputTranslationHelper(std::move(inputTranslationHelper)),
       m_Position(position),
       m_FacingRight(facingRight),
-      m_State(PlayerState::IDLE),
-      m_Health(health) {}
+      m_State(PlayerActionState::IDLE),
+      m_MovementConfig{},
+      m_MovementState{},
+      m_Health(health) {
+    m_MovementState.FacingRight = facingRight;
+}
 
 Result<CharacterAnimation> Player::GetAnimationToShow(AppCtx& ctx, const Arena& arena) const {
+    (void)ctx;
+    (void)arena;
+
     switch (m_State) {
-        case PlayerState::ATTACKING:
+        case PlayerActionState::ATTACKING:
             return Ok(CharacterAnimation::Attacks);
-        case PlayerState::DASHING:
+        case PlayerActionState::DASHING:
             return Ok(CharacterAnimation::Dash);
-        case PlayerState::IDLE:
-        case PlayerState::RUNNING:
+        case PlayerActionState::HITSTUN:
+            return Ok(CharacterAnimation::Idle);
+        case PlayerActionState::IDLE:
+        case PlayerActionState::RUNNING:
             break;
     }
 
-    TRY(onGround, IsOnGround(ctx, arena));
-    if (!onGround) {
-        return Ok(m_VelocityY < 0.0f ? CharacterAnimation::Ascending : CharacterAnimation::Falling);
+    if (!m_MovementState.Grounded) {
+        return Ok(m_MovementState.Velocity.y < 0.0f ? CharacterAnimation::Ascending
+                                                    : CharacterAnimation::Falling);
     }
 
     switch (m_State) {
-        case PlayerState::RUNNING:
+        case PlayerActionState::RUNNING:
             return Ok(CharacterAnimation::Walk);
-        case PlayerState::IDLE:
-        case PlayerState::ATTACKING:
-        case PlayerState::DASHING:
+        case PlayerActionState::IDLE:
+        case PlayerActionState::ATTACKING:
+        case PlayerActionState::DASHING:
+        case PlayerActionState::HITSTUN:
             return Ok(CharacterAnimation::Idle);
     }
 
@@ -125,36 +84,134 @@ std::optional<SDL_FRect> Player::GetBaselineSpriteRect(
     };
 }
 
+SDL_FPoint Player::CollisionAnchorOffsetForFacing() const {
+    return m_FacingRight ? m_FlippedCollisionAnchorOffset : m_CollisionAnchorOffset;
+}
+
+Result<void> Player::EnsureCollisionProfile(AppCtx& ctx) const {
+    // Collision Body is currently only initialized once
+    if (m_CollisionProfileInitialized) {
+        return Ok();
+    }
+
+    TRY(asset, ctx.assets.GetAssetData(m_Asset));
+
+    const auto sheet = asset.get().m_SpriteSheets.find(CharacterAnimation::Idle);
+    if (sheet == asset.get().m_SpriteSheets.end() || sheet->second.m_Frames.empty()) {
+        return Ok();
+    }
+
+    const CharacterSpriteSheetFrame& frame = sheet->second.m_Frames.front();
+    const SDL_FRect collisionBox = frame.m_CollisionBox;
+    if (collisionBox.w <= 0.0f || collisionBox.h <= 0.0f) {
+        return Ok();
+    }
+
+    const float anchorX = static_cast<float>(frame.m_Anchor.x);
+    const float anchorY = static_cast<float>(frame.m_Anchor.y);
+
+    m_CollisionBody.Rect.w = collisionBox.w * kPlayerScale;
+    m_CollisionBody.Rect.h = collisionBox.h * kPlayerScale;
+    m_CollisionBody.Dynamic = true;
+    m_CollisionBody.Weight = 100.0f;
+    m_CollisionAnchorOffset = SDL_FPoint{
+        .x = (anchorX - collisionBox.x) * kPlayerScale,
+        .y = (anchorY - collisionBox.y) * kPlayerScale,
+    };
+    m_FlippedCollisionAnchorOffset = SDL_FPoint{
+        .x = (collisionBox.x + collisionBox.w - anchorX) * kPlayerScale,
+        .y = m_CollisionAnchorOffset.y,
+    };
+    m_CollisionProfileInitialized = true;
+    SyncCollisionBodyToAnchor();
+
+    return Ok();
+}
+
+void Player::SyncCollisionBodyToAnchor() const {
+    if (!m_CollisionProfileInitialized) {
+        return;
+    }
+
+    const SDL_FPoint offset = CollisionAnchorOffsetForFacing();
+    m_CollisionBody.Rect.x = m_Position.x - offset.x;
+    m_CollisionBody.Rect.y = m_Position.y - offset.y;
+}
+
 Result<std::optional<SDL_FRect>> Player::GetBaselineCollisionBox(AppCtx& ctx) const {
+    TRY_VOID(EnsureCollisionProfile(ctx));
+    if (!m_CollisionProfileInitialized) {
+        return Ok(std::optional<SDL_FRect>{});
+    }
+
+    SyncCollisionBodyToAnchor();
+    return Ok(std::optional<SDL_FRect>{m_CollisionBody.Rect});
+}
+
+Result<std::optional<SDL_FPoint>> Player::GetBaselineMarkerAnchor(AppCtx& ctx) const {
+    TRY(collisionBox, GetBaselineCollisionBox(ctx));
+    if (!collisionBox) {
+        return Ok(std::optional<SDL_FPoint>{});
+    }
+
+    return Ok(SDL_FPoint{
+        .x = collisionBox->x + collisionBox->w * 0.5f,
+        .y = collisionBox->y,
+    });
+}
+
+Result<std::optional<WorldHitBox>> Player::GetCurrentHitBox(AppCtx& ctx) const {
     TRY(asset, ctx.assets.GetAssetData(m_Asset));
 
     const auto sheet = asset.get().m_SpriteSheets.find(m_CurrentAnimation);
     if (sheet == asset.get().m_SpriteSheets.end() || sheet->second.m_Frames.empty()) {
-        return Ok(std::optional<SDL_FRect>{});
+        return Ok(std::nullopt);
     }
 
     const std::vector<CharacterSpriteSheetFrame>& frames = sheet->second.m_Frames;
     const CharacterSpriteSheetFrame& frame =
         frames[static_cast<std::size_t>(m_CurrentAnimationFrame) % frames.size()];
-    const SDL_FRect collisionBox = frame.m_CollisionBox;
-    if (collisionBox.w <= 0.0f || collisionBox.h <= 0.0f) {
-        return Ok(std::optional<SDL_FRect>{});
+    const HitBox& hitBox = frame.m_HitBox;
+    if (IsEmpty(hitBox)) {
+        return Ok(std::nullopt);
     }
 
-    std::optional<SDL_FRect> spriteRect = GetBaselineSpriteRect(frame);
+    const std::optional<SDL_FRect> spriteRect = GetBaselineSpriteRect(frame);
     if (!spriteRect) {
-        return Ok(std::optional<SDL_FRect>{});
+        return Ok(std::nullopt);
+    }
+    // need: facingRight, Position, Hitbox
+    // const int worldX = spriteRect.value().x + hitBox.m_GridData.bounds.x * kPlayerScale;
+    // const int worldY = spriteRect.value().y + hitBox.m_GridData.bounds.y * kPlayerScale;
+
+    return Ok(WorldHitBox{hitBox, *spriteRect, m_FacingRight});
+}
+
+Result<std::optional<WorldHurtBox>> Player::GetCurrentHurtBox(AppCtx& ctx) const {
+    TRY(asset, ctx.assets.GetAssetData(m_Asset));
+
+    const auto sheet = asset.get().m_SpriteSheets.find(m_CurrentAnimation);
+    if (sheet == asset.get().m_SpriteSheets.end() || sheet->second.m_Frames.empty()) {
+        return Ok(std::nullopt);
     }
 
-    const float collisionX =
-        m_FacingRight ? frame.m_Location.w - collisionBox.x - collisionBox.w : collisionBox.x;
+    const std::vector<CharacterSpriteSheetFrame>& frames = sheet->second.m_Frames;
+    const CharacterSpriteSheetFrame& frame =
+        frames[static_cast<std::size_t>(m_CurrentAnimationFrame) % frames.size()];
+    const HurtBox& hurtBox = frame.m_HurtBox;
+    if (IsEmpty(hurtBox)) {
+        return Ok(std::nullopt);
+    }
 
-    return Ok(std::optional<SDL_FRect>{SDL_FRect{
-        .x = spriteRect->x + collisionX * kPlayerScale,
-        .y = spriteRect->y + collisionBox.y * kPlayerScale,
-        .w = collisionBox.w * kPlayerScale,
-        .h = collisionBox.h * kPlayerScale,
-    }});
+    const std::optional<SDL_FRect> spriteRect = GetBaselineSpriteRect(frame);
+    if (!spriteRect) {
+        return Ok(std::nullopt);
+    }
+    // need: facingRight, Position, Hitbox
+    // const int worldX = spriteRect.value().x + hitBox.m_GridData.bounds.x * kPlayerScale;
+    // const int worldY = spriteRect.value().y + hitBox.m_GridData.bounds.y * kPlayerScale;
+
+    return Ok(WorldHurtBox{hurtBox, *spriteRect, m_FacingRight});
 }
 
 Result<void> Player::OnEvent(AppCtx& ctx, const Event& event) {
@@ -172,130 +229,10 @@ Result<void> Player::OnEvent(AppCtx& ctx, const Event& event) {
     return Ok();
 }
 
-Result<void> Player::TickGameLogic(AppCtx& ctx, const Arena& arena) {
-    // Apply user input
-    const bool jumpRequested = HasQueuedAction(m_InputQueue, InputAction::JUMP);
-    const bool dashRequested = HasQueuedAction(m_InputQueue, InputAction::DASH);
-    const bool moveLeft = IsActionHeld(ctx.input, m_InputTranslationHelper, InputAction::MOVE_LEFT);
-    const bool moveRight =
-        IsActionHeld(ctx.input, m_InputTranslationHelper, InputAction::MOVE_RIGHT);
-    const bool attackHeld = IsActionHeld(ctx.input, m_InputTranslationHelper, InputAction::ATTACK);
-
-    m_InputQueue.clear();
-
-    if (m_DashCooldownTicksRemaining > 0) {
-        --m_DashCooldownTicksRemaining;
-    }
-
-    TRY(onGround, IsOnGround(ctx, arena));
-    if (onGround) {
-        m_AirDashAvailable = true;
-        m_DashJumpAvailable = false;
-    }
-
-    if (dashRequested && m_DashTicksRemaining == 0 && m_DashCooldownTicksRemaining == 0 &&
-        (onGround || m_AirDashAvailable)) {
-        if (moveLeft != moveRight) {
-            m_DashDirection = moveLeft ? -1.0f : 1.0f;
-        } else {
-            m_DashDirection = m_FacingRight ? 1.0f : -1.0f;
-        }
-
-        m_FacingRight = m_DashDirection > 0.0f;
-        m_DashTicksRemaining = kDashTicks;
-        m_DashCooldownTicksRemaining = kDashCooldownTicks;
-        m_VelocityY = 0.0f;
-
-        if (!onGround) {
-            m_AirDashAvailable = false;
-            m_DashJumpAvailable = true;
-        }
-    }
-
-    if (m_DashTicksRemaining > 0) {
-        m_Position.x += m_DashDirection * kDashSpeed;
-        m_VelocityY = 0.0f;
-        --m_DashTicksRemaining;
-        m_State = PlayerState::DASHING;
-    } else if (attackHeld) {
-        m_State = PlayerState::ATTACKING;
-    } else if (moveLeft != moveRight) {
-        const float direction = moveLeft ? -1.0f : 1.0f;
-        m_Position.x += direction * kWalkSpeed;
-        m_FacingRight = direction > 0.0f;
-        m_State = PlayerState::RUNNING;
-    } else {
-        m_State = PlayerState::IDLE;
-    }
-
-    if (m_State != PlayerState::DASHING && !attackHeld && jumpRequested) {
-        if (onGround) {
-            m_VelocityY = kJumpVelocity;
-        } else if (m_DashJumpAvailable) {
-            m_VelocityY = kJumpVelocity;
-            m_DashJumpAvailable = false;
-        }
-    }
-
-    // Apply gravity
-    if (m_State != PlayerState::DASHING) {
-        m_VelocityY += kGravity;
-        m_Position.y += m_VelocityY;
-    }
-
-    // Collision handling
-    TRY(arenaAsset, ctx.assets.GetAssetData(arena.asset));
-
-    TRY(playerCollisionBox, GetBaselineCollisionBox(ctx));
-    if (!playerCollisionBox) {
-        return Ok();
-    }
-
-    const std::vector<SDL_FRect>& solidBoxes = arenaAsset.get().m_CollisionBoxes;
-    const std::size_t maxPasses = solidBoxes.size() * 2;
-    for (std::size_t pass = 0; pass < maxPasses; ++pass) {
-        bool moved = false;
-
-        for (const SDL_FRect& solidBox : solidBoxes) {
-            if (!SDL_HasRectIntersectionFloat(&*playerCollisionBox, &solidBox)) {
-                continue;
-            }
-
-            const SDL_FPoint push = SmallestPushOutOf(*playerCollisionBox, solidBox);
-            m_Position.x += push.x;
-            m_Position.y += push.y;
-            playerCollisionBox->x += push.x;
-            playerCollisionBox->y += push.y;
-
-            if (push.y < 0.0f && m_VelocityY > 0.0f) {
-                m_VelocityY = 0.0f;
-            } else if (push.y > 0.0f && m_VelocityY < 0.0f) {
-                m_VelocityY = 0.0f;
-            }
-
-            moved = true;
-        }
-
-        if (!moved) {
-            break;
-        }
-    }
-
-    TRY(onGroundAfterCollision, IsOnGround(ctx, arena));
-    if (onGroundAfterCollision) {
-        m_AirDashAvailable = true;
-        m_DashJumpAvailable = false;
-    } else if (m_State == PlayerState::DASHING && m_AirDashAvailable) {
-        m_DashJumpAvailable = true;
-    }
-
-    return Ok();
-}
-
 Vec2 Player::LocalFramePointToBaselinePoint(const CharacterSpriteSheetFrame& frame,
                                             const SDL_FRect& spriteRect,
-                                            Vec2 localPoint,
-                                            bool facingRight) {
+                                            const Vec2 localPoint,
+                                            const bool facingRight) {
     const float localX = facingRight ? frame.m_Location.w - localPoint.x : localPoint.x;
 
     return Vec2{
@@ -304,7 +241,7 @@ Vec2 Player::LocalFramePointToBaselinePoint(const CharacterSpriteSheetFrame& fra
     };
 }
 
-Vec2 Player::MapBaselinePointToArenaPoint(Vec2 point, const SDL_Rect& arenaDimensions) {
+Vec2 Player::MapBaselinePointToArenaPoint(const Vec2 point, const SDL_Rect& arenaDimensions) {
     const SDL_FRect mapped = MapBaselineRectToArena(
         SDL_FRect{
             .x = point.x,
@@ -365,7 +302,7 @@ Result<void> Player::DispatchSwordFrameEffects(AppCtx& ctx,
             .Velocity =
                 Vec2{
                     m_FacingRight ? 90.0f : -90.0f,
-                    m_VelocityY - 120.0f,
+                    m_MovementState.Velocity.y - 120.0f,
                 },
             .FacingRight = m_FacingRight,
             .Strength = 1.0f,
@@ -409,25 +346,6 @@ Result<void> Player::TickAnimations(AppCtx& ctx, const Arena& arena) {
     return Ok();
 }
 
-Result<bool> Player::IsOnGround(AppCtx& ctx, const Arena& arena) const {
-    TRY(arenaAsset, ctx.assets.GetAssetData(arena.asset));
-
-    TRY(playerCollisionBox, GetBaselineCollisionBox(ctx));
-    if (!playerCollisionBox) {
-        return Ok(false);
-    }
-
-    playerCollisionBox->y += kGroundProbeDistance;
-
-    for (const SDL_FRect& solidBox : arenaAsset.get().m_CollisionBoxes) {
-        if (SDL_HasRectIntersectionFloat(&*playerCollisionBox, &solidBox)) {
-            return Ok(true);
-        }
-    }
-
-    return Ok(false);
-}
-
 Result<void> Player::Render(AppCtx& ctx, const Arena& arena) const {
     TRY(asset, ctx.assets.GetAssetData(m_Asset));
 
@@ -441,7 +359,7 @@ Result<void> Player::Render(AppCtx& ctx, const Arena& arena) const {
     const CharacterSpriteSheetFrame& frame =
         frames[static_cast<std::size_t>(m_CurrentAnimationFrame) % frames.size()];
     const SDL_FRect src = frame.m_Location;
-    std::optional<SDL_FRect> spriteRect = GetBaselineSpriteRect(frame);
+    const std::optional<SDL_FRect> spriteRect = GetBaselineSpriteRect(frame);
     if (!spriteRect) {
         return Ok();
     }
@@ -462,6 +380,61 @@ Result<void> Player::RenderCollisionBox(AppCtx& ctx, const Arena& arena) const {
 
     return ctx.renderer.DrawRect(MapBaselineRectToArena(*collisionBox, arena.dimensions),
                                  Color{255, 230, 0, 255});
+}
+
+namespace {
+
+SDL_FRect TransformRectToWorldspace(const SDL_FRect& localRect,
+                                    const SDL_FRect& spriteRect,
+                                    bool facingRight) {
+    const float scaledX = localRect.x * kPlayerScale;
+    const float scaledY = localRect.y * kPlayerScale;
+    const float scaledW = localRect.w * kPlayerScale;
+    const float scaledH = localRect.h * kPlayerScale;
+
+    return SDL_FRect{
+        .x = facingRight ? (spriteRect.x + spriteRect.w - scaledX - scaledW)
+                         : (spriteRect.x + scaledX),
+        .y = spriteRect.y + scaledY,
+        .w = scaledW,
+        .h = scaledH,
+    };
+}
+
+}  // namespace
+
+Result<void> Player::RenderHitBoxes(AppCtx& ctx, const Arena& arena) const {
+    TRY(worldHitBox, GetCurrentHitBox(ctx));
+    if (!worldHitBox) {
+        return Ok();
+    }
+
+    const SDL_FRect worldRect =
+        TransformRectToWorldspace(worldHitBox->hitBox.get().m_GridData.bounds,
+                                  worldHitBox->spriteRect,
+                                  worldHitBox->facingRight);
+
+    return ctx.renderer.DrawRect(MapBaselineRectToArena(worldRect, arena.dimensions),
+                                 Color{255, 0, 0, 255});
+}
+
+Result<void> Player::RenderHurtBoxes(AppCtx& ctx, const Arena& arena) const {
+    TRY(worldHurtBox, GetCurrentHurtBox(ctx));
+    if (!worldHurtBox) {
+        return Ok();
+    }
+
+    for (const auto& [value, subHurtBox] : worldHurtBox->hurtBox.get().m_SubHurtBoxes) {
+        (void)value;
+
+        const SDL_FRect worldRect = TransformRectToWorldspace(
+            subHurtBox.m_GridData.bounds, worldHurtBox->spriteRect, worldHurtBox->facingRight);
+
+        TRY_VOID(ctx.renderer.DrawRect(MapBaselineRectToArena(worldRect, arena.dimensions),
+                                       Color{0, 0, 255, 255}));
+    }
+
+    return Ok();
 }
 
 }  // namespace sop

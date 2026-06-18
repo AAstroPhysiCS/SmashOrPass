@@ -18,6 +18,11 @@
 
 namespace sop {
 
+struct DebugRenderOptions {
+    bool renderArenaCollisionBoxes = false;
+    bool renderPlayerBoxes = false;
+};
+
 struct AppCtx final {
     AppCtx();
     Result<void> Initialize();
@@ -35,7 +40,8 @@ struct AppCtx final {
     std::filesystem::path assetRootDir;
     DisplayMetrics displayMetrics;
 
-    bool renderCollisionBoxes = false;
+    DebugRenderOptions debugRender;
+
     bool debugOverlayVisible = false;
     bool appRunning = true;
 };

@@ -33,7 +33,8 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
     auto backButton =
         builder.Button("Back").Align(Alignment::TopCenter).OnClick([](AppCtx& ctx, ButtonData&) {
             spdlog::info("Back clicked");
-            ctx.eventDispatcher.Enqueue(NavigationEvent{.Action = NavigationAction::ShowMainMenu});
+            ctx.eventDispatcher.Enqueue(
+                NavigationEvent{.Action = NavigationAction::ShowGameModeSelect});
         });
 
     const auto startMatch = [this](AppCtx& ctx, ButtonData&) {
@@ -74,19 +75,27 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
             return;
         }
 
-        auto player2Asset = ctx.assets.LoadAsset<CharacterAssetLoadJob, CharacterAssetData>(
-            selectedCharacterJob(m_Player2Character));
-        if (!player2Asset) {
-            spdlog::warn("Failed to load player 2 character '{}': {}",
-                         m_Player2Character,
-                         player2Asset.error());
-            return;
+        Asset<CharacterAssetData> player2Asset;
+        if (m_Player1Character == m_Player2Character) {
+            player2Asset = *player1Asset;
+        } else {
+            auto loadedPlayer2Asset =
+                ctx.assets.LoadAsset<CharacterAssetLoadJob, CharacterAssetData>(
+                    selectedCharacterJob(m_Player2Character));
+            if (!loadedPlayer2Asset) {
+                spdlog::warn("Failed to load player 2 character '{}': {}",
+                             m_Player2Character,
+                             loadedPlayer2Asset.error());
+                return;
+            }
+            player2Asset = *loadedPlayer2Asset;
         }
 
         ctx.eventDispatcher.Enqueue(NavigationEvent{
             .Action = NavigationAction::StartMatch,
+            .Mode = m_GameMode,
             .ArenaAsset = *arenaAsset,
-            .CharacterAssets = {*player1Asset, *player2Asset},
+            .CharacterAssets = {*player1Asset, player2Asset},
         });
     };
 
@@ -172,6 +181,10 @@ void CharacterSelectScreen::SelectPlayer2(std::string character) {
     m_Player2Character = std::move(character);
 
     RebuildUI();
+}
+
+void CharacterSelectScreen::SetGameMode(const GameMode mode) {
+    m_GameMode = mode;
 }
 
 }  // namespace sop

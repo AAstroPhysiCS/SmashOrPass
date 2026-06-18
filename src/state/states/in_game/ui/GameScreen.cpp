@@ -1,5 +1,6 @@
 #include "smashorpass/state/states/in_game/ui/GameScreen.hpp"
 
+#include <cmath>
 #include <format>
 
 #include "smashorpass/core/Event.hpp"
@@ -59,6 +60,28 @@ Result<void> GameScreen::OnRender(AppCtx& ctx) {
     return UIScreen::OnRender(ctx);
 }
 
+void GameScreen::SetPlayersStats(const float player1Health,
+                                 const int player1Stocks,
+                                 const int player1RoundsWon,
+                                 const float player2Health,
+                                 const int player2Stocks,
+                                 const int player2RoundsWon,
+                                 const int currentRound) {
+    m_Player1.HP = static_cast<int>(std::lround(player1Health));
+    m_Player1.Stocks = player1Stocks;
+    m_Player1.RoundsWon = player1RoundsWon;
+    m_Player2.HP = static_cast<int>(std::lround(player2Health));
+    m_Player2.Stocks = player2Stocks;
+    m_Player2.RoundsWon = player2RoundsWon;
+    m_CurrentRound = currentRound;
+    UpdateHudText();
+}
+
+void GameScreen::SetMode(const GameMode mode) {
+    m_Mode = mode;
+    UpdateHudText();
+}
+
 void GameScreen::UpdateHudText() {
     if (m_P1Label != g_InvalidWidgetId) {
         auto& data = std::get<LabelData>(GetWidgetById(m_P1Label).Data);
@@ -86,7 +109,8 @@ std::string GameScreen::MakePlayerText(const PlayerMatchState& player) const {
         return std::format("{}  HP:{}  Rounds:{}", player.Name, player.HP, player.RoundsWon);
     }
 
-    return std::format("{}  Stocks:{}  Rounds:{}", player.Name, player.Stocks, player.RoundsWon);
+    return std::format(
+        "{}  HP:{}  Stocks:{}  Rounds:{}", player.Name, player.HP, player.Stocks, player.RoundsWon);
 }
 
 std::string GameScreen::MakeCenterText() const {

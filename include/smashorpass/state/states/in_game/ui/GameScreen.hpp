@@ -3,11 +3,10 @@
 #include <cstdint>
 #include <string>
 
+#include "smashorpass/state/states/in_game/GameMode.hpp"
 #include "smashorpass/ui/UIScreen.hpp"
 
 namespace sop {
-
-enum class GameMode : uint8_t { Smash, Deathmatch };
 
 struct PlayerMatchState {
     std::string Name;
@@ -26,6 +25,15 @@ class GameScreen : public UIScreen {
     EventFlow OnEvent(AppCtx& ctx, const Event& event) final override;
     void OnUpdate(AppCtx& ctx) final override;
     Result<void> OnRender(AppCtx& ctx) final override;
+
+    void SetPlayersStats(float player1Health,
+                         int player1Stocks,
+                         int player1RoundsWon,
+                         float player2Health,
+                         int player2Stocks,
+                         int player2RoundsWon,
+                         int currentRound);
+    void SetMode(GameMode mode);
 
    private:
     void UpdateHudText();
