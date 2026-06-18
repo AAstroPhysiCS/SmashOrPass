@@ -40,8 +40,8 @@ void Player::ApplyHit(const AttackData& attackData,
     if (!hitResult.hit) {
         return;
     }
-
-    ReduceHealth(attackData.m_Damage);
+    // hitResult; most vulnerable pixels were hit -> bestValue = 3, then 2, 1
+    ReduceHealth(attackData.m_Damage * hitResult.bestValue);
 
     const float knockbackDirection = attackerFacingRight ? 1.0f : -1.0f;
     const float knockbackMultiplier = 1.0f + (100.0f - m_Health) / 100.0f;
