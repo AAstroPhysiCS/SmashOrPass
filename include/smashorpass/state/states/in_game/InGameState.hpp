@@ -3,6 +3,7 @@
 #include <SDL3/SDL_rect.h>
 
 #include <chrono>
+#include <span>
 #include <vector>
 
 #include "smashorpass/core/AppCtx.hpp"
@@ -71,6 +72,11 @@ class InGameState final : public State {
     Result<void> SolveCombat(AppCtx& ctx);
     void SyncGameScreen();
     Result<void> ResolveDeathsAndRespawns();
+    void ResolveDeathmatchDeaths(std::span<const std::size_t> blastZonePlayers,
+                                 std::span<const std::size_t> outOfHealthPlayers);
+    void ResolveSmashDeaths(std::span<const std::size_t> blastZonePlayers);
+    bool TryResolveTwoPlayerRoundEnd(bool player1Out, bool player2Out);
+    void RespawnPlayerAtArenaSpawn(std::size_t playerIndex, float health);
     void StartNextRound(std::size_t winnerIndex);
     void RestartRound();
 
