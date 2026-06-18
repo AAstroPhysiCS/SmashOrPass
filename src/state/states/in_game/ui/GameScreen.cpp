@@ -77,6 +77,11 @@ void GameScreen::SetPlayersStats(const float player1Health,
     UpdateHudText();
 }
 
+void GameScreen::SetMode(const GameMode mode) {
+    m_Mode = mode;
+    UpdateHudText();
+}
+
 void GameScreen::UpdateHudText() {
     if (m_P1Label != g_InvalidWidgetId) {
         auto& data = std::get<LabelData>(GetWidgetById(m_P1Label).Data);

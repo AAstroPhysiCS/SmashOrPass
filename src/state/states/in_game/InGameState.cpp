@@ -27,13 +27,16 @@ constexpr Clock::duration kAnimationTickDuration =
 
 InGameState::InGameState(AppCtx& ctx,
                          Asset<ArenaAssetData> arenaAsset,
-                         std::vector<Asset<CharacterAssetData>> characterAssets)
+                         std::vector<Asset<CharacterAssetData>> characterAssets,
+                         GameMode gameMode)
     : m_GameScreen(ctx),
       m_PauseScreen(ctx),
       m_ArenaAsset(std::move(arenaAsset)),
-      m_CharacterAssets(std::move(characterAssets)) {
+      m_CharacterAssets(std::move(characterAssets)),
+      m_GameMode(gameMode) {
     UIBuilder gameScreenBuilder(m_GameScreen);
     m_GameScreen.Build(gameScreenBuilder);
+    m_GameScreen.SetMode(m_GameMode);
 
     UIBuilder pauseScreenBuilder(m_PauseScreen);
     m_PauseScreen.Build(pauseScreenBuilder);

@@ -3,6 +3,7 @@
 #include "smashorpass/asset/assets/AudioAsset.hpp"
 #include "smashorpass/state/State.hpp"
 #include "smashorpass/state/states/main_menu/ui/CharacterSelectScreen.hpp"
+#include "smashorpass/state/states/main_menu/ui/GameModeSelectScreen.hpp"
 #include "smashorpass/state/states/main_menu/ui/MenuScreen.hpp"
 
 namespace sop {
@@ -25,6 +26,7 @@ class MainMenuState final : public State {
    private:
     enum class View {
         MainMenu,
+        GameModeSelect,
         CharacterSelect,
     };
 
@@ -32,6 +34,7 @@ class MainMenuState final : public State {
 
     View m_View = View::MainMenu;
     MainMenuScreen m_MainMenuScreen;
+    GameModeSelectScreen m_GameModeSelectScreen;
     CharacterSelectScreen m_CharacterSelectScreen;
 
     Asset<AudioAssetData> m_MainMenuMusic;

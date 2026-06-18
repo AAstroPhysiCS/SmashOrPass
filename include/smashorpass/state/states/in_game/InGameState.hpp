@@ -10,6 +10,7 @@
 #include "smashorpass/state/State.hpp"
 #include "smashorpass/state/states/in_game/Arena.hpp"
 #include "smashorpass/state/states/in_game/DebugData.hpp"
+#include "smashorpass/state/states/in_game/GameMode.hpp"
 #include "smashorpass/state/states/in_game/Player.hpp"
 #include "smashorpass/state/states/in_game/ui/GameScreen.hpp"
 #include "smashorpass/state/states/in_game/ui/PauseScreen.hpp"
@@ -29,7 +30,8 @@ class InGameState final : public State {
    public:
     explicit InGameState(AppCtx& ctx,
                          Asset<ArenaAssetData> arenaAsset = {},
-                         std::vector<Asset<CharacterAssetData>> characterAssets = {});
+                         std::vector<Asset<CharacterAssetData>> characterAssets = {},
+                         GameMode gameMode = GameMode::Smash);
     ~InGameState() override = default;
 
     Result<void> Initialize(AppCtx& ctx) final;
@@ -88,6 +90,7 @@ class InGameState final : public State {
     Arena m_Arena;
     Asset<ArenaAssetData> m_ArenaAsset;
     std::vector<Asset<CharacterAssetData>> m_CharacterAssets;
+    GameMode m_GameMode = GameMode::Smash;
     // Player 1 is at index 0, Player 2 at 1, ...
     std::vector<Player> m_Players;
     std::vector<PlayerDebugRenderOptions> m_PlayerDebugRenderOptions;

@@ -11,6 +11,7 @@
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/asset/assets/ArenaAsset.hpp"
 #include "smashorpass/asset/assets/CharacterAsset.hpp"
+#include "smashorpass/state/states/in_game/GameMode.hpp"
 
 namespace sop {
 
@@ -50,6 +51,7 @@ struct ControllerButtonEvent {
 
 enum class NavigationAction {
     ShowMainMenu,
+    ShowGameModeSelect,
     ShowCharacterSelect,
     StartMatch,
     ResumeMatch,
@@ -57,6 +59,7 @@ enum class NavigationAction {
 
 struct NavigationEvent {
     NavigationAction Action = NavigationAction::ShowMainMenu;
+    GameMode Mode = GameMode::Smash;
     Asset<ArenaAssetData> ArenaAsset{};
     std::vector<Asset<CharacterAssetData>> CharacterAssets{};
 };

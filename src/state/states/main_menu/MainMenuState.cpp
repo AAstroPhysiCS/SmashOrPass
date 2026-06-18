@@ -5,9 +5,13 @@
 
 namespace sop {
 
-MainMenuState::MainMenuState(AppCtx& ctx) : m_MainMenuScreen(ctx), m_CharacterSelectScreen(ctx) {
+MainMenuState::MainMenuState(AppCtx& ctx)
+    : m_MainMenuScreen(ctx), m_GameModeSelectScreen(ctx), m_CharacterSelectScreen(ctx) {
     UIBuilder mainMenuBuilder(m_MainMenuScreen);
     m_MainMenuScreen.Build(mainMenuBuilder);
+
+    UIBuilder gameModeSelectBuilder(m_GameModeSelectScreen);
+    m_GameModeSelectScreen.Build(gameModeSelectBuilder);
 
     UIBuilder characterSelectBuilder(m_CharacterSelectScreen);
     m_CharacterSelectScreen.Build(characterSelectBuilder);
@@ -36,7 +40,11 @@ Result<EventFlow> MainMenuState::OnEvent(AppCtx& ctx, const Event& event) {
             case NavigationAction::ShowMainMenu:
                 m_View = View::MainMenu;
                 return Ok(EventFlow::Consumed);
+            case NavigationAction::ShowGameModeSelect:
+                m_View = View::GameModeSelect;
+                return Ok(EventFlow::Consumed);
             case NavigationAction::ShowCharacterSelect:
+                m_CharacterSelectScreen.SetGameMode(navigation->Mode);
                 m_View = View::CharacterSelect;
                 return Ok(EventFlow::Consumed);
             case NavigationAction::StartMatch:
@@ -62,6 +70,8 @@ UIScreen& MainMenuState::ActiveScreen() {
     switch (m_View) {
         case View::MainMenu:
             return m_MainMenuScreen;
+        case View::GameModeSelect:
+            return m_GameModeSelectScreen;
         case View::CharacterSelect:
             return m_CharacterSelectScreen;
     }

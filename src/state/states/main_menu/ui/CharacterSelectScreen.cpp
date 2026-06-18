@@ -33,7 +33,8 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
     auto backButton =
         builder.Button("Back").Align(Alignment::TopCenter).OnClick([](AppCtx& ctx, ButtonData&) {
             spdlog::info("Back clicked");
-            ctx.eventDispatcher.Enqueue(NavigationEvent{.Action = NavigationAction::ShowMainMenu});
+            ctx.eventDispatcher.Enqueue(
+                NavigationEvent{.Action = NavigationAction::ShowGameModeSelect});
         });
 
     const auto startMatch = [this](AppCtx& ctx, ButtonData&) {
@@ -92,6 +93,7 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
 
         ctx.eventDispatcher.Enqueue(NavigationEvent{
             .Action = NavigationAction::StartMatch,
+            .Mode = m_GameMode,
             .ArenaAsset = *arenaAsset,
             .CharacterAssets = {*player1Asset, player2Asset},
         });
@@ -179,6 +181,10 @@ void CharacterSelectScreen::SelectPlayer2(std::string character) {
     m_Player2Character = std::move(character);
 
     RebuildUI();
+}
+
+void CharacterSelectScreen::SetGameMode(const GameMode mode) {
+    m_GameMode = mode;
 }
 
 }  // namespace sop
