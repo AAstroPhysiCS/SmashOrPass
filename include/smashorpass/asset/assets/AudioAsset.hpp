@@ -34,7 +34,7 @@ struct AudioRawAssetData {
     AudioAssetType Type = AudioAssetType::SoundEffect;
     bool Predecode = true;
 
-    [[nodiscard]] struct AudioAssetData ToAssetData(AppCtx& ctx);
+    [[nodiscard]] class AudioAssetData ToAssetData(AppCtx& ctx);
 };
 
 class AudioAssetData final {
