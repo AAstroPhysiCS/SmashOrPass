@@ -9,10 +9,12 @@
 #include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/core/InputHelper.hpp"
 #include "smashorpass/state/State.hpp"
+#include "smashorpass/state/states/in_game/AiAgent.hpp"
 #include "smashorpass/state/states/in_game/Arena.hpp"
 #include "smashorpass/state/states/in_game/DebugData.hpp"
 #include "smashorpass/state/states/in_game/GameMode.hpp"
 #include "smashorpass/state/states/in_game/Player.hpp"
+#include "smashorpass/state/states/in_game/PlayerControl.hpp"
 #include "smashorpass/state/states/in_game/ui/GameScreen.hpp"
 #include "smashorpass/state/states/in_game/ui/PauseScreen.hpp"
 
@@ -32,7 +34,8 @@ class InGameState final : public State {
     explicit InGameState(AppCtx& ctx,
                          Asset<ArenaAssetData> arenaAsset = {},
                          std::vector<Asset<CharacterAssetData>> characterAssets = {},
-                         GameMode gameMode = GameMode::Smash);
+                         GameMode gameMode = GameMode::Smash,
+                         std::vector<PlayerControl> playerControls = {});
     ~InGameState() override = default;
 
     Result<void> Initialize(AppCtx& ctx) final;
@@ -97,8 +100,10 @@ class InGameState final : public State {
     Asset<ArenaAssetData> m_ArenaAsset;
     std::vector<Asset<CharacterAssetData>> m_CharacterAssets;
     GameMode m_GameMode = GameMode::Smash;
+    std::vector<PlayerControl> m_PlayerControls;
     // Player 1 is at index 0, Player 2 at 1, ...
     std::vector<Player> m_Players;
+    std::vector<Agent> m_Agents;
     std::vector<PlayerDebugRenderOptions> m_PlayerDebugRenderOptions;
     std::vector<PlayerCombatDebugData> m_PlayerCombatDebugData;
 

@@ -28,12 +28,14 @@ constexpr Clock::duration kAnimationTickDuration =
 InGameState::InGameState(AppCtx& ctx,
                          Asset<ArenaAssetData> arenaAsset,
                          std::vector<Asset<CharacterAssetData>> characterAssets,
-                         GameMode gameMode)
+                         GameMode gameMode,
+                         std::vector<PlayerControl> playerControls)
     : m_GameScreen(ctx),
       m_PauseScreen(ctx),
       m_ArenaAsset(std::move(arenaAsset)),
       m_CharacterAssets(std::move(characterAssets)),
-      m_GameMode(gameMode) {
+      m_GameMode(gameMode),
+      m_PlayerControls(std::move(playerControls)) {
     UIBuilder gameScreenBuilder(m_GameScreen);
     m_GameScreen.Build(gameScreenBuilder);
     m_GameScreen.SetMode(m_GameMode);
@@ -51,10 +53,11 @@ Result<void> InGameState::Initialize(AppCtx& ctx) {
 
     m_Players.clear();
     m_Players.reserve(m_CharacterAssets.size());
+    m_PlayerControls.resize(m_CharacterAssets.size(), PlayerControl::Human);
 
     for (std::size_t playerIndex = 0; playerIndex < m_CharacterAssets.size(); ++playerIndex) {
         InputTranslationHelper<InputAction> input;
-        if (playerIndex < 2) {
+        if (playerIndex < 2 && m_PlayerControls[playerIndex] == PlayerControl::Human) {
             TRY_VOID(FillDefaultInputTranslation(input, static_cast<int>(playerIndex)));
         }
 
@@ -68,6 +71,9 @@ Result<void> InGameState::Initialize(AppCtx& ctx) {
                                kDefaultPlayerHealth,
                                std::move(input));
     }
+
+    m_Agents.clear();
+    m_Agents.resize(m_Players.size());
 
     m_PlayerDebugRenderOptions.clear();
     m_PlayerDebugRenderOptions.resize(m_Players.size());
@@ -231,8 +237,33 @@ Result<void> InGameState::AdjustToWindow(AppCtx& ctx) {
 }
 
 Result<void> InGameState::TickGameLogic(AppCtx& ctx) {
-    for (Player& player : m_Players) {
-        TRY_VOID(player.TickGameLogic(ctx, m_Arena));
+    std::vector<SDL_FPoint> playerPositions;
+    std::vector<PlayerActionState> playerActionStates;
+    playerPositions.reserve(m_Players.size());
+    playerActionStates.reserve(m_Players.size());
+    for (const Player& player : m_Players) {
+        playerPositions.push_back(player.Position());
+        playerActionStates.push_back(player.ActionState());
+    }
+
+    for (std::size_t playerIndex = 0; playerIndex < m_Players.size(); ++playerIndex) {
+        Player& player = m_Players[playerIndex];
+        if (m_PlayerControls[playerIndex] != PlayerControl::Agent) {
+            TRY_VOID(player.TickGameLogic(ctx, m_Arena));
+            continue;
+        }
+
+        MovementInput input{};
+        const std::size_t targetIndex = playerIndex == 0 ? 1 : 0;
+        if (targetIndex < playerPositions.size()) {
+            input = m_Agents[playerIndex].Tick(AgentObservation{
+                .SelfPosition = playerPositions[playerIndex],
+                .TargetPosition = playerPositions[targetIndex],
+                .SelfActionState = playerActionStates[playerIndex],
+                .TargetActionState = playerActionStates[targetIndex],
+            });
+        }
+        TRY_VOID(player.TickGameLogic(ctx, m_Arena, input));
     }
 
     TRY_VOID(SolveCollisions(ctx));
