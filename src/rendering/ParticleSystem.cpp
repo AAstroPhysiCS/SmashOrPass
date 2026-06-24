@@ -136,8 +136,6 @@ Result<void> ParticleSystem::Render(AppCtx& ctx) {
         const float ageT = 1.0f - std::clamp(lifeRatio, 0.0f, 1.0f);
         const float colorT = std::clamp((ageT / 0.55f), 0.0f, 1.0f);
 
-        const float fadeT = std::clamp(((ageT - 0.55f) / 0.45f), 0.0f, 1.0f);
-
         Color color = LerpColor(p.StartColor, p.EndColor, colorT);
         const float alpha = std::lerp(static_cast<float>(p.StartColor.a),
                                       static_cast<float>(p.EndColor.a),

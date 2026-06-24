@@ -35,8 +35,6 @@ struct OrderedBucket {
 };
 
 IntersectionInfo intersects(const SDL_FRect& hitbox, const SDL_FRect& hurtbox) {
-    constexpr float kEpsilon = 0.001f;
-
     const float left = std::max(hitbox.x, hurtbox.x);
     const float top = std::max(hitbox.y, hurtbox.y);
     const float right = std::min(hitbox.x + hitbox.w, hurtbox.x + hurtbox.w);
@@ -79,7 +77,6 @@ SDL_Point transformPointToWorldSpace(const SDL_Point& localPoint,
                                      const bool isFacingRight) {
     const float scaledBoundsX = localBounds.x * kPlayerScale;
     const float scaledBoundsY = localBounds.y * kPlayerScale;
-    const float scaledBoundsW = localBounds.w * kPlayerScale;
     const float scaledPointX = static_cast<float>(localPoint.x) * kPlayerScale;
     const float scaledPointY = static_cast<float>(localPoint.y) * kPlayerScale;
 
@@ -89,11 +86,6 @@ SDL_Point transformPointToWorldSpace(const SDL_Point& localPoint,
                                                    : worldBounds.x + scaledBoundsX + scaledPointX)),
         static_cast<int>(std::lround(worldBounds.y + scaledBoundsY + scaledPointY)),
     };
-}
-
-bool isInRect(const SDL_Point& point, const SDL_FRect& rect) {
-    return static_cast<float>(point.x) >= rect.x && static_cast<float>(point.x) < rect.x + rect.w &&
-           static_cast<float>(point.y) >= rect.y && static_cast<float>(point.y) < rect.y + rect.h;
 }
 
 SDL_FRect getHitboxRect(const HitBox& attackHitBox,
@@ -350,8 +342,6 @@ bool checkIfHurtBoxWasHit(const std::unordered_map<std::uint64_t, bool>& attackP
                                                               endBucketX,
                                                               endBucketY);
 
-    const int defenderWorldXInt = static_cast<int>(std::lround(defenderSpriteRect.x));
-    const int defenderWorldYInt = static_cast<int>(std::lround(defenderSpriteRect.y));
     if (defenderDebugData != nullptr)
         defenderDebugData->hurtBoxBounds.emplace_back(transformRectToWorldspace(
             defenderSubHurtBox.m_GridData.bounds, defenderSpriteRect, defenderFacingRight));
@@ -395,18 +385,12 @@ HitResult detectOverlap(const WorldHitBox& attackerHitBox,
     // ok, so now I have WorldHitBox and WorldHurtBox
     // both contain the positions of the Hit and Hurtboxes, as well
     // as a FRect of where the general frame is in world coordinates and facingRight
-    const SDL_FRect attackWorldBounds = transformRectToWorldspace(
-        attackerLocalHitBox.m_GridData.bounds, attackerSpriteRect, attackerFacingRight);
     const DefinedHitbox definedHitbox = defineHitbox(attackerLocalHitBox,
                                                      attackerSpriteRect,
                                                      attackerFacingRight,
                                                      defenderLocalHurtBox,
                                                      defenderSpriteRect,
                                                      defenderFacingRight);
-    SDL_FRect fixAttacker = SDL_FRect{attackerSpriteRect.x - attackerSpriteRect.w * kPlayerScale,
-                                      attackerSpriteRect.y - attackerSpriteRect.h * kPlayerScale,
-                                      attackerSpriteRect.w,
-                                      attackerSpriteRect.h};
     if (attackerDebugData != nullptr)
         // do I want the whole sprite too?
         // attackerDebugData->hitBoxBounds.push_back(attackerSpriteRect);

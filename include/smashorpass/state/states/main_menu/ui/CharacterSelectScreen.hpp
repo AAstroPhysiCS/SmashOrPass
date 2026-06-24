@@ -23,9 +23,11 @@ class CharacterSelectScreen : public UIScreen {
     std::string m_Player1Character;
     std::string m_Player2Character;
     GameMode m_GameMode = GameMode::Smash;
+    bool m_Player2IsAgent = false;
 
     std::string CharacterName(std::string_view character) const;
     void SelectPlayer1(std::string character);
     void SelectPlayer2(std::string character);
+    void SetPlayer2Agent(bool isAgent);
 };
 }  // namespace sop
