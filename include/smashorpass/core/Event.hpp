@@ -12,6 +12,7 @@
 #include "smashorpass/asset/assets/ArenaAsset.hpp"
 #include "smashorpass/asset/assets/CharacterAsset.hpp"
 #include "smashorpass/state/states/in_game/GameMode.hpp"
+#include "smashorpass/state/states/in_game/PlayerControl.hpp"
 
 namespace sop {
 
@@ -62,6 +63,7 @@ struct NavigationEvent {
     GameMode Mode = GameMode::Smash;
     Asset<ArenaAssetData> ArenaAsset{};
     std::vector<Asset<CharacterAssetData>> CharacterAssets{};
+    std::vector<PlayerControl> PlayerControls{};
 };
 
 struct ApplicationQuitEvent {};

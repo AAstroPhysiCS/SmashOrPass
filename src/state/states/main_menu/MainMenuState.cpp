@@ -49,7 +49,7 @@ Result<EventFlow> MainMenuState::OnEvent(AppCtx& ctx, const Event& event) {
                 return Ok(EventFlow::Consumed);
             case NavigationAction::StartMatch:
             case NavigationAction::ResumeMatch:
-                ctx.audioSystem.StopBus(AudioBus::Music, 2000);
+                TRY_VOID(ctx.audioSystem.StopBus(AudioBus::Music, 2000));
                 return Ok(EventFlow::Passed);
         }
     }

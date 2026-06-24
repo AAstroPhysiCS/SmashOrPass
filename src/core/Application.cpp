@@ -151,7 +151,8 @@ Result<void> Application::OnEvent(const Event& event) {
                                     ctx,
                                     navigation.ArenaAsset,
                                     navigation.CharacterAssets,
-                                    navigation.Mode));
+                                    navigation.Mode,
+                                    navigation.PlayerControls));
                             (void)inGameState;
 
                             return Ok();

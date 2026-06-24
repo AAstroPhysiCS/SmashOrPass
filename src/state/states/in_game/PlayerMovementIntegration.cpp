@@ -48,9 +48,12 @@ MovementInput Player::GatherMovementInput(AppCtx& ctx) {
 }
 
 Result<void> Player::TickGameLogic(AppCtx& ctx, const Arena& arena) {
-    (void)arena;
+    return TickGameLogic(ctx, arena, GatherMovementInput(ctx));
+}
 
-    const MovementInput input = GatherMovementInput(ctx);
+Result<void> Player::TickGameLogic(AppCtx& ctx, const Arena& arena, const MovementInput& input) {
+    (void)arena;
+    (void)ctx;
 
     m_MovementState.FacingRight = m_FacingRight;
     const bool wasAttacking = m_MovementState.Attack.IsActive();

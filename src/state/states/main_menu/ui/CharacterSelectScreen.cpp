@@ -38,9 +38,10 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
         });
 
     const auto startMatch = [this](AppCtx& ctx, ButtonData&) {
-        spdlog::info("Starting match: P1={}, P2={}",
+        spdlog::info("Starting match: P1={}, P2={} ({})",
                      CharacterName(m_Player1Character),
-                     CharacterName(m_Player2Character));
+                     CharacterName(m_Player2Character),
+                     m_Player2IsAgent ? "Agent" : "Human");
 
         auto arenaJobs = ctx.assets.ListAvailableAssets<ArenaAssetDiscoverer, ArenaAssetLoadJob>();
         if (!arenaJobs) {
@@ -96,8 +97,28 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
             .Mode = m_GameMode,
             .ArenaAsset = *arenaAsset,
             .CharacterAssets = {*player1Asset, player2Asset},
+            .PlayerControls =
+                {
+                    PlayerControl::Human,
+                    m_Player2IsAgent ? PlayerControl::Agent : PlayerControl::Human,
+                },
         });
     };
+
+    auto p2ControlSelect =
+        builder.Row()
+            .Spacing(16.0f)
+            .Align(Alignment::TopCenter)
+            .Add(builder.Button("P2 HUMAN")
+                     .Align(Alignment::TopCenter)
+                     .OnClick([this](AppCtx&, ButtonData&) { SetPlayer2Agent(false); })
+                     .TextColor(!m_Player2IsAgent ? Theme::PLAYER_2_COLOR
+                                                  : Color{255, 255, 255, 255}),
+                 builder.Button("P2 AI")
+                     .Align(Alignment::TopCenter)
+                     .OnClick([this](AppCtx&, ButtonData&) { SetPlayer2Agent(true); })
+                     .TextColor(m_Player2IsAgent ? Theme::PLAYER_2_COLOR
+                                                 : Color{255, 255, 255, 255}));
 
     if (m_Characters.empty()) {
         auto actions =
@@ -110,6 +131,7 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
         auto menu = builder.Column().Spacing(22.0f).Add(
             builder.Label("SELECT YOUR FIGHTERS").Align(Alignment::TopCenter),
             builder.Label("NO CHARACTERS AVAILABLE").Align(Alignment::TopCenter),
+            std::move(p2ControlSelect),
             std::move(actions));
 
         auto root = builder.Align(Alignment::Center, std::move(menu));
@@ -155,6 +177,7 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
     auto menu = builder.Column().Spacing(22.0f).Add(
         builder.Label("SELECT YOUR FIGHTERS").Align(Alignment::TopCenter),
         std::move(characterGrid),
+        std::move(p2ControlSelect),
         std::move(actions));
 
     auto root = builder.Align(Alignment::Center, std::move(menu));
@@ -179,6 +202,13 @@ void CharacterSelectScreen::SelectPlayer1(std::string character) {
 void CharacterSelectScreen::SelectPlayer2(std::string character) {
     spdlog::info("Player 2 selected {}", CharacterName(character));
     m_Player2Character = std::move(character);
+
+    RebuildUI();
+}
+
+void CharacterSelectScreen::SetPlayer2Agent(const bool isAgent) {
+    m_Player2IsAgent = isAgent;
+    spdlog::info("Player 2 control set to {}", m_Player2IsAgent ? "Agent" : "Human");
 
     RebuildUI();
 }
