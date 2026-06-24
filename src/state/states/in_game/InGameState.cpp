@@ -128,7 +128,7 @@ Result<EventFlow> InGameState::OnEvent(AppCtx& ctx, const Event& event) {
         TRY_VOID(player.OnEvent(ctx, event));
     }
 
-    EventDispatcher::Dispatch<PlayerParticleEffectEvent>(
+    (void)EventDispatcher::Dispatch<PlayerParticleEffectEvent>(
         event, [&](const PlayerParticleEffectEvent& particleEffectEvent) {
             switch (particleEffectEvent.Type) {
                 case PlayerParticleEffectType::SwordFire: {
