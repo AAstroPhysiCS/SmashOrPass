@@ -14,6 +14,8 @@ namespace sop {
 
 struct MatchConfig {
     GameMode Mode = GameMode::Smash;
+    int TargetRoundsToWin = 3;
+    int StocksPerRound = 3;
     Asset<ArenaAssetData> ArenaAsset{};
     std::vector<Asset<CharacterAssetData>> CharacterAssets{};
     std::vector<PlayerControl> PlayerControls{};

@@ -9,6 +9,7 @@ MainMenuState::MainMenuState(AppCtx& ctx)
     : m_MainMenuScreen(ctx),
       m_GameModeSelectScreen(ctx),
       m_CharacterSelectScreen(ctx),
+      m_SettingsScreen(ctx),
       m_ScoreboardScreen(ctx) {
     UIBuilder mainMenuBuilder(m_MainMenuScreen);
     m_MainMenuScreen.Build(mainMenuBuilder);
@@ -18,6 +19,9 @@ MainMenuState::MainMenuState(AppCtx& ctx)
 
     UIBuilder characterSelectBuilder(m_CharacterSelectScreen);
     m_CharacterSelectScreen.Build(characterSelectBuilder);
+
+    UIBuilder settingsBuilder(m_SettingsScreen);
+    m_SettingsScreen.Build(settingsBuilder);
 
     UIBuilder scoreboardBuilder(m_ScoreboardScreen);
     m_ScoreboardScreen.Build(scoreboardBuilder);
@@ -50,8 +54,12 @@ Result<EventFlow> MainMenuState::OnEvent(AppCtx& ctx, const Event& event) {
                 m_View = View::GameModeSelect;
                 return Ok(EventFlow::Consumed);
             case NavigationAction::ShowCharacterSelect:
-                m_CharacterSelectScreen.SetGameMode(navigation->Match.Mode);
+                m_CharacterSelectScreen.SetMatchConfig(navigation->Match);
                 m_View = View::CharacterSelect;
+                return Ok(EventFlow::Consumed);
+            case NavigationAction::ShowSettings:
+                m_SettingsScreen.RebuildUI();
+                m_View = View::Settings;
                 return Ok(EventFlow::Consumed);
             case NavigationAction::ShowScoreboard:
                 m_ScoreboardScreen.RebuildUI();
@@ -85,6 +93,8 @@ UIScreen& MainMenuState::ActiveScreen() {
             return m_GameModeSelectScreen;
         case View::CharacterSelect:
             return m_CharacterSelectScreen;
+        case View::Settings:
+            return m_SettingsScreen;
         case View::Scoreboard:
             return m_ScoreboardScreen;
     }

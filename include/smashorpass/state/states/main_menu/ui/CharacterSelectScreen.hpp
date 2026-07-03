@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "smashorpass/asset/assets/CharacterAsset.hpp"
-#include "smashorpass/state/states/in_game/GameMode.hpp"
+#include "smashorpass/state/states/in_game/MatchConfig.hpp"
 #include "smashorpass/ui/UIScreen.hpp"
 
 namespace sop {
@@ -16,13 +16,13 @@ class CharacterSelectScreen : public UIScreen {
     virtual ~CharacterSelectScreen() = default;
 
     void Build(UIBuilder& builder) override;
-    void SetGameMode(GameMode mode);
+    void SetMatchConfig(MatchConfig matchConfig);
 
    private:
     std::vector<CharacterAssetLoadJob> m_Characters;
     std::string m_Player1Character;
     std::string m_Player2Character;
-    GameMode m_GameMode = GameMode::Smash;
+    MatchConfig m_MatchConfig{};
     bool m_Player2IsAgent = false;
 
     std::string CharacterName(std::string_view character) const;

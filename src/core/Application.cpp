@@ -10,6 +10,7 @@
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/core/Base.hpp"
 #include "smashorpass/persistence/OverallStatsStore.hpp"
+#include "smashorpass/persistence/SettingsStore.hpp"
 #include "smashorpass/state/overlays/DebugState.hpp"
 #include "smashorpass/state/states/in_game/InGameState.hpp"
 #include "smashorpass/state/states/main_menu/MainMenuState.hpp"
@@ -42,6 +43,13 @@ Result<void> Application::Run() {
         TRY_VOID(ProcessEvents());
         TRY_VOID(Update());
         TRY_VOID(Render());
+    }
+
+    if (!ctx.settingsPath.empty()) {
+        auto saveResult = SettingsStore::Save(ctx.settingsPath, ctx.settings);
+        if (!saveResult) {
+            spdlog::warn("Failed to save settings: {}", saveResult.error());
+        }
     }
 
     spdlog::info("Shutting down the game");
@@ -149,8 +157,7 @@ Result<void> Application::OnEvent(const Event& event) {
                             ctx.particleSystem.Clear();
 
                             TRY(inGameState,
-                                ctx.stateManager.ResetToState<InGameState>(
-                                    ctx, navigation.Match));
+                                ctx.stateManager.ResetToState<InGameState>(ctx, navigation.Match));
                             (void)inGameState;
 
                             return Ok();
@@ -176,6 +183,7 @@ Result<void> Application::OnEvent(const Event& event) {
                         }
                         case NavigationAction::ShowGameModeSelect:
                         case NavigationAction::ShowCharacterSelect:
+                        case NavigationAction::ShowSettings:
                         case NavigationAction::ShowScoreboard:
                         case NavigationAction::ResumeMatch:
                             return Ok();

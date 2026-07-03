@@ -26,12 +26,11 @@ constexpr Clock::duration kAnimationTickDuration =
     duration_cast<Clock::duration>(std::chrono::duration<double>(1.0 / kAnimationTicksPerSecond));
 
 InGameState::InGameState(AppCtx& ctx, MatchConfig matchConfig)
-    : m_GameScreen(ctx),
-      m_PauseScreen(ctx),
-      m_MatchConfig(std::move(matchConfig)) {
+    : m_GameScreen(ctx), m_PauseScreen(ctx), m_MatchConfig(std::move(matchConfig)) {
     UIBuilder gameScreenBuilder(m_GameScreen);
     m_GameScreen.Build(gameScreenBuilder);
     m_GameScreen.SetMode(m_MatchConfig.Mode);
+    m_GameScreen.SetTargetRoundsToWin(m_MatchConfig.TargetRoundsToWin);
 
     UIBuilder pauseScreenBuilder(m_PauseScreen);
     m_PauseScreen.Build(pauseScreenBuilder);
@@ -64,6 +63,7 @@ Result<void> InGameState::Initialize(AppCtx& ctx) {
                                facingRight,
                                kDefaultPlayerHealth,
                                std::move(input));
+        m_Players.back().ResetStocks(m_MatchConfig.StocksPerRound);
     }
 
     m_Agents.clear();
@@ -98,7 +98,8 @@ Result<EventFlow> InGameState::OnEvent(AppCtx& ctx, const Event& event) {
 
     // Go into pause menu
     if (const auto* keyEvent = std::get_if<KeyEvent>(&event.Payload)) {
-        if (!m_MatchFinished && keyEvent->Down && !keyEvent->Repeat && keyEvent->Key == SDLK_ESCAPE) {
+        if (!m_MatchFinished && keyEvent->Down && !keyEvent->Repeat &&
+            keyEvent->Key == SDLK_ESCAPE) {
             TogglePause();
             return Ok(EventFlow::Consumed);
         }

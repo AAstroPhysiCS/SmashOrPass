@@ -49,6 +49,7 @@ enum class NavigationAction {
     ShowMainMenu,
     ShowGameModeSelect,
     ShowCharacterSelect,
+    ShowSettings,
     ShowScoreboard,
     StartMatch,
     ResumeMatch,

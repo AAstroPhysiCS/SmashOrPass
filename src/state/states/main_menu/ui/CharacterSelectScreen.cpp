@@ -92,19 +92,17 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
             player2Asset = *loadedPlayer2Asset;
         }
 
+        MatchConfig matchConfig = m_MatchConfig;
+        matchConfig.ArenaAsset = *arenaAsset;
+        matchConfig.CharacterAssets = {*player1Asset, player2Asset};
+        matchConfig.PlayerControls = {
+            PlayerControl::Human,
+            m_Player2IsAgent ? PlayerControl::Agent : PlayerControl::Human,
+        };
+
         ctx.eventDispatcher.Enqueue(NavigationEvent{
             .Action = NavigationAction::StartMatch,
-            .Match =
-                MatchConfig{
-                    .Mode = m_GameMode,
-                    .ArenaAsset = *arenaAsset,
-                    .CharacterAssets = {*player1Asset, player2Asset},
-                    .PlayerControls =
-                        {
-                            PlayerControl::Human,
-                            m_Player2IsAgent ? PlayerControl::Agent : PlayerControl::Human,
-                        },
-                },
+            .Match = std::move(matchConfig),
         });
     };
 
@@ -216,8 +214,8 @@ void CharacterSelectScreen::SetPlayer2Agent(const bool isAgent) {
     RebuildUI();
 }
 
-void CharacterSelectScreen::SetGameMode(const GameMode mode) {
-    m_GameMode = mode;
+void CharacterSelectScreen::SetMatchConfig(MatchConfig matchConfig) {
+    m_MatchConfig = std::move(matchConfig);
 }
 
 }  // namespace sop

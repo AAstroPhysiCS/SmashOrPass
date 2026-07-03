@@ -109,7 +109,6 @@ class InGameState final : public State {
     Clock::time_point m_PreviousGameLogicTick;
     Clock::time_point m_PreviousAnimationTick;
     int m_CurrentRound = 1;
-    int m_TargetRoundsToWin = 3;
     bool m_MatchFinished = false;
     bool m_Paused = false;
 };

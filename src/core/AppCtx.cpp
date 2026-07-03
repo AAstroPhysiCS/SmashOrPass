@@ -3,6 +3,7 @@
 #include <spdlog/spdlog.h>
 
 #include "smashorpass/persistence/OverallStatsStore.hpp"
+#include "smashorpass/persistence/SettingsStore.hpp"
 #include "smashorpass/persistence/UserDataPath.hpp"
 
 namespace sop {
@@ -40,15 +41,24 @@ Result<void> AppCtx::InitializeUserData() {
 
     userDataDir = std::move(*userDataPath);
     overallStatsPath = userDataDir / "overall_stats.json";
+    settingsPath = userDataDir / "settings.json";
 
     auto loadedStats = OverallStatsStore::Load(overallStatsPath);
     if (!loadedStats) {
         spdlog::warn("Failed to load overall stats: {}", loadedStats.error());
         overallStats = OverallStatsTracker{};
-        return Ok();
+    } else {
+        overallStats = std::move(*loadedStats);
     }
 
-    overallStats = std::move(*loadedStats);
+    auto loadedSettings = SettingsStore::Load(settingsPath);
+    if (!loadedSettings) {
+        spdlog::warn("Failed to load settings: {}", loadedSettings.error());
+        settings = Settings{};
+    } else {
+        settings = *loadedSettings;
+    }
+
     return Ok();
 }
 

@@ -82,6 +82,11 @@ void GameScreen::SetMode(const GameMode mode) {
     UpdateHudText();
 }
 
+void GameScreen::SetTargetRoundsToWin(const int targetRoundsToWin) {
+    m_TargetRoundsToWin = targetRoundsToWin;
+    UpdateHudText();
+}
+
 void GameScreen::UpdateHudText() {
     if (m_P1Label != g_InvalidWidgetId) {
         auto& data = std::get<LabelData>(GetWidgetById(m_P1Label).Data);

@@ -34,6 +34,7 @@ class GameScreen : public UIScreen {
                          int player2RoundsWon,
                          int currentRound);
     void SetMode(GameMode mode);
+    void SetTargetRoundsToWin(int targetRoundsToWin);
 
    private:
     void UpdateHudText();

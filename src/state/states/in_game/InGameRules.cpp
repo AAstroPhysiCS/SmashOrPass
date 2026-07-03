@@ -188,7 +188,7 @@ void InGameState::StartNextRound(AppCtx& ctx, const std::size_t winnerIndex) {
     if (winnerIndex < m_Players.size()) {
         m_Players[winnerIndex].WinRound();
 
-        if (m_Players[winnerIndex].RoundsWon() >= m_TargetRoundsToWin) {
+        if (m_Players[winnerIndex].RoundsWon() >= m_MatchConfig.TargetRoundsToWin) {
             FinishMatch(ctx, winnerIndex);
             return;
         }
@@ -202,7 +202,7 @@ void InGameState::RestartRound() {
     for (std::size_t playerIndex = 0; playerIndex < m_Players.size(); ++playerIndex) {
         const SDL_FPoint spawnPosition = PlayerStartPosition(playerIndex);
         const bool facingRight = FacingRightAtSpawn(spawnPosition, m_Arena);
-        m_Players[playerIndex].ResetStocks(kDefaultPlayerStocks);
+        m_Players[playerIndex].ResetStocks(m_MatchConfig.StocksPerRound);
         m_Players[playerIndex].Respawn(spawnPosition, facingRight, kDefaultPlayerHealth);
     }
 }
