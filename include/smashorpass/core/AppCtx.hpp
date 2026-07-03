@@ -27,6 +27,7 @@ struct DebugRenderOptions {
 struct AppCtx final {
     AppCtx();
     Result<void> Initialize();
+    Result<void> InitializeUserData();
 
     Window window;
     Renderer renderer;
@@ -40,6 +41,8 @@ struct AppCtx final {
     OverallStatsTracker overallStats;
 
     std::filesystem::path assetRootDir;
+    std::filesystem::path userDataDir;
+    std::filesystem::path overallStatsPath;
     DisplayMetrics displayMetrics;
 
     DebugRenderOptions debugRender;

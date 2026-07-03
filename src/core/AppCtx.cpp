@@ -1,5 +1,10 @@
 #include "smashorpass/core/AppCtx.hpp"
 
+#include <spdlog/spdlog.h>
+
+#include "smashorpass/persistence/OverallStatsStore.hpp"
+#include "smashorpass/persistence/UserDataPath.hpp"
+
 namespace sop {
 
 AppCtx::AppCtx() : assets(*this), assetRootDir(SOP_ASSET_ROOT_DIR) {}
@@ -22,6 +27,28 @@ Result<void> AppCtx::Initialize() {
                                        AudioAssetLoadJob,
                                        AudioRawAssetData,
                                        AudioAssetData>()));
+    TRY_VOID(InitializeUserData());
+    return Ok();
+}
+
+Result<void> AppCtx::InitializeUserData() {
+    auto userDataPath = UserDataPath::Get();
+    if (!userDataPath) {
+        spdlog::warn("Failed to resolve user data path: {}", userDataPath.error());
+        return Ok();
+    }
+
+    userDataDir = std::move(*userDataPath);
+    overallStatsPath = userDataDir / "overall_stats.json";
+
+    auto loadedStats = OverallStatsStore::Load(overallStatsPath);
+    if (!loadedStats) {
+        spdlog::warn("Failed to load overall stats: {}", loadedStats.error());
+        overallStats = OverallStatsTracker{};
+        return Ok();
+    }
+
+    overallStats = std::move(*loadedStats);
     return Ok();
 }
 

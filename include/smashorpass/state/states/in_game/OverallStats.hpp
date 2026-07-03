@@ -56,6 +56,14 @@ class OverallStatsTracker {
         return m_Stats[ToIndex(matchup)];
     }
 
+    void SetStatsFor(const MatchupType matchup, OverallMatchupStats stats) {
+        m_Stats[ToIndex(matchup)] = stats;
+    }
+
+    [[nodiscard]] const std::array<OverallMatchupStats, 2>& AllStats() const {
+        return m_Stats;
+    }
+
     [[nodiscard]] static MatchupType MatchupFor(const MatchConfig& config) {
         const bool player2IsAi = config.PlayerControls.size() > 1 &&
                                  config.PlayerControls[1] == PlayerControl::Agent;

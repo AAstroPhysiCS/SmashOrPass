@@ -9,6 +9,7 @@
 
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/core/Base.hpp"
+#include "smashorpass/persistence/OverallStatsStore.hpp"
 #include "smashorpass/state/overlays/DebugState.hpp"
 #include "smashorpass/state/states/in_game/InGameState.hpp"
 #include "smashorpass/state/states/main_menu/MainMenuState.hpp"
@@ -157,6 +158,14 @@ Result<void> Application::OnEvent(const Event& event) {
                         case NavigationAction::ShowMatchResults: {
                             ctx.particleSystem.Clear();
                             ctx.overallStats.RecordMatch(navigation.Match, navigation.Results);
+                            if (!ctx.overallStatsPath.empty()) {
+                                auto saveResult =
+                                    OverallStatsStore::Save(ctx.overallStatsPath, ctx.overallStats);
+                                if (!saveResult) {
+                                    spdlog::warn("Failed to save overall stats: {}",
+                                                 saveResult.error());
+                                }
+                            }
 
                             TRY(matchResultsState,
                                 ctx.stateManager.ResetToState<MatchResultsState>(
