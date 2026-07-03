@@ -178,6 +178,8 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
         TRY_VOID(TickAnimation(ctx));
         m_PreviousAnimationTick += kAnimationTickDuration;
         ++animationTicks;
+        // Tick Combat with Animations, since Hit and Hurtboxes are derived from Animations
+        TRY_VOID(SolveCombat(ctx));
     }
     if (animationTicks == kAnimationMaxCatchUpTicks) {
         m_PreviousAnimationTick = now;
@@ -186,7 +188,6 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
     // Effects (every frame)
     TRY_VOID(TickEffects(ctx, dt));
 
-    TRY_VOID(SolveCombat(ctx));
     TRY_VOID(ResolveDeathsAndRespawns(ctx));
 
     SyncGameScreen();
