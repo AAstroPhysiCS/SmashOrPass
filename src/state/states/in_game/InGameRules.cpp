@@ -67,6 +67,21 @@ Result<void> InGameState::ResolveDeathsAndRespawns() {
 
 void InGameState::ResolveDeathmatchDeaths(const std::span<const std::size_t> blastZonePlayers,
                                           const std::span<const std::size_t> outOfHealthPlayers) {
+    std::vector<std::size_t> defeatedPlayers;
+    defeatedPlayers.reserve(blastZonePlayers.size() + outOfHealthPlayers.size());
+    for (const std::size_t playerIndex : outOfHealthPlayers) {
+        defeatedPlayers.push_back(playerIndex);
+    }
+    for (const std::size_t playerIndex : blastZonePlayers) {
+        if (!ContainsPlayerIndex(defeatedPlayers, playerIndex)) {
+            defeatedPlayers.push_back(playerIndex);
+        }
+    }
+
+    for (const std::size_t playerIndex : defeatedPlayers) {
+        RecordPlayerDefeat(playerIndex, false);
+    }
+
     if (m_Players.size() == 2 && !outOfHealthPlayers.empty()) {
         const bool player1Out = ContainsPlayerIndex(outOfHealthPlayers, 0);
         const bool player2Out = ContainsPlayerIndex(outOfHealthPlayers, 1);
@@ -93,6 +108,7 @@ void InGameState::ResolveSmashDeaths(const std::span<const std::size_t> blastZon
     }
 
     for (const std::size_t playerIndex : blastZonePlayers) {
+        RecordPlayerDefeat(playerIndex, true);
         m_Players[playerIndex].LoseStock();
     }
 
@@ -123,6 +139,17 @@ bool InGameState::TryResolveTwoPlayerRoundEnd(const bool player1Out, const bool 
     }
 
     return false;
+}
+
+void InGameState::RecordPlayerDefeat(const std::size_t playerIndex, const bool losesStock) {
+    if (playerIndex >= m_MatchStats.size()) {
+        return;
+    }
+
+    ++m_MatchStats[playerIndex].Falls;
+    if (losesStock) {
+        ++m_MatchStats[playerIndex].StocksLost;
+    }
 }
 
 void InGameState::RespawnPlayerAtArenaSpawn(const std::size_t playerIndex, const float health) {

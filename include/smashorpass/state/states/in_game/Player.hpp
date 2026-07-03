@@ -81,9 +81,9 @@ class Player {
     void InitAttack();
     [[nodiscard]] bool HasHitPlayerThisAttack(int playerId) const;
     void MarkPlayerHitThisAttack(int playerId);
-    void ApplyHit(const AttackData& attackData,
-                  const HitResult& hitResult,
-                  bool attackerFacingRight);
+    float ApplyHit(const AttackData& attackData,
+                   const HitResult& hitResult,
+                   bool attackerFacingRight);
     void ReduceHealth(float damage);
     void LoseStock();
     void ResetStocks(int stocks);

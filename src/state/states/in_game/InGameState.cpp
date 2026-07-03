@@ -81,6 +81,9 @@ Result<void> InGameState::Initialize(AppCtx& ctx) {
     m_PlayerCombatDebugData.clear();
     m_PlayerCombatDebugData.resize(m_Players.size());
 
+    m_MatchStats.clear();
+    m_MatchStats.resize(m_Players.size());
+
     m_CurrentRound = 1;
     m_Paused = false;
     ResetFrameTimer();

@@ -34,14 +34,18 @@ void Player::WinRound() {
     ++m_RoundsWon;
 }
 
-void Player::ApplyHit(const AttackData& attackData,
-                      const HitResult& hitResult,
-                      const bool attackerFacingRight) {
+float Player::ApplyHit(const AttackData& attackData,
+                       const HitResult& hitResult,
+                       const bool attackerFacingRight) {
     if (!hitResult.hit) {
-        return;
+        return 0.0f;
     }
+
+    const float previousHealth = m_Health;
+
     // hitResult; most vulnerable pixels were hit -> bestValue = 3, then 2, 1
     ReduceHealth(attackData.m_Damage * hitResult.bestValue);
+    const float appliedDamage = previousHealth - m_Health;
 
     const float knockbackDirection = attackerFacingRight ? 1.0f : -1.0f;
     const float knockbackMultiplier = 1.0f + (100.0f - m_Health) / 100.0f;
@@ -55,6 +59,7 @@ void Player::ApplyHit(const AttackData& attackData,
     m_MovementState.HitstunTicksRemaining = hitstunTicks;
     m_MovementState.Attack = MovementAttackState{};
     m_MovementState.Dash.TicksRemaining = 0;
+    return appliedDamage;
 }
 
 }  // namespace sop

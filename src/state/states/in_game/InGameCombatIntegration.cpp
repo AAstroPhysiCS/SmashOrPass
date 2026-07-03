@@ -3,23 +3,46 @@
 #include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/state/states/in_game/CombatSystem.hpp"
 #include "smashorpass/state/states/in_game/InGameState.hpp"
+#include "smashorpass/state/states/in_game/MatchStats.hpp"
 
 namespace sop {
 
 namespace {
 
-void ApplyHitResult(const HitResult& hitResult,
-                    const WorldHitBox& attackerHitBox,
-                    Player& attacker,
-                    Player& defender) {
+float ApplyHitResult(const HitResult& hitResult,
+                     const WorldHitBox& attackerHitBox,
+                     Player& attacker,
+                     Player& defender) {
     if (!hitResult.hit) {
-        return;
+        return 0.0f;
     }
 
     const AttackData& attackData = attackerHitBox.hitBox.get().m_AttackData;
 
-    defender.ApplyHit(attackData, hitResult, attackerHitBox.facingRight);
+    const float appliedDamage = defender.ApplyHit(attackData, hitResult, attackerHitBox.facingRight);
     attacker.MarkPlayerHitThisAttack(defender.Id());
+    return appliedDamage;
+}
+
+void RecordHitLocationStats(const HitResult& hitResult,
+                            PlayerMatchStats& attackerStats,
+                            PlayerMatchStats& defenderStats) {
+    switch (hitResult.bestValue) {
+        case 3:
+            ++attackerStats.HeadHitsLanded;
+            ++defenderStats.HeadHitsTaken;
+            break;
+        case 2:
+            ++attackerStats.TorsoHitsLanded;
+            ++defenderStats.TorsoHitsTaken;
+            break;
+        case 1:
+            ++attackerStats.LegHitsLanded;
+            ++defenderStats.LegHitsTaken;
+            break;
+        default:
+            break;
+    }
 }
 
 }  // namespace
@@ -54,7 +77,27 @@ Result<void> InGameState::SolveCombat(AppCtx& ctx) {
                                                       *defenderHurtBox,
                                                       &m_PlayerCombatDebugData[attackerIndex],
                                                       &m_PlayerCombatDebugData[defenderIndex]);
-            ApplyHitResult(hitResult, *attackerHitBox, attacker, defender);
+            const float appliedDamage =
+                ApplyHitResult(hitResult, *attackerHitBox, attacker, defender);
+            if (!hitResult.hit) {
+                continue;
+            }
+
+            if (attackerIndex < m_MatchStats.size()) {
+                ++m_MatchStats[attackerIndex].HitsLanded;
+                m_MatchStats[attackerIndex].DamageDealt += appliedDamage;
+            }
+
+            if (defenderIndex < m_MatchStats.size()) {
+                ++m_MatchStats[defenderIndex].HitsTaken;
+                m_MatchStats[defenderIndex].DamageTaken += appliedDamage;
+            }
+
+            if (attackerIndex < m_MatchStats.size() && defenderIndex < m_MatchStats.size()) {
+                RecordHitLocationStats(hitResult,
+                                       m_MatchStats[attackerIndex],
+                                       m_MatchStats[defenderIndex]);
+            }
         }
     }
 

@@ -13,6 +13,7 @@
 #include "smashorpass/state/states/in_game/Arena.hpp"
 #include "smashorpass/state/states/in_game/DebugData.hpp"
 #include "smashorpass/state/states/in_game/GameMode.hpp"
+#include "smashorpass/state/states/in_game/MatchStats.hpp"
 #include "smashorpass/state/states/in_game/Player.hpp"
 #include "smashorpass/state/states/in_game/PlayerControl.hpp"
 #include "smashorpass/state/states/in_game/ui/GameScreen.hpp"
@@ -79,6 +80,7 @@ class InGameState final : public State {
                                  std::span<const std::size_t> outOfHealthPlayers);
     void ResolveSmashDeaths(std::span<const std::size_t> blastZonePlayers);
     bool TryResolveTwoPlayerRoundEnd(bool player1Out, bool player2Out);
+    void RecordPlayerDefeat(std::size_t playerIndex, bool losesStock);
     void RespawnPlayerAtArenaSpawn(std::size_t playerIndex, float health);
     void StartNextRound(std::size_t winnerIndex);
     void RestartRound();
@@ -106,6 +108,7 @@ class InGameState final : public State {
     std::vector<Agent> m_Agents;
     std::vector<PlayerDebugRenderOptions> m_PlayerDebugRenderOptions;
     std::vector<PlayerCombatDebugData> m_PlayerCombatDebugData;
+    std::vector<PlayerMatchStats> m_MatchStats;
 
     using Clock = std::chrono::steady_clock;
     Clock::time_point m_PreviousUpdateTime;
