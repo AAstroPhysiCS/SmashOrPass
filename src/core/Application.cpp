@@ -156,6 +156,7 @@ Result<void> Application::OnEvent(const Event& event) {
                         }
                         case NavigationAction::ShowMatchResults: {
                             ctx.particleSystem.Clear();
+                            ctx.overallStats.RecordMatch(navigation.Match, navigation.Results);
 
                             TRY(matchResultsState,
                                 ctx.stateManager.ResetToState<MatchResultsState>(
@@ -166,6 +167,7 @@ Result<void> Application::OnEvent(const Event& event) {
                         }
                         case NavigationAction::ShowGameModeSelect:
                         case NavigationAction::ShowCharacterSelect:
+                        case NavigationAction::ShowScoreboard:
                         case NavigationAction::ResumeMatch:
                             return Ok();
                     }

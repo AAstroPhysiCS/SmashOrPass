@@ -14,6 +14,7 @@
 #include "smashorpass/rendering/ParticleSystem.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
 #include "smashorpass/state/StateManager.hpp"
+#include "smashorpass/state/states/in_game/OverallStats.hpp"
 #include "smashorpass/util.hpp"
 
 namespace sop {
@@ -36,6 +37,7 @@ struct AppCtx final {
 
     AssetManager assets;
     StateManager stateManager;
+    OverallStatsTracker overallStats;
 
     std::filesystem::path assetRootDir;
     DisplayMetrics displayMetrics;
