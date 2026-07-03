@@ -84,18 +84,27 @@ void SettingsScreen::Build(UIBuilder& builder) {
                      .Align(Alignment::TopCenter)
                      .Add(namesColumn, controlsColumn);
 
-    auto content =
-        builder.Column()
-            .Spacing(18.0f)
+    auto actions =
+        builder.Row()
+            .Spacing(16.0f)
             .Align(Alignment::TopCenter)
-            .Add(builder.Label("SETTINGS").Font(FontId::Title).Align(Alignment::TopCenter),
-                 table,
+            .Add(builder.Button("Reset")
+                     .Align(Alignment::TopCenter)
+                     .OnClick([this](AppCtx& ctx, ButtonData&) { ResetSettings(ctx); }),
                  builder.Button("Back")
                      .Align(Alignment::TopCenter)
                      .OnClick([](AppCtx& ctx, ButtonData&) {
                          ctx.eventDispatcher.Enqueue(
                              NavigationEvent{.Action = NavigationAction::ShowMainMenu});
                      }));
+
+    auto content =
+        builder.Column()
+            .Spacing(18.0f)
+            .Align(Alignment::TopCenter)
+            .Add(builder.Label("SETTINGS").Font(FontId::Title).Align(Alignment::TopCenter),
+                 table,
+                 actions);
 
     auto root = builder.Align(Alignment::Center, content);
     builder.SetRoot(root);
@@ -115,6 +124,14 @@ void SettingsScreen::AdjustSetting(AppCtx& ctx, const SettingValue setting, cons
     }
 
     ctx.settings.Clamp();
+    UpdateSettingLabels();
+    SaveSettings(ctx);
+}
+
+void SettingsScreen::ResetSettings(AppCtx& ctx) {
+    ctx.settings = Settings{};
+    ctx.settings.Clamp();
+
     UpdateSettingLabels();
     SaveSettings(ctx);
 }

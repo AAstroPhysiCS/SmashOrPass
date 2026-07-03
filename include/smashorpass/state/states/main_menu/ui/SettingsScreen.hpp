@@ -19,6 +19,7 @@ class SettingsScreen : public UIScreen {
     };
 
     void AdjustSetting(AppCtx& ctx, SettingValue setting, int delta);
+    void ResetSettings(AppCtx& ctx);
     void UpdateSettingLabels();
     void SaveSettings(AppCtx& ctx) const;
     void SetValueLabel(UIWidgetId labelId, int value);
