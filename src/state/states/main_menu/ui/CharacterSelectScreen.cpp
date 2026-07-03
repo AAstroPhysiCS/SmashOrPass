@@ -94,13 +94,16 @@ void CharacterSelectScreen::Build(UIBuilder& builder) {
 
         ctx.eventDispatcher.Enqueue(NavigationEvent{
             .Action = NavigationAction::StartMatch,
-            .Mode = m_GameMode,
-            .ArenaAsset = *arenaAsset,
-            .CharacterAssets = {*player1Asset, player2Asset},
-            .PlayerControls =
-                {
-                    PlayerControl::Human,
-                    m_Player2IsAgent ? PlayerControl::Agent : PlayerControl::Human,
+            .Match =
+                MatchConfig{
+                    .Mode = m_GameMode,
+                    .ArenaAsset = *arenaAsset,
+                    .CharacterAssets = {*player1Asset, player2Asset},
+                    .PlayerControls =
+                        {
+                            PlayerControl::Human,
+                            m_Player2IsAgent ? PlayerControl::Agent : PlayerControl::Human,
+                        },
                 },
         });
     };

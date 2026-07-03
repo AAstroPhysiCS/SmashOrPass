@@ -44,11 +44,12 @@ Result<EventFlow> MainMenuState::OnEvent(AppCtx& ctx, const Event& event) {
                 m_View = View::GameModeSelect;
                 return Ok(EventFlow::Consumed);
             case NavigationAction::ShowCharacterSelect:
-                m_CharacterSelectScreen.SetGameMode(navigation->Mode);
+                m_CharacterSelectScreen.SetGameMode(navigation->Match.Mode);
                 m_View = View::CharacterSelect;
                 return Ok(EventFlow::Consumed);
             case NavigationAction::StartMatch:
             case NavigationAction::ResumeMatch:
+            case NavigationAction::ShowMatchResults:
                 TRY_VOID(ctx.audioSystem.StopBus(AudioBus::Music, 2000));
                 return Ok(EventFlow::Passed);
         }

@@ -39,7 +39,7 @@ namespace {
 
 }  // namespace
 
-Result<void> InGameState::ResolveDeathsAndRespawns() {
+Result<void> InGameState::ResolveDeathsAndRespawns(AppCtx& ctx) {
     std::vector<std::size_t> blastZonePlayers;
     std::vector<std::size_t> outOfHealthPlayers;
     for (std::size_t playerIndex = 0; playerIndex < m_Players.size(); ++playerIndex) {
@@ -56,16 +56,17 @@ Result<void> InGameState::ResolveDeathsAndRespawns() {
         return Ok();
     }
 
-    if (m_GameMode == GameMode::Deathmatch) {
-        ResolveDeathmatchDeaths(blastZonePlayers, outOfHealthPlayers);
+    if (m_MatchConfig.Mode == GameMode::Deathmatch) {
+        ResolveDeathmatchDeaths(ctx, blastZonePlayers, outOfHealthPlayers);
         return Ok();
     }
 
-    ResolveSmashDeaths(blastZonePlayers);
+    ResolveSmashDeaths(ctx, blastZonePlayers);
     return Ok();
 }
 
-void InGameState::ResolveDeathmatchDeaths(const std::span<const std::size_t> blastZonePlayers,
+void InGameState::ResolveDeathmatchDeaths(AppCtx& ctx,
+                                          const std::span<const std::size_t> blastZonePlayers,
                                           const std::span<const std::size_t> outOfHealthPlayers) {
     std::vector<std::size_t> defeatedPlayers;
     defeatedPlayers.reserve(blastZonePlayers.size() + outOfHealthPlayers.size());
@@ -86,7 +87,7 @@ void InGameState::ResolveDeathmatchDeaths(const std::span<const std::size_t> bla
         const bool player1Out = ContainsPlayerIndex(outOfHealthPlayers, 0);
         const bool player2Out = ContainsPlayerIndex(outOfHealthPlayers, 1);
 
-        if (TryResolveTwoPlayerRoundEnd(player1Out, player2Out)) {
+        if (TryResolveTwoPlayerRoundEnd(ctx, player1Out, player2Out)) {
             return;
         }
     }
@@ -102,7 +103,8 @@ void InGameState::ResolveDeathmatchDeaths(const std::span<const std::size_t> bla
     }
 }
 
-void InGameState::ResolveSmashDeaths(const std::span<const std::size_t> blastZonePlayers) {
+void InGameState::ResolveSmashDeaths(AppCtx& ctx,
+                                     const std::span<const std::size_t> blastZonePlayers) {
     if (blastZonePlayers.empty()) {
         return;
     }
@@ -113,7 +115,7 @@ void InGameState::ResolveSmashDeaths(const std::span<const std::size_t> blastZon
     }
 
     if (m_Players.size() == 2 &&
-        TryResolveTwoPlayerRoundEnd(m_Players[0].Stocks() == 0, m_Players[1].Stocks() == 0)) {
+        TryResolveTwoPlayerRoundEnd(ctx, m_Players[0].Stocks() == 0, m_Players[1].Stocks() == 0)) {
         return;
     }
 
@@ -122,19 +124,21 @@ void InGameState::ResolveSmashDeaths(const std::span<const std::size_t> blastZon
     }
 }
 
-bool InGameState::TryResolveTwoPlayerRoundEnd(const bool player1Out, const bool player2Out) {
+bool InGameState::TryResolveTwoPlayerRoundEnd(AppCtx& ctx,
+                                              const bool player1Out,
+                                              const bool player2Out) {
     if (player1Out && player2Out) {
         RestartRound();
         return true;
     }
 
     if (player1Out) {
-        StartNextRound(1);
+        StartNextRound(ctx, 1);
         return true;
     }
 
     if (player2Out) {
-        StartNextRound(0);
+        StartNextRound(ctx, 0);
         return true;
     }
 
@@ -158,9 +162,36 @@ void InGameState::RespawnPlayerAtArenaSpawn(const std::size_t playerIndex, const
     m_Players[playerIndex].Respawn(spawnPosition, facingRight, health);
 }
 
-void InGameState::StartNextRound(const std::size_t winnerIndex) {
+void InGameState::FinishMatch(AppCtx& ctx, const std::size_t winnerIndex) {
+    m_MatchFinished = true;
+    m_Paused = false;
+
+    if (m_Players.size() < 2 || m_MatchStats.size() < 2) {
+        return;
+    }
+
+    ctx.eventDispatcher.Enqueue(NavigationEvent{
+        .Action = NavigationAction::ShowMatchResults,
+        .Match = m_MatchConfig,
+        .Results =
+            MatchResults{
+                .WinnerIndex = winnerIndex,
+                .Player1RoundsWon = m_Players[0].RoundsWon(),
+                .Player2RoundsWon = m_Players[1].RoundsWon(),
+                .Player1Stats = m_MatchStats[0],
+                .Player2Stats = m_MatchStats[1],
+            },
+    });
+}
+
+void InGameState::StartNextRound(AppCtx& ctx, const std::size_t winnerIndex) {
     if (winnerIndex < m_Players.size()) {
         m_Players[winnerIndex].WinRound();
+
+        if (m_Players[winnerIndex].RoundsWon() >= m_TargetRoundsToWin) {
+            FinishMatch(ctx, winnerIndex);
+            return;
+        }
     }
 
     ++m_CurrentRound;

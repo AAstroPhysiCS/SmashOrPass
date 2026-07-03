@@ -25,20 +25,13 @@ constexpr Clock::duration kGameLogicTickDuration =
 constexpr Clock::duration kAnimationTickDuration =
     duration_cast<Clock::duration>(std::chrono::duration<double>(1.0 / kAnimationTicksPerSecond));
 
-InGameState::InGameState(AppCtx& ctx,
-                         Asset<ArenaAssetData> arenaAsset,
-                         std::vector<Asset<CharacterAssetData>> characterAssets,
-                         GameMode gameMode,
-                         std::vector<PlayerControl> playerControls)
+InGameState::InGameState(AppCtx& ctx, MatchConfig matchConfig)
     : m_GameScreen(ctx),
       m_PauseScreen(ctx),
-      m_ArenaAsset(std::move(arenaAsset)),
-      m_CharacterAssets(std::move(characterAssets)),
-      m_GameMode(gameMode),
-      m_PlayerControls(std::move(playerControls)) {
+      m_MatchConfig(std::move(matchConfig)) {
     UIBuilder gameScreenBuilder(m_GameScreen);
     m_GameScreen.Build(gameScreenBuilder);
-    m_GameScreen.SetMode(m_GameMode);
+    m_GameScreen.SetMode(m_MatchConfig.Mode);
 
     UIBuilder pauseScreenBuilder(m_PauseScreen);
     m_PauseScreen.Build(pauseScreenBuilder);
@@ -47,17 +40,18 @@ InGameState::InGameState(AppCtx& ctx,
 }
 
 Result<void> InGameState::Initialize(AppCtx& ctx) {
-    Arena defaultArena{.asset = m_ArenaAsset, .dimensions = SDL_Rect{}};
+    Arena defaultArena{.asset = m_MatchConfig.ArenaAsset, .dimensions = SDL_Rect{}};
     defaultArena.ResizeToWindow(ctx.displayMetrics.LogicalSize());
     m_Arena = defaultArena;
 
     m_Players.clear();
-    m_Players.reserve(m_CharacterAssets.size());
-    m_PlayerControls.resize(m_CharacterAssets.size(), PlayerControl::Human);
+    m_Players.reserve(m_MatchConfig.CharacterAssets.size());
+    m_MatchConfig.PlayerControls.resize(m_MatchConfig.CharacterAssets.size(), PlayerControl::Human);
 
-    for (std::size_t playerIndex = 0; playerIndex < m_CharacterAssets.size(); ++playerIndex) {
+    for (std::size_t playerIndex = 0; playerIndex < m_MatchConfig.CharacterAssets.size();
+         ++playerIndex) {
         InputTranslationHelper<InputAction> input;
-        if (playerIndex < 2 && m_PlayerControls[playerIndex] == PlayerControl::Human) {
+        if (playerIndex < 2 && m_MatchConfig.PlayerControls[playerIndex] == PlayerControl::Human) {
             TRY_VOID(FillDefaultInputTranslation(input, static_cast<int>(playerIndex)));
         }
 
@@ -65,7 +59,7 @@ Result<void> InGameState::Initialize(AppCtx& ctx) {
         const bool facingRight = position.x < 960.0f;
 
         m_Players.emplace_back(static_cast<int>(playerIndex),
-                               m_CharacterAssets[playerIndex],
+                               m_MatchConfig.CharacterAssets[playerIndex],
                                position,
                                facingRight,
                                kDefaultPlayerHealth,
@@ -85,6 +79,7 @@ Result<void> InGameState::Initialize(AppCtx& ctx) {
     m_MatchStats.resize(m_Players.size());
 
     m_CurrentRound = 1;
+    m_MatchFinished = false;
     m_Paused = false;
     ResetFrameTimer();
     return Ok();
@@ -103,7 +98,7 @@ Result<EventFlow> InGameState::OnEvent(AppCtx& ctx, const Event& event) {
 
     // Go into pause menu
     if (const auto* keyEvent = std::get_if<KeyEvent>(&event.Payload)) {
-        if (keyEvent->Down && !keyEvent->Repeat && keyEvent->Key == SDLK_ESCAPE) {
+        if (!m_MatchFinished && keyEvent->Down && !keyEvent->Repeat && keyEvent->Key == SDLK_ESCAPE) {
             TogglePause();
             return Ok(EventFlow::Consumed);
         }
@@ -159,6 +154,10 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
         return Ok();
     }
 
+    if (m_MatchFinished) {
+        return Ok();
+    }
+
     // Game Logic
     int gameLogicTicks = 0;
     while (now - m_PreviousGameLogicTick >= kGameLogicTickDuration &&
@@ -188,7 +187,7 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
     TRY_VOID(TickEffects(ctx, dt));
 
     TRY_VOID(SolveCombat(ctx));
-    TRY_VOID(ResolveDeathsAndRespawns());
+    TRY_VOID(ResolveDeathsAndRespawns(ctx));
 
     SyncGameScreen();
     m_GameScreen.OnUpdate(ctx);
@@ -251,7 +250,7 @@ Result<void> InGameState::TickGameLogic(AppCtx& ctx) {
 
     for (std::size_t playerIndex = 0; playerIndex < m_Players.size(); ++playerIndex) {
         Player& player = m_Players[playerIndex];
-        if (m_PlayerControls[playerIndex] != PlayerControl::Agent) {
+        if (m_MatchConfig.PlayerControls[playerIndex] != PlayerControl::Agent) {
             TRY_VOID(player.TickGameLogic(ctx, m_Arena));
             continue;
         }

@@ -4,15 +4,10 @@
 #include <SDL3/SDL_keycode.h>
 
 #include <deque>
-#include <vector>
 
 #include "Base.hpp"
 #include "DisplayMetrics.hpp"
-#include "smashorpass/asset/AssetManager.hpp"
-#include "smashorpass/asset/assets/ArenaAsset.hpp"
-#include "smashorpass/asset/assets/CharacterAsset.hpp"
-#include "smashorpass/state/states/in_game/GameMode.hpp"
-#include "smashorpass/state/states/in_game/PlayerControl.hpp"
+#include "smashorpass/state/states/in_game/MatchConfig.hpp"
 
 namespace sop {
 
@@ -56,14 +51,13 @@ enum class NavigationAction {
     ShowCharacterSelect,
     StartMatch,
     ResumeMatch,
+    ShowMatchResults,
 };
 
 struct NavigationEvent {
     NavigationAction Action = NavigationAction::ShowMainMenu;
-    GameMode Mode = GameMode::Smash;
-    Asset<ArenaAssetData> ArenaAsset{};
-    std::vector<Asset<CharacterAssetData>> CharacterAssets{};
-    std::vector<PlayerControl> PlayerControls{};
+    MatchConfig Match{};
+    MatchResults Results{};
 };
 
 struct ApplicationQuitEvent {};

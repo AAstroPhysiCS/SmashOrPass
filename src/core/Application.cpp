@@ -12,6 +12,7 @@
 #include "smashorpass/state/overlays/DebugState.hpp"
 #include "smashorpass/state/states/in_game/InGameState.hpp"
 #include "smashorpass/state/states/main_menu/MainMenuState.hpp"
+#include "smashorpass/state/states/match_results/MatchResultsState.hpp"
 
 namespace sop {
 
@@ -148,12 +149,18 @@ Result<void> Application::OnEvent(const Event& event) {
 
                             TRY(inGameState,
                                 ctx.stateManager.ResetToState<InGameState>(
-                                    ctx,
-                                    navigation.ArenaAsset,
-                                    navigation.CharacterAssets,
-                                    navigation.Mode,
-                                    navigation.PlayerControls));
+                                    ctx, navigation.Match));
                             (void)inGameState;
+
+                            return Ok();
+                        }
+                        case NavigationAction::ShowMatchResults: {
+                            ctx.particleSystem.Clear();
+
+                            TRY(matchResultsState,
+                                ctx.stateManager.ResetToState<MatchResultsState>(
+                                    ctx, navigation.Match, navigation.Results));
+                            (void)matchResultsState;
 
                             return Ok();
                         }

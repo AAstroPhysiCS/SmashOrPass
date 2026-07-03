@@ -12,10 +12,9 @@
 #include "smashorpass/state/states/in_game/AiAgent.hpp"
 #include "smashorpass/state/states/in_game/Arena.hpp"
 #include "smashorpass/state/states/in_game/DebugData.hpp"
-#include "smashorpass/state/states/in_game/GameMode.hpp"
+#include "smashorpass/state/states/in_game/MatchConfig.hpp"
 #include "smashorpass/state/states/in_game/MatchStats.hpp"
 #include "smashorpass/state/states/in_game/Player.hpp"
-#include "smashorpass/state/states/in_game/PlayerControl.hpp"
 #include "smashorpass/state/states/in_game/ui/GameScreen.hpp"
 #include "smashorpass/state/states/in_game/ui/PauseScreen.hpp"
 
@@ -32,11 +31,7 @@ struct PlayerDebugRenderOptions {
 
 class InGameState final : public State {
    public:
-    explicit InGameState(AppCtx& ctx,
-                         Asset<ArenaAssetData> arenaAsset = {},
-                         std::vector<Asset<CharacterAssetData>> characterAssets = {},
-                         GameMode gameMode = GameMode::Smash,
-                         std::vector<PlayerControl> playerControls = {});
+    explicit InGameState(AppCtx& ctx, MatchConfig matchConfig = {});
     ~InGameState() override = default;
 
     Result<void> Initialize(AppCtx& ctx) final;
@@ -75,14 +70,16 @@ class InGameState final : public State {
     Result<void> TickEffects(AppCtx& ctx, std::chrono::duration<float> dt);
     Result<void> SolveCombat(AppCtx& ctx);
     void SyncGameScreen();
-    Result<void> ResolveDeathsAndRespawns();
-    void ResolveDeathmatchDeaths(std::span<const std::size_t> blastZonePlayers,
+    Result<void> ResolveDeathsAndRespawns(AppCtx& ctx);
+    void ResolveDeathmatchDeaths(AppCtx& ctx,
+                                 std::span<const std::size_t> blastZonePlayers,
                                  std::span<const std::size_t> outOfHealthPlayers);
-    void ResolveSmashDeaths(std::span<const std::size_t> blastZonePlayers);
-    bool TryResolveTwoPlayerRoundEnd(bool player1Out, bool player2Out);
+    void ResolveSmashDeaths(AppCtx& ctx, std::span<const std::size_t> blastZonePlayers);
+    bool TryResolveTwoPlayerRoundEnd(AppCtx& ctx, bool player1Out, bool player2Out);
     void RecordPlayerDefeat(std::size_t playerIndex, bool losesStock);
     void RespawnPlayerAtArenaSpawn(std::size_t playerIndex, float health);
-    void StartNextRound(std::size_t winnerIndex);
+    void FinishMatch(AppCtx& ctx, std::size_t winnerIndex);
+    void StartNextRound(AppCtx& ctx, std::size_t winnerIndex);
     void RestartRound();
 
     Result<void> RenderBackdrop(AppCtx& ctx);
@@ -99,10 +96,7 @@ class InGameState final : public State {
     PauseScreen m_PauseScreen;
 
     Arena m_Arena;
-    Asset<ArenaAssetData> m_ArenaAsset;
-    std::vector<Asset<CharacterAssetData>> m_CharacterAssets;
-    GameMode m_GameMode = GameMode::Smash;
-    std::vector<PlayerControl> m_PlayerControls;
+    MatchConfig m_MatchConfig;
     // Player 1 is at index 0, Player 2 at 1, ...
     std::vector<Player> m_Players;
     std::vector<Agent> m_Agents;
@@ -115,6 +109,8 @@ class InGameState final : public State {
     Clock::time_point m_PreviousGameLogicTick;
     Clock::time_point m_PreviousAnimationTick;
     int m_CurrentRound = 1;
+    int m_TargetRoundsToWin = 3;
+    bool m_MatchFinished = false;
     bool m_Paused = false;
 };
 
