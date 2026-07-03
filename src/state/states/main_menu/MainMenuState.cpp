@@ -10,6 +10,7 @@ MainMenuState::MainMenuState(AppCtx& ctx)
       m_GameModeSelectScreen(ctx),
       m_CharacterSelectScreen(ctx),
       m_SettingsScreen(ctx),
+      m_KeybindSettingsScreen(ctx),
       m_ScoreboardScreen(ctx) {
     UIBuilder mainMenuBuilder(m_MainMenuScreen);
     m_MainMenuScreen.Build(mainMenuBuilder);
@@ -22,6 +23,9 @@ MainMenuState::MainMenuState(AppCtx& ctx)
 
     UIBuilder settingsBuilder(m_SettingsScreen);
     m_SettingsScreen.Build(settingsBuilder);
+
+    UIBuilder keybindSettingsBuilder(m_KeybindSettingsScreen);
+    m_KeybindSettingsScreen.Build(keybindSettingsBuilder);
 
     UIBuilder scoreboardBuilder(m_ScoreboardScreen);
     m_ScoreboardScreen.Build(scoreboardBuilder);
@@ -61,6 +65,10 @@ Result<EventFlow> MainMenuState::OnEvent(AppCtx& ctx, const Event& event) {
                 m_SettingsScreen.RebuildUI();
                 m_View = View::Settings;
                 return Ok(EventFlow::Consumed);
+            case NavigationAction::ShowKeybindSettings:
+                m_KeybindSettingsScreen.RebuildUI();
+                m_View = View::KeybindSettings;
+                return Ok(EventFlow::Consumed);
             case NavigationAction::ShowScoreboard:
                 m_ScoreboardScreen.RebuildUI();
                 m_View = View::Scoreboard;
@@ -95,6 +103,8 @@ UIScreen& MainMenuState::ActiveScreen() {
             return m_CharacterSelectScreen;
         case View::Settings:
             return m_SettingsScreen;
+        case View::KeybindSettings:
+            return m_KeybindSettingsScreen;
         case View::Scoreboard:
             return m_ScoreboardScreen;
     }

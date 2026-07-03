@@ -50,8 +50,10 @@ Result<void> InGameState::Initialize(AppCtx& ctx) {
     for (std::size_t playerIndex = 0; playerIndex < m_MatchConfig.CharacterAssets.size();
          ++playerIndex) {
         InputTranslationHelper<InputAction> input;
-        if (playerIndex < 2 && m_MatchConfig.PlayerControls[playerIndex] == PlayerControl::Human) {
-            TRY_VOID(FillDefaultInputTranslation(input, static_cast<int>(playerIndex)));
+        if (playerIndex < ctx.settings.PlayerKeyBindingsByPlayer.size() &&
+            m_MatchConfig.PlayerControls[playerIndex] == PlayerControl::Human) {
+            FillInputTranslationFromBindings(input,
+                                             ctx.settings.PlayerKeyBindingsByPlayer[playerIndex]);
         }
 
         const SDL_FPoint position = PlayerStartPosition(playerIndex);

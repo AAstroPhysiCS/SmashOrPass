@@ -91,6 +91,12 @@ void SettingsScreen::Build(UIBuilder& builder) {
             .Add(builder.Button("Reset")
                      .Align(Alignment::TopCenter)
                      .OnClick([this](AppCtx& ctx, ButtonData&) { ResetSettings(ctx); }),
+                 builder.Button("Keybinds")
+                     .Align(Alignment::TopCenter)
+                     .OnClick([](AppCtx& ctx, ButtonData&) {
+                         ctx.eventDispatcher.Enqueue(
+                             NavigationEvent{.Action = NavigationAction::ShowKeybindSettings});
+                     }),
                  builder.Button("Back")
                      .Align(Alignment::TopCenter)
                      .OnClick([](AppCtx& ctx, ButtonData&) {
