@@ -48,6 +48,9 @@ struct MovementConfig {
 
     int TotalAttackTicks = 72;
     int MinAttackTicks = 28;
+    float AttackVelocityMultiplier = 0.2f;
+    float AttackGravityMultiplier = 0.2f;
+    float AttackFrictionMultiplier = 0.2f;
 };
 
 struct MovementDashState {

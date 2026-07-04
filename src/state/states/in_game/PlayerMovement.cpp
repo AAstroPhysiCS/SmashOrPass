@@ -97,8 +97,8 @@ void TryStartAttack(MovementState& state,
 
     state.Attack.TicksRemaining = config.TotalAttackTicks;
     state.Attack.MinimumTicksRemaining = config.MinAttackTicks;
-    state.Velocity.y = 0.0f;
-    state.Velocity.x = 0.0f;
+    state.Velocity.x *= config.AttackVelocityMultiplier;
+    state.Velocity.y *= config.AttackVelocityMultiplier;
 }
 
 void TryApplyJump(MovementState& state, const MovementConfig& config) {
@@ -128,16 +128,21 @@ void TryApplyMove(MovementState& state, const MovementInput& input, const Moveme
     state.FacingRight = horizontalIntent > 0.0f;
 }
 
-void ApplyGravity(MovementState& state, const MovementConfig& config) {
-    state.Velocity.y += config.Gravity;
+void ApplyGravity(MovementState& state,
+                  const MovementConfig& config,
+                  const float multiplier = 1.0f) {
+    state.Velocity.y += config.Gravity * multiplier;
 }
 
 void ClampFallSpeed(MovementState& state, const MovementConfig& config) {
     state.Velocity.y = std::min(state.Velocity.y, config.MaxFallSpeed);
 }
 
-void ApplyHorizontalDrag(MovementState& state, const MovementConfig& config) {
-    const float friction = state.Grounded ? config.GroundFriction : config.AirFriction;
+void ApplyHorizontalDrag(MovementState& state,
+                         const MovementConfig& config,
+                         const float multiplier = 1.0f) {
+    const float friction =
+        (state.Grounded ? config.GroundFriction : config.AirFriction) * multiplier;
     if (state.Velocity.x > 0.0f) {
         state.Velocity.x = std::max(state.Velocity.x - friction, 0.0f);
     } else if (state.Velocity.x < 0.0f) {
@@ -147,6 +152,16 @@ void ApplyHorizontalDrag(MovementState& state, const MovementConfig& config) {
 
 void ClampWalkSpeed(MovementState& state, const MovementConfig& config) {
     state.Velocity.x = std::clamp(state.Velocity.x, -config.WalkSpeed, config.WalkSpeed);
+}
+
+void ApplyPassivePhysics(MovementState& state,
+                         const MovementConfig& config,
+                         const float gravityMultiplier = 1.0f,
+                         const float frictionMultiplier = 1.0f) {
+    ApplyGravity(state, config, gravityMultiplier);
+    ClampFallSpeed(state, config);
+    ApplyHorizontalDrag(state, config, frictionMultiplier);
+    ClampWalkSpeed(state, config);
 }
 
 PlayerActionState ApplyMoves(MovementState& state,
@@ -168,15 +183,14 @@ PlayerActionState ApplyMoves(MovementState& state,
 
     TryStartAttack(state, input, config);
     if (state.Attack.IsActive()) {
+        ApplyPassivePhysics(
+            state, config, config.AttackGravityMultiplier, config.AttackFrictionMultiplier);
         return PlayerActionState::ATTACKING;
     }
 
     TryApplyJump(state, config);
     TryApplyMove(state, input, config);
-    ApplyGravity(state, config);
-    ClampFallSpeed(state, config);
-    ApplyHorizontalDrag(state, config);
-    ClampWalkSpeed(state, config);
+    ApplyPassivePhysics(state, config);
 
     if (input.HorizontalIntent() != 0.0f) {
         return PlayerActionState::RUNNING;
