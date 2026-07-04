@@ -151,7 +151,7 @@ Result<EventFlow> InGameState::OnEvent(AppCtx& ctx, const Event& event) {
     // TODO: Think about whether player event handling should always
     // fall through or not (see the EventFlow::Passed below)
     for (Player& player : m_Players) {
-        TRY_VOID(player.OnEvent(ctx, event));
+        TRY_VOID(player.OnEvent(event));
     }
 
     (void)EventDispatcher::Dispatch<PlayerParticleEffectEvent>(

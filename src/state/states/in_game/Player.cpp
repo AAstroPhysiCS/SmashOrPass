@@ -30,10 +30,7 @@ Player::Player(int playerId,
     m_MovementState.FacingRight = facingRight;
 }
 
-Result<CharacterAnimation> Player::GetAnimationToShow(AppCtx& ctx, const Arena& arena) const {
-    (void)ctx;
-    (void)arena;
-
+Result<CharacterAnimation> Player::GetAnimationToShow() const {
     switch (m_State) {
         case PlayerActionState::ATTACKING:
             return Ok(CharacterAnimation::Attacks);
@@ -208,9 +205,7 @@ Result<std::optional<WorldHurtBox>> Player::GetCurrentHurtBox(AppCtx& ctx) const
     return Ok(WorldHurtBox{hurtBox, *spriteRect, m_FacingRight});
 }
 
-Result<void> Player::OnEvent(AppCtx& ctx, const Event& event) {
-    (void)ctx;
-
+Result<void> Player::OnEvent(const Event& event) {
     if (const auto* keyEvent = std::get_if<KeyEvent>(&event.Payload)) {
         if (keyEvent->Down && !keyEvent->Repeat) {
             if (std::optional<InputAction> action =
@@ -314,7 +309,7 @@ Result<void> Player::DispatchSwordFrameEffects(AppCtx& ctx,
 Result<void> Player::TickAnimations(AppCtx& ctx, const Arena& arena) {
     TRY(asset, ctx.assets.GetAssetData(m_Asset));
 
-    TRY(animation, GetAnimationToShow(ctx, arena));
+    TRY(animation, GetAnimationToShow());
     const bool animationChanged = animation != m_CurrentAnimation;
     m_CurrentAnimation = animation;
     const auto sheet = asset.get().m_SpriteSheets.find(animation);
@@ -420,8 +415,8 @@ Result<void> Player::RenderHurtBoxes(AppCtx& ctx, const Arena& arena) const {
         return Ok();
     }
 
-    for (const auto& [value, subHurtBox] : worldHurtBox->hurtBox.get().m_SubHurtBoxes) {
-        (void)value;
+    for (const auto& subHurtBoxEntry : worldHurtBox->hurtBox.get().m_SubHurtBoxes) {
+        const SubHurtBox& subHurtBox = subHurtBoxEntry.second;
 
         const SDL_FRect worldRect = TransformRectToWorldspace(
             subHurtBox.m_GridData.bounds, worldHurtBox->spriteRect, worldHurtBox->facingRight);

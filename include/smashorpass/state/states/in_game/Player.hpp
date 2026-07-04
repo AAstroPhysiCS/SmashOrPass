@@ -41,7 +41,7 @@ class Player {
            bool facingRight,
            float health,
            InputTranslationHelper<InputAction> inputTranslationHelper);
-    Result<void> OnEvent(AppCtx& ctx, const Event& event);
+    Result<void> OnEvent(const Event& event);
 
     [[nodiscard]] int Id() const {
         return m_playerId;
@@ -149,8 +149,7 @@ class Player {
     mutable SDL_FPoint m_FlippedCollisionAnchorOffset{};
     SDL_FRect m_CollisionBodyAfterMovement{};
 
-    [[nodiscard]] Result<CharacterAnimation> GetAnimationToShow(AppCtx& ctx,
-                                                                const Arena& arena) const;
+    [[nodiscard]] Result<CharacterAnimation> GetAnimationToShow() const;
     [[nodiscard]] std::optional<SDL_FRect> GetBaselineSpriteRect(
         const CharacterSpriteSheetFrame& frame) const;
     [[nodiscard]] SDL_FPoint CollisionAnchorOffsetForFacing() const;
