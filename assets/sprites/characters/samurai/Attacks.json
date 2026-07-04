@@ -17,16 +17,6 @@
         "y": 0,
         "width": 371,
         "height": 285
-      },
-      "attack": {
-        "id": 1,
-        "damage": 3,
-        "knockback": {
-          "x": 10,
-          "y": -2
-        },
-        "hitstunTicks": 18,
-        "hitCooldownTicks": 20
       }
     },
     {
@@ -42,16 +32,6 @@
         "y": 0,
         "width": 372,
         "height": 285
-      },
-      "attack": {
-        "id": 1,
-        "damage": 3,
-        "knockback": {
-          "x": 10,
-          "y": -3
-        },
-        "hitstunTicks": 18,
-        "hitCooldownTicks": 20
       }
     },
     {
@@ -67,16 +47,6 @@
         "y": 0,
         "width": 362,
         "height": 283
-      },
-      "attack": {
-        "id": 1,
-        "damage": 3,
-        "knockback": {
-          "x": 9,
-          "y": -4
-        },
-        "hitstunTicks": 18,
-        "hitCooldownTicks": 20
       }
     },
     {
@@ -92,16 +62,6 @@
         "y": 0,
         "width": 310,
         "height": 277
-      },
-      "attack": {
-        "id": 1,
-        "damage": 3,
-        "knockback": {
-          "x": 9,
-          "y": -4
-        },
-        "hitstunTicks": 18,
-        "hitCooldownTicks": 20
       }
     },
     {
@@ -212,7 +172,7 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": 7,
+          "x": 6,
           "y": -8
         },
         "hitstunTicks": 18,
@@ -237,7 +197,7 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": 6,
+          "x": 4,
           "y": -8
         },
         "hitstunTicks": 18,
@@ -262,7 +222,7 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": 6,
+          "x": 3,
           "y": -9
         },
         "hitstunTicks": 18,
@@ -287,8 +247,8 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": 5,
-          "y": -10
+          "x": 2,
+          "y": -8
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -312,8 +272,8 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": 5,
-          "y": -10
+          "x": 1,
+          "y": -7
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -337,8 +297,8 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": 4,
-          "y": -10
+          "x": 1,
+          "y": -6
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -362,8 +322,8 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": 4,
-          "y": -9
+          "x": 1,
+          "y": -6
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -387,8 +347,8 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": 3,
-          "y": -9
+          "x": 0,
+          "y": -7
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -412,8 +372,8 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": 2,
-          "y": -8
+          "x": -1,
+          "y": -6
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -437,8 +397,8 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": 1,
-          "y": -8
+          "x": -1,
+          "y": -6
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -462,8 +422,8 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": 1,
-          "y": -7
+          "x": -1,
+          "y": -6
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -487,8 +447,8 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": 0,
-          "y": -7
+          "x": -2,
+          "y": -5
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -512,8 +472,8 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": -1,
-          "y": -6
+          "x": -2,
+          "y": -5
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -537,8 +497,8 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": -1,
-          "y": -6
+          "x": -2,
+          "y": -5
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -613,7 +573,7 @@
         "damage": 3,
         "knockback": {
           "x": -4,
-          "y": -4
+          "y": -3
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -637,8 +597,8 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": -4,
-          "y": -4
+          "x": -6,
+          "y": -2
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -662,8 +622,8 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": -5,
-          "y": -3
+          "x": -7,
+          "y": -1
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -687,8 +647,8 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": -6,
-          "y": -3
+          "x": -7,
+          "y": -1
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -713,7 +673,7 @@
         "damage": 3,
         "knockback": {
           "x": -6,
-          "y": -2
+          "y": -1
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -737,8 +697,8 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": -7,
-          "y": -2
+          "x": -5,
+          "y": -1
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -777,7 +737,7 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": -8,
+          "x": 10,
           "y": -1
         },
         "hitstunTicks": 18,
@@ -802,7 +762,7 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": -9,
+          "x": 11,
           "y": -1
         },
         "hitstunTicks": 18,
@@ -827,8 +787,8 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": -9,
-          "y": 0
+          "x": 12,
+          "y": -1
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
@@ -852,8 +812,8 @@
         "id": 1,
         "damage": 3,
         "knockback": {
-          "x": -10,
-          "y": 0
+          "x": 8,
+          "y": -1
         },
         "hitstunTicks": 18,
         "hitCooldownTicks": 20
