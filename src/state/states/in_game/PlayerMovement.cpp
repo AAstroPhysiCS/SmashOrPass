@@ -132,18 +132,21 @@ void ApplyGravity(MovementState& state, const MovementConfig& config) {
     state.Velocity.y += config.Gravity;
 }
 
-void ApplyFallSpeedClamp(MovementState& state, const MovementConfig& config) {
+void ClampFallSpeed(MovementState& state, const MovementConfig& config) {
     state.Velocity.y = std::min(state.Velocity.y, config.MaxFallSpeed);
 }
 
-void ApplyFriction(MovementState& state, const MovementConfig& config) {
-    ApplyFallSpeedClamp(state, config);
+void ApplyHorizontalDrag(MovementState& state, const MovementConfig& config) {
     const float friction = state.Grounded ? config.GroundFriction : config.AirFriction;
     if (state.Velocity.x > 0.0f) {
-        state.Velocity.x = std::clamp(state.Velocity.x - friction, 0.0f, config.WalkSpeed);
+        state.Velocity.x = std::max(state.Velocity.x - friction, 0.0f);
     } else if (state.Velocity.x < 0.0f) {
-        state.Velocity.x = std::clamp(state.Velocity.x + friction, -config.WalkSpeed, 0.0f);
+        state.Velocity.x = std::min(state.Velocity.x + friction, 0.0f);
     }
+}
+
+void ClampWalkSpeed(MovementState& state, const MovementConfig& config) {
+    state.Velocity.x = std::clamp(state.Velocity.x, -config.WalkSpeed, config.WalkSpeed);
 }
 
 PlayerActionState ApplyMoves(MovementState& state,
@@ -152,7 +155,7 @@ PlayerActionState ApplyMoves(MovementState& state,
     if (state.HitstunTicksRemaining > 0) {
         --state.HitstunTicksRemaining;
         ApplyGravity(state, config);
-        ApplyFallSpeedClamp(state, config);
+        ClampFallSpeed(state, config);
         return PlayerActionState::HITSTUN;
     }
 
@@ -171,7 +174,9 @@ PlayerActionState ApplyMoves(MovementState& state,
     TryApplyJump(state, config);
     TryApplyMove(state, input, config);
     ApplyGravity(state, config);
-    ApplyFriction(state, config);
+    ClampFallSpeed(state, config);
+    ApplyHorizontalDrag(state, config);
+    ClampWalkSpeed(state, config);
 
     if (input.HorizontalIntent() != 0.0f) {
         return PlayerActionState::RUNNING;
