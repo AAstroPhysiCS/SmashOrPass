@@ -18,12 +18,17 @@ void MainMenuScreen::Build(UIBuilder& builder) {
                 ctx.eventDispatcher.Enqueue(
                     NavigationEvent{.Action = NavigationAction::ShowGameModeSelect});
             }),
-        builder.Button("Options").Align(Alignment::TopCenter).OnClick([](AppCtx&, ButtonData&) {
+        builder.Button("Options").Align(Alignment::TopCenter).OnClick([](AppCtx& ctx, ButtonData&) {
             spdlog::info("Options clicked");
+            ctx.eventDispatcher.Enqueue(NavigationEvent{.Action = NavigationAction::ShowSettings});
         }),
-        builder.Button("Scoreboard").Align(Alignment::TopCenter).OnClick([](AppCtx&, ButtonData&) {
-            spdlog::info("Scoreboard clicked");
-        }),
+        builder.Button("Scoreboard")
+            .Align(Alignment::TopCenter)
+            .OnClick([](AppCtx& ctx, ButtonData&) {
+                spdlog::info("Scoreboard clicked");
+                ctx.eventDispatcher.Enqueue(
+                    NavigationEvent{.Action = NavigationAction::ShowScoreboard});
+            }),
         builder.Button("Exit").Align(Alignment::TopCenter).OnClick([](AppCtx& ctx, ButtonData&) {
             ctx.eventDispatcher.Enqueue(ApplicationQuitEvent{});
         }));

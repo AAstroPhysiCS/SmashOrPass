@@ -6,7 +6,12 @@
 namespace sop {
 
 MainMenuState::MainMenuState(AppCtx& ctx)
-    : m_MainMenuScreen(ctx), m_GameModeSelectScreen(ctx), m_CharacterSelectScreen(ctx) {
+    : m_MainMenuScreen(ctx),
+      m_GameModeSelectScreen(ctx),
+      m_CharacterSelectScreen(ctx),
+      m_SettingsScreen(ctx),
+      m_KeybindSettingsScreen(ctx),
+      m_ScoreboardScreen(ctx) {
     UIBuilder mainMenuBuilder(m_MainMenuScreen);
     m_MainMenuScreen.Build(mainMenuBuilder);
 
@@ -15,6 +20,15 @@ MainMenuState::MainMenuState(AppCtx& ctx)
 
     UIBuilder characterSelectBuilder(m_CharacterSelectScreen);
     m_CharacterSelectScreen.Build(characterSelectBuilder);
+
+    UIBuilder settingsBuilder(m_SettingsScreen);
+    m_SettingsScreen.Build(settingsBuilder);
+
+    UIBuilder keybindSettingsBuilder(m_KeybindSettingsScreen);
+    m_KeybindSettingsScreen.Build(keybindSettingsBuilder);
+
+    UIBuilder scoreboardBuilder(m_ScoreboardScreen);
+    m_ScoreboardScreen.Build(scoreboardBuilder);
 }
 
 Result<void> MainMenuState::Initialize(AppCtx& ctx) {
@@ -44,11 +58,26 @@ Result<EventFlow> MainMenuState::OnEvent(AppCtx& ctx, const Event& event) {
                 m_View = View::GameModeSelect;
                 return Ok(EventFlow::Consumed);
             case NavigationAction::ShowCharacterSelect:
-                m_CharacterSelectScreen.SetGameMode(navigation->Mode);
+                m_CharacterSelectScreen.SetMatchConfig(navigation->Match);
                 m_View = View::CharacterSelect;
+                return Ok(EventFlow::Consumed);
+            case NavigationAction::ShowSettings:
+                m_SettingsScreen.RebuildUI();
+                m_View = View::Settings;
+                return Ok(EventFlow::Consumed);
+            case NavigationAction::ShowKeybindSettings:
+                m_KeybindSettingsScreen.RebuildUI();
+                m_View = View::KeybindSettings;
+                return Ok(EventFlow::Consumed);
+            case NavigationAction::HideKeybindSettings:
+                return Ok(EventFlow::Passed);
+            case NavigationAction::ShowScoreboard:
+                m_ScoreboardScreen.RebuildUI();
+                m_View = View::Scoreboard;
                 return Ok(EventFlow::Consumed);
             case NavigationAction::StartMatch:
             case NavigationAction::ResumeMatch:
+            case NavigationAction::ShowMatchResults:
                 TRY_VOID(ctx.audioSystem.StopBus(AudioBus::Music, 2000));
                 return Ok(EventFlow::Passed);
         }
@@ -74,6 +103,12 @@ UIScreen& MainMenuState::ActiveScreen() {
             return m_GameModeSelectScreen;
         case View::CharacterSelect:
             return m_CharacterSelectScreen;
+        case View::Settings:
+            return m_SettingsScreen;
+        case View::KeybindSettings:
+            return m_KeybindSettingsScreen;
+        case View::Scoreboard:
+            return m_ScoreboardScreen;
     }
 
     return m_MainMenuScreen;

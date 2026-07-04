@@ -4,7 +4,10 @@
 #include "smashorpass/state/State.hpp"
 #include "smashorpass/state/states/main_menu/ui/CharacterSelectScreen.hpp"
 #include "smashorpass/state/states/main_menu/ui/GameModeSelectScreen.hpp"
+#include "smashorpass/state/states/main_menu/ui/KeybindSettingsScreen.hpp"
 #include "smashorpass/state/states/main_menu/ui/MenuScreen.hpp"
+#include "smashorpass/state/states/main_menu/ui/ScoreboardScreen.hpp"
+#include "smashorpass/state/states/main_menu/ui/SettingsScreen.hpp"
 
 namespace sop {
 
@@ -28,6 +31,9 @@ class MainMenuState final : public State {
         MainMenu,
         GameModeSelect,
         CharacterSelect,
+        Settings,
+        KeybindSettings,
+        Scoreboard,
     };
 
     [[nodiscard]] UIScreen& ActiveScreen();
@@ -36,6 +42,9 @@ class MainMenuState final : public State {
     MainMenuScreen m_MainMenuScreen;
     GameModeSelectScreen m_GameModeSelectScreen;
     CharacterSelectScreen m_CharacterSelectScreen;
+    SettingsScreen m_SettingsScreen;
+    KeybindSettingsScreen m_KeybindSettingsScreen;
+    ScoreboardScreen m_ScoreboardScreen;
 
     Asset<AudioAssetData> m_MainMenuMusic;
 };

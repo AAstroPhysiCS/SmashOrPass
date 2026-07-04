@@ -34,6 +34,7 @@ class GameScreen : public UIScreen {
                          int player2RoundsWon,
                          int currentRound);
     void SetMode(GameMode mode);
+    void SetTargetRoundsToWin(int targetRoundsToWin);
 
    private:
     void UpdateHudText();
@@ -51,7 +52,6 @@ class GameScreen : public UIScreen {
     int32_t m_CurrentRound = 1;
 
     bool m_Paused = false;
-    bool m_DebugDraw = false;
 
     UIWidgetId m_P1Label = g_InvalidWidgetId;
     UIWidgetId m_CenterLabel = g_InvalidWidgetId;

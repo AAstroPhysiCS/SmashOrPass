@@ -43,8 +43,14 @@ struct MovementConfig {
     int DashCooldownTicks = 54;
     float DashSpeed = 11.0f;
 
+    int GroundJumpGraceTicks = 8;
+    int JumpBufferTicks = 8;
+
     int TotalAttackTicks = 72;
     int MinAttackTicks = 28;
+    float AttackVelocityMultiplier = 0.2f;
+    float AttackGravityMultiplier = 0.2f;
+    float AttackFrictionMultiplier = 0.2f;
 };
 
 struct MovementDashState {
@@ -72,6 +78,8 @@ struct MovementState {
     bool Grounded = false;
     bool FacingRight = true;
     bool DashJumpAvailable = false;
+    int GroundJumpGraceTicksRemaining = 0;
+    int JumpBufferTicksRemaining = 0;
     int HitstunTicksRemaining = 0;
 
     MovementDashState Dash{};
@@ -80,7 +88,6 @@ struct MovementState {
 
 struct MovementResult {
     SDL_FPoint PositionDelta{0.0f, 0.0f};
-    bool FacingRightChanged = false;
     PlayerActionState ActionState = PlayerActionState::IDLE;
 };
 

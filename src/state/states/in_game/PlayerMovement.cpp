@@ -31,12 +31,38 @@ void RefreshAirOptions(MovementState& state) {
     state.DashJumpAvailable = false;
 }
 
+void RefreshJumpWindows(MovementState& state,
+                        const MovementInput& input,
+                        const MovementConfig& config) {
+    if (state.Grounded) {
+        state.GroundJumpGraceTicksRemaining = config.GroundJumpGraceTicks;
+    }
+
+    if (input.JumpPressed) {
+        state.JumpBufferTicksRemaining = std::max(1, config.JumpBufferTicks);
+    }
+}
+
+void TickJumpWindows(MovementState& state) {
+    if (!state.Grounded && state.GroundJumpGraceTicksRemaining > 0) {
+        --state.GroundJumpGraceTicksRemaining;
+    }
+
+    if (state.JumpBufferTicksRemaining > 0) {
+        --state.JumpBufferTicksRemaining;
+    }
+}
+
 void TryStartDash(MovementState& state, const MovementInput& input, const MovementConfig& config) {
     if (!input.DashPressed) {
         return;
     }
 
     if (state.Dash.IsActive() || state.Dash.CooldownTicksRemaining != 0) {
+        return;
+    }
+
+    if (state.Attack.MinimumTicksRemaining > 0) {
         return;
     }
 
@@ -54,6 +80,7 @@ void TryStartDash(MovementState& state, const MovementInput& input, const Moveme
     state.FacingRight = state.Dash.Direction > 0.0f;
     state.Dash.TicksRemaining = config.DashTicks;
     state.Dash.CooldownTicksRemaining = config.DashCooldownTicks;
+    state.Attack = MovementAttackState{};
 
     if (!state.Grounded) {
         state.Dash.AirDashAvailable = false;
@@ -75,24 +102,28 @@ void TryStartAttack(MovementState& state,
 
     state.Attack.TicksRemaining = config.TotalAttackTicks;
     state.Attack.MinimumTicksRemaining = config.MinAttackTicks;
-    state.Velocity.y = 0.0f;
-    state.Velocity.x = 0.0f;
+    state.Velocity.x *= config.AttackVelocityMultiplier;
+    state.Velocity.y *= config.AttackVelocityMultiplier;
 }
 
-void TryApplyJump(MovementState& state, const MovementInput& input, const MovementConfig& config) {
-    if (!input.JumpPressed) {
+void TryApplyJump(MovementState& state, const MovementConfig& config) {
+    if (state.JumpBufferTicksRemaining <= 0) {
         return;
     }
 
-    if (state.Grounded) {
+    if (state.Grounded || state.GroundJumpGraceTicksRemaining > 0) {
         state.Velocity.y = config.JumpVelocity;
+        state.GroundJumpGraceTicksRemaining = 0;
+        state.JumpBufferTicksRemaining = 0;
     } else if (state.DashJumpAvailable) {
         state.Velocity.y = config.JumpVelocity;
         state.DashJumpAvailable = false;
+        state.JumpBufferTicksRemaining = 0;
     }
 }
 
 void TryApplyMove(MovementState& state, const MovementInput& input, const MovementConfig& config) {
+    // Horizontal Intent checks if left or right were pressed
     const float horizontalIntent = input.HorizontalIntent();
     if (horizontalIntent == 0.0f) {
         return;
@@ -100,34 +131,53 @@ void TryApplyMove(MovementState& state, const MovementInput& input, const Moveme
 
     const float movementFactor = state.Grounded ? 1.0f : config.AirMovementFactor;
     state.Velocity.x += horizontalIntent * config.WalkAcceleration * movementFactor;
-    state.FacingRight = state.Velocity.x > 0.0f;
+    state.FacingRight = horizontalIntent > 0.0f;
 }
 
-void ApplyGravity(MovementState& state, const MovementConfig& config) {
-    state.Velocity.y += config.Gravity;
+void ApplyGravity(MovementState& state,
+                  const MovementConfig& config,
+                  const float multiplier = 1.0f) {
+    state.Velocity.y += config.Gravity * multiplier;
 }
 
-void ApplyFallSpeedClamp(MovementState& state, const MovementConfig& config) {
+void ClampFallSpeed(MovementState& state, const MovementConfig& config) {
     state.Velocity.y = std::min(state.Velocity.y, config.MaxFallSpeed);
 }
 
-void ApplyFriction(MovementState& state, const MovementConfig& config) {
-    ApplyFallSpeedClamp(state, config);
-    const float friction = state.Grounded ? config.GroundFriction : config.AirFriction;
+void ApplyHorizontalDrag(MovementState& state,
+                         const MovementConfig& config,
+                         const float multiplier = 1.0f) {
+    const float friction =
+        (state.Grounded ? config.GroundFriction : config.AirFriction) * multiplier;
     if (state.Velocity.x > 0.0f) {
-        state.Velocity.x = std::clamp(state.Velocity.x - friction, 0.0f, config.WalkSpeed);
+        state.Velocity.x = std::max(state.Velocity.x - friction, 0.0f);
     } else if (state.Velocity.x < 0.0f) {
-        state.Velocity.x = std::clamp(state.Velocity.x + friction, -config.WalkSpeed, 0.0f);
+        state.Velocity.x = std::min(state.Velocity.x + friction, 0.0f);
     }
+}
+
+void ClampWalkSpeed(MovementState& state, const MovementConfig& config) {
+    state.Velocity.x = std::clamp(state.Velocity.x, -config.WalkSpeed, config.WalkSpeed);
+}
+
+void ApplyPassivePhysics(MovementState& state,
+                         const MovementConfig& config,
+                         const float gravityMultiplier = 1.0f,
+                         const float frictionMultiplier = 1.0f) {
+    ApplyGravity(state, config, gravityMultiplier);
+    ClampFallSpeed(state, config);
+    ApplyHorizontalDrag(state, config, frictionMultiplier);
+    ClampWalkSpeed(state, config);
 }
 
 PlayerActionState ApplyMoves(MovementState& state,
                              const MovementInput& input,
                              const MovementConfig& config) {
+    // Stun > Dash > Attack > Normal Movement
     if (state.HitstunTicksRemaining > 0) {
         --state.HitstunTicksRemaining;
         ApplyGravity(state, config);
-        ApplyFallSpeedClamp(state, config);
+        ClampFallSpeed(state, config);
         return PlayerActionState::HITSTUN;
     }
 
@@ -140,13 +190,14 @@ PlayerActionState ApplyMoves(MovementState& state,
 
     TryStartAttack(state, input, config);
     if (state.Attack.IsActive()) {
+        ApplyPassivePhysics(
+            state, config, config.AttackGravityMultiplier, config.AttackFrictionMultiplier);
         return PlayerActionState::ATTACKING;
     }
 
-    TryApplyJump(state, input, config);
+    TryApplyJump(state, config);
     TryApplyMove(state, input, config);
-    ApplyGravity(state, config);
-    ApplyFriction(state, config);
+    ApplyPassivePhysics(state, config);
 
     if (input.HorizontalIntent() != 0.0f) {
         return PlayerActionState::RUNNING;
@@ -160,19 +211,18 @@ PlayerActionState ApplyMoves(MovementState& state,
 MovementResult PlayerMovement::Tick(MovementState& state,
                                     const MovementInput& input,
                                     const MovementConfig& config) {
-    const bool wasFacingRight = state.FacingRight;
-
     TickCooldowns(state, input);
+    RefreshJumpWindows(state, input, config);
 
     if (state.Grounded) {
         RefreshAirOptions(state);
     }
 
     const PlayerActionState actionState = ApplyMoves(state, input, config);
+    TickJumpWindows(state);
 
     return MovementResult{
         .PositionDelta = state.Velocity,
-        .FacingRightChanged = wasFacingRight != state.FacingRight,
         .ActionState = actionState,
     };
 }

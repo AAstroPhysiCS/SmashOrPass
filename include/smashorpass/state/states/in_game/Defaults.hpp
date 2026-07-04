@@ -7,6 +7,7 @@
 #include <string>
 
 #include "smashorpass/core/InputHelper.hpp"
+#include "smashorpass/core/Settings.hpp"
 #include "smashorpass/state/states/in_game/Player.hpp"
 #include "smashorpass/util.hpp"
 
@@ -33,25 +34,24 @@ inline SDL_FPoint PlayerStartPosition(const std::size_t playerIndex) {
     }
 }
 
+inline void FillInputTranslationFromBindings(InputTranslationHelper<InputAction>& helper,
+                                             const PlayerKeyBindings& bindings) {
+    helper.BindKey(bindings.MoveLeft, InputAction::MOVE_LEFT);
+    helper.BindKey(bindings.MoveRight, InputAction::MOVE_RIGHT);
+    helper.BindKey(bindings.Jump, InputAction::JUMP);
+    helper.BindKey(bindings.Dash, InputAction::DASH);
+    helper.BindKey(bindings.Attack, InputAction::ATTACK);
+}
+
 inline Result<void> FillDefaultInputTranslation(InputTranslationHelper<InputAction>& helper,
                                                 const int player) {
     if (player == 0) {
-        // Player 1: WASD
-        helper.BindKey(SDLK_A, InputAction::MOVE_LEFT);
-        helper.BindKey(SDLK_D, InputAction::MOVE_RIGHT);
-        helper.BindKey(SDLK_W, InputAction::JUMP);
-        helper.BindKey(SDLK_LSHIFT, InputAction::DASH);
-        helper.BindKey(SDLK_SPACE, InputAction::ATTACK);
+        FillInputTranslationFromBindings(helper, Settings{}.PlayerKeyBindingsByPlayer[0]);
         return Ok();
     }
 
     if (player == 1) {
-        // Player 2: arrows
-        helper.BindKey(SDLK_LEFT, InputAction::MOVE_LEFT);
-        helper.BindKey(SDLK_RIGHT, InputAction::MOVE_RIGHT);
-        helper.BindKey(SDLK_UP, InputAction::JUMP);
-        helper.BindKey(SDLK_RSHIFT, InputAction::DASH);
-        helper.BindKey(SDLK_RCTRL, InputAction::ATTACK);
+        FillInputTranslationFromBindings(helper, Settings{}.PlayerKeyBindingsByPlayer[1]);
         return Ok();
     }
 

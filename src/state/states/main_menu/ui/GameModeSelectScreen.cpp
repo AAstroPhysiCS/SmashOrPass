@@ -15,7 +15,9 @@ void GameModeSelectScreen::Build(UIBuilder& builder) {
         builder.Button("Smash").Align(Alignment::TopCenter).OnClick([](AppCtx& ctx, ButtonData&) {
             ctx.eventDispatcher.Enqueue(NavigationEvent{
                 .Action = NavigationAction::ShowCharacterSelect,
-                .Mode = GameMode::Smash,
+                .Match = MatchConfig{.Mode = GameMode::Smash,
+                                     .TargetRoundsToWin = ctx.settings.SmashRoundsToWin,
+                                     .StocksPerRound = ctx.settings.SmashStocksPerRound},
             });
         }),
         builder.Button("Deathmatch")
@@ -23,7 +25,9 @@ void GameModeSelectScreen::Build(UIBuilder& builder) {
             .OnClick([](AppCtx& ctx, ButtonData&) {
                 ctx.eventDispatcher.Enqueue(NavigationEvent{
                     .Action = NavigationAction::ShowCharacterSelect,
-                    .Mode = GameMode::Deathmatch,
+                    .Match = MatchConfig{.Mode = GameMode::Deathmatch,
+                                         .TargetRoundsToWin = ctx.settings.DeathmatchRoundsToWin,
+                                         .StocksPerRound = ctx.settings.SmashStocksPerRound},
                 });
             }),
         builder.Button("Back").Align(Alignment::TopCenter).OnClick([](AppCtx& ctx, ButtonData&) {

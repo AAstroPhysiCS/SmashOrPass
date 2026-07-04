@@ -11,6 +11,8 @@ namespace {
 constexpr int kBucketReorderStride = 5;
 
 void reorderBucketByStride(std::vector<SDL_Point>& bucket, int stride) {
+    // Points in each Bucket Vector are reordered, so you can
+    // check Pixels from different Areas earlier and hopefully find an overlap quicker
     if (bucket.size() <= 1 || stride <= 1) {
         return;
     }
@@ -66,6 +68,8 @@ createInnerOuterBuckets(const ChannelPlane& channel,
                         int bucketMatrixWidth,
                         int bucketMatrixHeight,
                         int channelValue) {
+    // Outer buckets store hurtbox edge pixels, split by grid cell.
+    // With continuous Hitboxes this should suffice to find an overlap -> less computation
     std::vector<std::vector<SDL_Point>> innerBuckets(bucketMatrixWidth * bucketMatrixHeight);
     std::vector<std::vector<SDL_Point>> outerBuckets(bucketMatrixWidth * bucketMatrixHeight);
 
@@ -178,6 +182,8 @@ std::vector<std::vector<SDL_Point>> createBuckets(const ChannelPlane& channel,
                                                   int bucketMatrixWidth,
                                                   int bucketMatrixHeight,
                                                   int channelValue) {
+    // Each Bucket is one Grid Cell.
+    // We later compute which Grid Cells overlap and only compare the pixels in those Buckets
     std::vector<std::vector<SDL_Point>> buckets(bucketMatrixWidth * bucketMatrixHeight);
 
     const int left = static_cast<int>(boundingBox.x);
@@ -213,6 +219,7 @@ std::vector<std::vector<SDL_Point>> createBuckets(const ChannelPlane& channel,
 SubHurtBox setupSubHurtBox(const ChannelPlane& blueChannel,
                            int targetGridSize,
                            int blueChannelValue) {
+    // SubHurtBox -> All pixels with similar blue (=hurt) values -> head, torso etc.
     const SDL_FRect boundingBox = getBounds(blueChannel, blueChannelValue);
 
     const int gridSize = std::max(1, targetGridSize);
@@ -262,6 +269,7 @@ SubHurtBox setupSubHurtBox(const ChannelPlane& blueChannel,
 }  // namespace
 
 HitBox setupHitbox(const ChannelPlane& redChannel, int targetGridSize, AttackData attackData) {
+    // build a Hitbox Grid, with one vector of Hitbox pixels per Cell
     const SDL_FRect boundingBox = getBounds(redChannel, 1);
 
     const int gridSize = std::max(1, targetGridSize);
@@ -305,6 +313,7 @@ HitBox setupHitbox(const ChannelPlane& redChannel, int targetGridSize, AttackDat
 }
 
 AttackData loadAttackData(const nlohmann::json& frameJson) {
+    // Get Info about attack from each frame (damage, knockback, stun)
     const auto attackIt = frameJson.find("attack");
     if (attackIt == frameJson.end() || attackIt->is_null()) {
         return AttackData{};
@@ -327,6 +336,8 @@ AttackData loadAttackData(const nlohmann::json& frameJson) {
 }
 
 HurtBox setupHurtBox(const ChannelPlane& blueChannel, int targetGridSize) {
+    // gets values 1-3 for Blue Channel, 3 = most vulnerable (head) etc.
+    // builds one SubHurtBox per Value, later we first check 3 for a hit, then 2 etc.
     HurtBox hurtBox;
 
     for (int value = 1; value <= 3; value++) {

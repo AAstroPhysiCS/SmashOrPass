@@ -10,10 +10,12 @@
 #include "smashorpass/core/DisplayMetrics.hpp"
 #include "smashorpass/core/Event.hpp"
 #include "smashorpass/core/InputHelper.hpp"
+#include "smashorpass/core/Settings.hpp"
 #include "smashorpass/core/Window.hpp"
 #include "smashorpass/rendering/ParticleSystem.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
 #include "smashorpass/state/StateManager.hpp"
+#include "smashorpass/state/states/in_game/OverallStats.hpp"
 #include "smashorpass/util.hpp"
 
 namespace sop {
@@ -26,6 +28,7 @@ struct DebugRenderOptions {
 struct AppCtx final {
     AppCtx();
     Result<void> Initialize();
+    Result<void> InitializeUserData();
 
     Window window;
     Renderer renderer;
@@ -36,8 +39,13 @@ struct AppCtx final {
 
     AssetManager assets;
     StateManager stateManager;
+    OverallStatsTracker overallStats;
+    Settings settings;
 
     std::filesystem::path assetRootDir;
+    std::filesystem::path userDataDir;
+    std::filesystem::path overallStatsPath;
+    std::filesystem::path settingsPath;
     DisplayMetrics displayMetrics;
 
     DebugRenderOptions debugRender;

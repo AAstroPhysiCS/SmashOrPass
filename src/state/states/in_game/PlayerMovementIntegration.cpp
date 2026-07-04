@@ -59,6 +59,8 @@ Result<void> Player::TickGameLogic(AppCtx& ctx, const Arena& arena, const Moveme
     const bool wasAttacking = m_MovementState.Attack.IsActive();
 
     const MovementResult movement = PlayerMovement::Tick(m_MovementState, input, m_MovementConfig);
+    // check if Attack was started, if yes clear the map of player hits
+    // -> can hit everybody again with an attack
     if (!wasAttacking && m_MovementState.Attack.IsActive()) {
         InitAttack();
     }
@@ -67,6 +69,7 @@ Result<void> Player::TickGameLogic(AppCtx& ctx, const Arena& arena, const Moveme
     m_Position.y += movement.PositionDelta.y;
     m_FacingRight = m_MovementState.FacingRight;
 
+    // Grounded will be set by collision detection
     m_MovementState.Grounded = false;
 
     m_State = movement.ActionState;

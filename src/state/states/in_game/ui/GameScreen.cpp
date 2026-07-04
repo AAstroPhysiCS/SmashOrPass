@@ -45,14 +45,6 @@ void GameScreen::OnUpdate(AppCtx&) {
         return;
     }
 
-    // TODO:
-    // update player controllers
-    // apply gravity / movement
-    // resolve collisions
-    // resolve hits / knockback / HP
-    // advance particles / effects
-    // detect round win / match win
-
     UpdateHudText();
 }
 
@@ -79,6 +71,11 @@ void GameScreen::SetPlayersStats(const float player1Health,
 
 void GameScreen::SetMode(const GameMode mode) {
     m_Mode = mode;
+    UpdateHudText();
+}
+
+void GameScreen::SetTargetRoundsToWin(const int targetRoundsToWin) {
+    m_TargetRoundsToWin = targetRoundsToWin;
     UpdateHudText();
 }
 

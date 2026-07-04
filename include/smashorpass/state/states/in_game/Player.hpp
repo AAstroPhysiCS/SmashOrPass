@@ -41,7 +41,7 @@ class Player {
            bool facingRight,
            float health,
            InputTranslationHelper<InputAction> inputTranslationHelper);
-    Result<void> OnEvent(AppCtx& ctx, const Event& event);
+    Result<void> OnEvent(const Event& event);
 
     [[nodiscard]] int Id() const {
         return m_playerId;
@@ -81,14 +81,15 @@ class Player {
     void InitAttack();
     [[nodiscard]] bool HasHitPlayerThisAttack(int playerId) const;
     void MarkPlayerHitThisAttack(int playerId);
-    void ApplyHit(const AttackData& attackData,
-                  const HitResult& hitResult,
-                  bool attackerFacingRight);
+    float ApplyHit(const AttackData& attackData,
+                   const HitResult& hitResult,
+                   bool attackerFacingRight);
     void ReduceHealth(float damage);
     void LoseStock();
     void ResetStocks(int stocks);
     void WinRound();
     void Respawn(SDL_FPoint position, bool facingRight, float health);
+    void SetInputTranslationHelper(InputTranslationHelper<InputAction> inputTranslationHelper);
 
     Result<void> Render(AppCtx& ctx, const Arena& arena) const;
     Result<void> RenderCollisionBox(AppCtx& ctx, const Arena& arena) const;
@@ -148,8 +149,7 @@ class Player {
     mutable SDL_FPoint m_FlippedCollisionAnchorOffset{};
     SDL_FRect m_CollisionBodyAfterMovement{};
 
-    [[nodiscard]] Result<CharacterAnimation> GetAnimationToShow(AppCtx& ctx,
-                                                                const Arena& arena) const;
+    [[nodiscard]] Result<CharacterAnimation> GetAnimationToShow() const;
     [[nodiscard]] std::optional<SDL_FRect> GetBaselineSpriteRect(
         const CharacterSpriteSheetFrame& frame) const;
     [[nodiscard]] SDL_FPoint CollisionAnchorOffsetForFacing() const;

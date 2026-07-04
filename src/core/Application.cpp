@@ -9,9 +9,12 @@
 
 #include "smashorpass/asset/AssetManager.hpp"
 #include "smashorpass/core/Base.hpp"
+#include "smashorpass/persistence/OverallStatsStore.hpp"
+#include "smashorpass/persistence/SettingsStore.hpp"
 #include "smashorpass/state/overlays/DebugState.hpp"
 #include "smashorpass/state/states/in_game/InGameState.hpp"
 #include "smashorpass/state/states/main_menu/MainMenuState.hpp"
+#include "smashorpass/state/states/match_results/MatchResultsState.hpp"
 
 namespace sop {
 
@@ -40,6 +43,13 @@ Result<void> Application::Run() {
         TRY_VOID(ProcessEvents());
         TRY_VOID(Update());
         TRY_VOID(Render());
+    }
+
+    if (!ctx.settingsPath.empty()) {
+        auto saveResult = SettingsStore::Save(ctx.settingsPath, ctx.settings);
+        if (!saveResult) {
+            spdlog::warn("Failed to save settings: {}", saveResult.error());
+        }
     }
 
     spdlog::info("Shutting down the game");
@@ -147,18 +157,36 @@ Result<void> Application::OnEvent(const Event& event) {
                             ctx.particleSystem.Clear();
 
                             TRY(inGameState,
-                                ctx.stateManager.ResetToState<InGameState>(
-                                    ctx,
-                                    navigation.ArenaAsset,
-                                    navigation.CharacterAssets,
-                                    navigation.Mode,
-                                    navigation.PlayerControls));
+                                ctx.stateManager.ResetToState<InGameState>(ctx, navigation.Match));
                             (void)inGameState;
+
+                            return Ok();
+                        }
+                        case NavigationAction::ShowMatchResults: {
+                            ctx.particleSystem.Clear();
+                            ctx.overallStats.RecordMatch(navigation.Match, navigation.Results);
+                            if (!ctx.overallStatsPath.empty()) {
+                                auto saveResult =
+                                    OverallStatsStore::Save(ctx.overallStatsPath, ctx.overallStats);
+                                if (!saveResult) {
+                                    spdlog::warn("Failed to save overall stats: {}",
+                                                 saveResult.error());
+                                }
+                            }
+
+                            TRY(matchResultsState,
+                                ctx.stateManager.ResetToState<MatchResultsState>(
+                                    ctx, navigation.Match, navigation.Results));
+                            (void)matchResultsState;
 
                             return Ok();
                         }
                         case NavigationAction::ShowGameModeSelect:
                         case NavigationAction::ShowCharacterSelect:
+                        case NavigationAction::ShowSettings:
+                        case NavigationAction::ShowKeybindSettings:
+                        case NavigationAction::HideKeybindSettings:
+                        case NavigationAction::ShowScoreboard:
                         case NavigationAction::ResumeMatch:
                             return Ok();
                     }

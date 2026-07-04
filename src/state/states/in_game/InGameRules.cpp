@@ -27,6 +27,20 @@ namespace {
     return std::find(players.begin(), players.end(), playerIndex) != players.end();
 }
 
+void PushUniquePlayerIndex(std::vector<std::size_t>& players, const std::size_t playerIndex) {
+    if (!ContainsPlayerIndex(players, playerIndex)) {
+        players.push_back(playerIndex);
+    }
+}
+
+[[nodiscard]] float ApplyOutOfBoundsDamage(Player& player, const int damage) {
+    // In Default Deathmatch you are allowed to go out of bounds and respawn
+    // here is optionally applied damage
+    const float previousHealth = player.Health();
+    player.ReduceHealth(static_cast<float>(damage));
+    return previousHealth - player.Health();
+}
+
 [[nodiscard]] SDL_FPoint RespawnPosition(const std::size_t playerIndex, const Arena& arena) {
     SDL_FPoint spawnPosition = PlayerStartPosition(playerIndex);
     spawnPosition.y = static_cast<float>(arena.dimensions.y) - kRespawnHeightAboveArena;
@@ -39,7 +53,11 @@ namespace {
 
 }  // namespace
 
-Result<void> InGameState::ResolveDeathsAndRespawns() {
+Result<void> InGameState::ResolveDeathsAndRespawns(AppCtx& ctx) {
+    // Smash -> only dies when out of bounds
+    // Deathmatch -> only dies when no health left
+    // (Can also mean out of bounds if you set outOfBoundsDamage to 100)
+    // use Vectors so both players can be checked and draws are possible
     std::vector<std::size_t> blastZonePlayers;
     std::vector<std::size_t> outOfHealthPlayers;
     for (std::size_t playerIndex = 0; playerIndex < m_Players.size(); ++playerIndex) {
@@ -56,48 +74,87 @@ Result<void> InGameState::ResolveDeathsAndRespawns() {
         return Ok();
     }
 
-    if (m_GameMode == GameMode::Deathmatch) {
-        ResolveDeathmatchDeaths(blastZonePlayers, outOfHealthPlayers);
+    if (m_MatchConfig.Mode == GameMode::Deathmatch) {
+        ResolveDeathmatchDeaths(ctx, blastZonePlayers, outOfHealthPlayers);
         return Ok();
     }
 
-    ResolveSmashDeaths(blastZonePlayers);
+    ResolveSmashDeaths(ctx, blastZonePlayers);
     return Ok();
 }
 
-void InGameState::ResolveDeathmatchDeaths(const std::span<const std::size_t> blastZonePlayers,
+void InGameState::ResolveDeathmatchDeaths(AppCtx& ctx,
+                                          const std::span<const std::size_t> blastZonePlayers,
                                           const std::span<const std::size_t> outOfHealthPlayers) {
-    if (m_Players.size() == 2 && !outOfHealthPlayers.empty()) {
-        const bool player1Out = ContainsPlayerIndex(outOfHealthPlayers, 0);
-        const bool player2Out = ContainsPlayerIndex(outOfHealthPlayers, 1);
+    std::vector<std::size_t> defeatedPlayers = {};
+    std::vector<std::size_t> roundOutPlayers = {};
+    defeatedPlayers.reserve(blastZonePlayers.size() + outOfHealthPlayers.size());
+    roundOutPlayers.reserve(blastZonePlayers.size() + outOfHealthPlayers.size());
 
-        if (TryResolveTwoPlayerRoundEnd(player1Out, player2Out)) {
+    for (const std::size_t playerIndex : outOfHealthPlayers) {
+        PushUniquePlayerIndex(defeatedPlayers, playerIndex);
+        PushUniquePlayerIndex(roundOutPlayers, playerIndex);
+    }
+
+    // Out of Bounds, depending on Settings this is allowed or punished (0-100 damage)
+    for (const std::size_t playerIndex : blastZonePlayers) {
+        PushUniquePlayerIndex(defeatedPlayers, playerIndex);
+
+        if (ContainsPlayerIndex(outOfHealthPlayers, playerIndex)) {
+            continue;
+        }
+
+        const float appliedDamage = ApplyOutOfBoundsDamage(
+            m_Players[playerIndex], ctx.settings.DeathmatchOutOfBoundsDamage);
+        if (playerIndex < m_MatchStats.size()) {
+            m_MatchStats[playerIndex].DamageTaken += appliedDamage;
+        }
+
+        if (IsOutOfHealth(m_Players[playerIndex])) {
+            PushUniquePlayerIndex(roundOutPlayers, playerIndex);
+        }
+    }
+
+    for (const std::size_t playerIndex : defeatedPlayers) {
+        RecordPlayerDefeat(playerIndex, false);
+    }
+
+    // allow draws
+    if (m_Players.size() == 2 && !roundOutPlayers.empty()) {
+        const bool player1Out = ContainsPlayerIndex(roundOutPlayers, 0);
+        const bool player2Out = ContainsPlayerIndex(roundOutPlayers, 1);
+
+        if (TryResolveTwoPlayerRoundEnd(ctx, player1Out, player2Out)) {
             return;
         }
     }
 
-    for (const std::size_t playerIndex : outOfHealthPlayers) {
+    for (const std::size_t playerIndex : roundOutPlayers) {
         RespawnPlayerAtArenaSpawn(playerIndex, kDefaultPlayerHealth);
     }
 
     for (const std::size_t playerIndex : blastZonePlayers) {
-        if (!ContainsPlayerIndex(outOfHealthPlayers, playerIndex)) {
+        if (!ContainsPlayerIndex(roundOutPlayers, playerIndex)) {
             RespawnPlayerAtArenaSpawn(playerIndex, m_Players[playerIndex].Health());
         }
     }
 }
 
-void InGameState::ResolveSmashDeaths(const std::span<const std::size_t> blastZonePlayers) {
+void InGameState::ResolveSmashDeaths(AppCtx& ctx,
+                                     const std::span<const std::size_t> blastZonePlayers) {
     if (blastZonePlayers.empty()) {
         return;
     }
 
+    // first reduce Stocks, then check whether the Round is over
     for (const std::size_t playerIndex : blastZonePlayers) {
+        RecordPlayerDefeat(playerIndex, true);
         m_Players[playerIndex].LoseStock();
     }
 
+    // allow draws
     if (m_Players.size() == 2 &&
-        TryResolveTwoPlayerRoundEnd(m_Players[0].Stocks() == 0, m_Players[1].Stocks() == 0)) {
+        TryResolveTwoPlayerRoundEnd(ctx, m_Players[0].Stocks() == 0, m_Players[1].Stocks() == 0)) {
         return;
     }
 
@@ -106,23 +163,37 @@ void InGameState::ResolveSmashDeaths(const std::span<const std::size_t> blastZon
     }
 }
 
-bool InGameState::TryResolveTwoPlayerRoundEnd(const bool player1Out, const bool player2Out) {
+bool InGameState::TryResolveTwoPlayerRoundEnd(AppCtx& ctx,
+                                              const bool player1Out,
+                                              const bool player2Out) {
+    // replay the round if both are out at the same time
     if (player1Out && player2Out) {
         RestartRound();
         return true;
     }
 
     if (player1Out) {
-        StartNextRound(1);
+        StartNextRound(ctx, 1);
         return true;
     }
 
     if (player2Out) {
-        StartNextRound(0);
+        StartNextRound(ctx, 0);
         return true;
     }
 
     return false;
+}
+
+void InGameState::RecordPlayerDefeat(const std::size_t playerIndex, const bool losesStock) {
+    if (playerIndex >= m_MatchStats.size()) {
+        return;
+    }
+
+    ++m_MatchStats[playerIndex].Falls;
+    if (losesStock) {
+        ++m_MatchStats[playerIndex].StocksLost;
+    }
 }
 
 void InGameState::RespawnPlayerAtArenaSpawn(const std::size_t playerIndex, const float health) {
@@ -131,9 +202,36 @@ void InGameState::RespawnPlayerAtArenaSpawn(const std::size_t playerIndex, const
     m_Players[playerIndex].Respawn(spawnPosition, facingRight, health);
 }
 
-void InGameState::StartNextRound(const std::size_t winnerIndex) {
+void InGameState::FinishMatch(AppCtx& ctx, const std::size_t winnerIndex) {
+    m_MatchFinished = true;
+    m_Paused = false;
+
+    if (m_Players.size() < 2 || m_MatchStats.size() < 2) {
+        return;
+    }
+
+    ctx.eventDispatcher.Enqueue(NavigationEvent{
+        .Action = NavigationAction::ShowMatchResults,
+        .Match = m_MatchConfig,
+        .Results =
+            MatchResults{
+                .WinnerIndex = winnerIndex,
+                .Player1RoundsWon = m_Players[0].RoundsWon(),
+                .Player2RoundsWon = m_Players[1].RoundsWon(),
+                .Player1Stats = m_MatchStats[0],
+                .Player2Stats = m_MatchStats[1],
+            },
+    });
+}
+
+void InGameState::StartNextRound(AppCtx& ctx, const std::size_t winnerIndex) {
     if (winnerIndex < m_Players.size()) {
         m_Players[winnerIndex].WinRound();
+
+        if (m_Players[winnerIndex].RoundsWon() >= m_MatchConfig.TargetRoundsToWin) {
+            FinishMatch(ctx, winnerIndex);
+            return;
+        }
     }
 
     ++m_CurrentRound;
@@ -144,7 +242,7 @@ void InGameState::RestartRound() {
     for (std::size_t playerIndex = 0; playerIndex < m_Players.size(); ++playerIndex) {
         const SDL_FPoint spawnPosition = PlayerStartPosition(playerIndex);
         const bool facingRight = FacingRightAtSpawn(spawnPosition, m_Arena);
-        m_Players[playerIndex].ResetStocks(kDefaultPlayerStocks);
+        m_Players[playerIndex].ResetStocks(m_MatchConfig.StocksPerRound);
         m_Players[playerIndex].Respawn(spawnPosition, facingRight, kDefaultPlayerHealth);
     }
 }

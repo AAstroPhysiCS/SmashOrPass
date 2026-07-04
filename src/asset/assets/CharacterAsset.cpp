@@ -250,6 +250,42 @@ Result<std::vector<CharacterAssetLoadJob>> CharacterAssetDiscoverer::ListAvailab
 
 namespace {
 
+// RAII for LoadCombatData
+class SurfaceLock final {
+   public:
+    explicit SurfaceLock(SDL_Surface* surface) : m_Surface(surface) {}
+
+    SurfaceLock(const SurfaceLock&) = delete;
+    SurfaceLock& operator=(const SurfaceLock&) = delete;
+
+    [[nodiscard]] Result<void> LockIfNeeded() {
+        if (m_Surface == nullptr) {
+            return Err(std::string("SurfaceLock failed: surface is null"));
+        }
+
+        if (!SDL_MUSTLOCK(m_Surface)) {
+            return Ok();
+        }
+
+        if (!SDL_LockSurface(m_Surface)) {
+            return Err(SdlError("SDL_LockSurface"));
+        }
+
+        m_Locked = true;
+        return Ok();
+    }
+
+    ~SurfaceLock() {
+        if (m_Locked) {
+            SDL_UnlockSurface(m_Surface);
+        }
+    }
+
+   private:
+    SDL_Surface* m_Surface = nullptr;
+    bool m_Locked = false;
+};
+
 Result<SurfacePtr> ConvertToRgba32(SDL_Surface* surface) {
     if (surface == nullptr) {
         return Err(std::string("ConvertToRgba32 failed: surface is null"));
@@ -286,7 +322,7 @@ ChannelPlane getFrameChannelFromSurface(const unsigned char* pixels,
                 static_cast<unsigned char>((static_cast<int>(p[channelOffset]) * p[3]) / 255);
 
             // hitboxes are absolute, hurtboxes are grouped by their blue channel value
-            // each group gets the same amount of damage (3=head -> max damage etc.)
+            // each group gets the same amount of damage (3=head group-> max damage etc.)
             if (channel[x][y] != 0) {
                 if (isHitbox) {
                     channel[x][y] = 1;
@@ -313,17 +349,8 @@ Result<void> LoadCombatData(SDL_Surface* combatSurface,
                             int gridSize) {
     TRY(rgbaSurface, ConvertToRgba32(combatSurface));
 
-    const bool mustLock = SDL_MUSTLOCK(rgbaSurface.get());
-
-    if (mustLock && !SDL_LockSurface(rgbaSurface.get())) {
-        return Err(SdlError("SDL_LockSurface"));
-    }
-
-    const auto unlockSurface = [&]() {
-        if (mustLock) {
-            SDL_UnlockSurface(rgbaSurface.get());
-        }
-    };
+    SurfaceLock surfaceLock{rgbaSurface.get()};
+    TRY_VOID(surfaceLock.LockIfNeeded());
 
     const auto* pixels = static_cast<const unsigned char*>(rgbaSurface.get()->pixels);
     const int pitch = rgbaSurface.get()->pitch;
@@ -338,7 +365,6 @@ Result<void> LoadCombatData(SDL_Surface* combatSurface,
         frame.m_HurtBox = setupHurtBox(blue, gridSize);
     }
 
-    unlockSurface();
     return Ok();
 }
 
