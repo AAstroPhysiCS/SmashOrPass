@@ -31,7 +31,14 @@ constexpr int kOverallStatsVersion = 1;
 }  // namespace
 
 Result<OverallStatsTracker> OverallStatsStore::Load(const std::filesystem::path& path) {
-    if (!std::filesystem::exists(path)) {
+    std::error_code error;
+    const bool exists = std::filesystem::exists(path, error);
+    if (error) {
+        return Err(std::string{"Failed to check overall stats '"} + path.string() +
+                   "': " + error.message());
+    }
+
+    if (!exists) {
         return Ok(OverallStatsTracker{});
     }
 
