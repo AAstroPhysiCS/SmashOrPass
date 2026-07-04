@@ -223,8 +223,7 @@ Result<void> Player::OnEvent(AppCtx& ctx, const Event& event) {
     return Ok();
 }
 
-void Player::SetInputTranslationHelper(
-    InputTranslationHelper<InputAction> inputTranslationHelper) {
+void Player::SetInputTranslationHelper(InputTranslationHelper<InputAction> inputTranslationHelper) {
     m_InputTranslationHelper = std::move(inputTranslationHelper);
     m_InputQueue.clear();
 }

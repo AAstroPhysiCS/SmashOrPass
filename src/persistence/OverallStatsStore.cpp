@@ -1,9 +1,8 @@
 #include "smashorpass/persistence/OverallStatsStore.hpp"
 
 #include <fstream>
-#include <string>
-
 #include <nlohmann/json.hpp>
+#include <string>
 
 #include "smashorpass/persistence/OverallStatsJson.hpp"
 
@@ -51,12 +50,11 @@ Result<OverallStatsTracker> OverallStatsStore::Load(const std::filesystem::path&
         const nlohmann::json json = nlohmann::json::parse(file);
         OverallStatsTracker stats;
 
-        stats.SetStatsFor(MatchupType::Player1VsPlayer2,
-                          json.value(MatchupKey(MatchupType::Player1VsPlayer2),
-                                     OverallMatchupStats{}));
+        stats.SetStatsFor(
+            MatchupType::Player1VsPlayer2,
+            json.value(MatchupKey(MatchupType::Player1VsPlayer2), OverallMatchupStats{}));
         stats.SetStatsFor(MatchupType::Player1VsAi,
-                          json.value(MatchupKey(MatchupType::Player1VsAi),
-                                     OverallMatchupStats{}));
+                          json.value(MatchupKey(MatchupType::Player1VsAi), OverallMatchupStats{}));
 
         return Ok(std::move(stats));
     } catch (const nlohmann::json::exception& e) {
@@ -66,18 +64,17 @@ Result<OverallStatsTracker> OverallStatsStore::Load(const std::filesystem::path&
 }
 
 Result<void> OverallStatsStore::Save(const std::filesystem::path& path,
-                                     const OverallStatsTracker& stats) {                                
+                                     const OverallStatsTracker& stats) {
     std::error_code error;
     std::filesystem::create_directories(path.parent_path(), error);
     if (error) {
-        return Err(std::string{"Failed to create stats directory '"} +
-                   path.parent_path().string() + "': " + error.message());
+        return Err(std::string{"Failed to create stats directory '"} + path.parent_path().string() +
+                   "': " + error.message());
     }
 
     nlohmann::json json{
         {"version", kOverallStatsVersion},
-        {MatchupKey(MatchupType::Player1VsPlayer2),
-         stats.StatsFor(MatchupType::Player1VsPlayer2)},
+        {MatchupKey(MatchupType::Player1VsPlayer2), stats.StatsFor(MatchupType::Player1VsPlayer2)},
         {MatchupKey(MatchupType::Player1VsAi), stats.StatsFor(MatchupType::Player1VsAi)},
     };
 

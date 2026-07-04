@@ -19,7 +19,8 @@ float ApplyHitResult(const HitResult& hitResult,
 
     const AttackData& attackData = attackerHitBox.hitBox.get().m_AttackData;
 
-    const float appliedDamage = defender.ApplyHit(attackData, hitResult, attackerHitBox.facingRight);
+    const float appliedDamage =
+        defender.ApplyHit(attackData, hitResult, attackerHitBox.facingRight);
     attacker.MarkPlayerHitThisAttack(defender.Id());
     return appliedDamage;
 }
@@ -99,9 +100,8 @@ Result<void> InGameState::SolveCombat(AppCtx& ctx) {
             }
 
             if (attackerIndex < m_MatchStats.size() && defenderIndex < m_MatchStats.size()) {
-                RecordHitLocationStats(hitResult,
-                                       m_MatchStats[attackerIndex],
-                                       m_MatchStats[defenderIndex]);
+                RecordHitLocationStats(
+                    hitResult, m_MatchStats[attackerIndex], m_MatchStats[defenderIndex]);
             }
         }
     }

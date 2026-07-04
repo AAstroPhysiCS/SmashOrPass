@@ -56,63 +56,59 @@ void SettingsScreen::Build(UIBuilder& builder) {
                      }));
     };
 
-    auto namesColumn =
-        builder.Column()
-            .Spacing(16.0f + Theme::BUTTON_PADDING_Y * 2.0f)
-            .Align(Alignment::CenterLeft)
-            .Add(builder.Label("Deathmatch Rounds")
-                     .Font(FontId::Medium)
-                     .TextColor(Theme::TEXT_PRIMARY_COLOR)
-                     .Align(Alignment::TopLeft),
-                 builder.Label("Smash Rounds")
-                     .Font(FontId::Medium)
-                     .TextColor(Theme::TEXT_PRIMARY_COLOR)
-                     .Align(Alignment::TopLeft),
-                 builder.Label("Smash Stocks")
-                     .Font(FontId::Medium)
-                     .TextColor(Theme::TEXT_PRIMARY_COLOR)
-                     .Align(Alignment::TopLeft),
-                 builder.Label("Deathmatch Out Damage")
-                     .Font(FontId::Medium)
-                     .TextColor(Theme::TEXT_PRIMARY_COLOR)
-                     .Align(Alignment::TopLeft));
+    auto namesColumn = builder.Column()
+                           .Spacing(16.0f + Theme::BUTTON_PADDING_Y * 2.0f)
+                           .Align(Alignment::CenterLeft)
+                           .Add(builder.Label("Deathmatch Rounds")
+                                    .Font(FontId::Medium)
+                                    .TextColor(Theme::TEXT_PRIMARY_COLOR)
+                                    .Align(Alignment::TopLeft),
+                                builder.Label("Smash Rounds")
+                                    .Font(FontId::Medium)
+                                    .TextColor(Theme::TEXT_PRIMARY_COLOR)
+                                    .Align(Alignment::TopLeft),
+                                builder.Label("Smash Stocks")
+                                    .Font(FontId::Medium)
+                                    .TextColor(Theme::TEXT_PRIMARY_COLOR)
+                                    .Align(Alignment::TopLeft),
+                                builder.Label("Deathmatch Out Damage")
+                                    .Font(FontId::Medium)
+                                    .TextColor(Theme::TEXT_PRIMARY_COLOR)
+                                    .Align(Alignment::TopLeft));
 
     auto controlsColumn =
         builder.Column()
             .Spacing(16.0f)
             .Align(Alignment::TopCenter)
-            .Add(makeControlRow(GetAppCtx().settings.DeathmatchRoundsToWin,
-                                SettingValue::DeathmatchRounds),
-                 makeControlRow(GetAppCtx().settings.SmashRoundsToWin, SettingValue::SmashRounds),
-                 makeControlRow(GetAppCtx().settings.SmashStocksPerRound,
-                                SettingValue::SmashStocks),
-                 makeControlRow(GetAppCtx().settings.DeathmatchOutOfBoundsDamage,
-                                SettingValue::DeathmatchOutOfBoundsDamage));
+            .Add(
+                makeControlRow(GetAppCtx().settings.DeathmatchRoundsToWin,
+                               SettingValue::DeathmatchRounds),
+                makeControlRow(GetAppCtx().settings.SmashRoundsToWin, SettingValue::SmashRounds),
+                makeControlRow(GetAppCtx().settings.SmashStocksPerRound, SettingValue::SmashStocks),
+                makeControlRow(GetAppCtx().settings.DeathmatchOutOfBoundsDamage,
+                               SettingValue::DeathmatchOutOfBoundsDamage));
 
-    auto table = builder.Row()
-                     .Spacing(40.0f)
-                     .Align(Alignment::TopCenter)
-                     .Add(namesColumn, controlsColumn);
+    auto table =
+        builder.Row().Spacing(40.0f).Align(Alignment::TopCenter).Add(namesColumn, controlsColumn);
 
-    auto actions =
-        builder.Row()
-            .Spacing(16.0f)
-            .Align(Alignment::TopCenter)
-            .Add(builder.Button("Reset")
-                     .Align(Alignment::TopCenter)
-                     .OnClick([this](AppCtx& ctx, ButtonData&) { ResetSettings(ctx); }),
-                 builder.Button("Keybinds")
-                     .Align(Alignment::TopCenter)
-                     .OnClick([](AppCtx& ctx, ButtonData&) {
-                         ctx.eventDispatcher.Enqueue(
-                             NavigationEvent{.Action = NavigationAction::ShowKeybindSettings});
-                     }),
-                 builder.Button("Back")
-                     .Align(Alignment::TopCenter)
-                     .OnClick([](AppCtx& ctx, ButtonData&) {
-                         ctx.eventDispatcher.Enqueue(
-                             NavigationEvent{.Action = NavigationAction::ShowMainMenu});
-                     }));
+    auto actions = builder.Row()
+                       .Spacing(16.0f)
+                       .Align(Alignment::TopCenter)
+                       .Add(builder.Button("Reset")
+                                .Align(Alignment::TopCenter)
+                                .OnClick([this](AppCtx& ctx, ButtonData&) { ResetSettings(ctx); }),
+                            builder.Button("Keybinds")
+                                .Align(Alignment::TopCenter)
+                                .OnClick([](AppCtx& ctx, ButtonData&) {
+                                    ctx.eventDispatcher.Enqueue(NavigationEvent{
+                                        .Action = NavigationAction::ShowKeybindSettings});
+                                }),
+                            builder.Button("Back")
+                                .Align(Alignment::TopCenter)
+                                .OnClick([](AppCtx& ctx, ButtonData&) {
+                                    ctx.eventDispatcher.Enqueue(
+                                        NavigationEvent{.Action = NavigationAction::ShowMainMenu});
+                                }));
 
     auto content =
         builder.Column()

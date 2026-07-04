@@ -34,11 +34,12 @@ void KeybindSettingsScreen::Build(UIBuilder& builder) {
     const auto makeBindingButton = [this, &builder](const std::size_t playerIndex,
                                                     const PlayerKeyBindings& bindings,
                                                     const KeybindAction action) {
-        const bool isPending =
-            m_PendingBinding.has_value() && m_PendingBinding->PlayerIndex == playerIndex &&
-            m_PendingBinding->Action == action;
+        const bool isPending = m_PendingBinding.has_value() &&
+                               m_PendingBinding->PlayerIndex == playerIndex &&
+                               m_PendingBinding->Action == action;
 
-        return builder.Button(isPending ? "Press key..." : KeyName(GetKeyForAction(bindings, action)))
+        return builder
+            .Button(isPending ? "Press key..." : KeyName(GetKeyForAction(bindings, action)))
             .Align(Alignment::TopCenter)
             .OnClick([this, playerIndex, action](AppCtx&, ButtonData&) {
                 // waits for next keyinput and assigns it to the action
@@ -46,33 +47,31 @@ void KeybindSettingsScreen::Build(UIBuilder& builder) {
             });
     };
 
-    const auto makeBindingRows = [&builder, &makeBindingButton](
-                                     const std::size_t playerIndex,
-                                     const PlayerKeyBindings& bindings) {
-        auto actionColumn =
-            builder.Column()
-                .Spacing(10.0f + Theme::BUTTON_PADDING_Y * 2.0f)
-                .Align(Alignment::CenterLeft)
-                .Add(builder.Label("Move Left")
-                         .Font(FontId::Small)
-                         .TextColor(Theme::TEXT_PRIMARY_COLOR)
-                         .Align(Alignment::TopLeft),
-                     builder.Label("Move Right")
-                         .Font(FontId::Small)
-                         .TextColor(Theme::TEXT_PRIMARY_COLOR)
-                         .Align(Alignment::TopLeft),
-                     builder.Label("Jump")
-                         .Font(FontId::Small)
-                         .TextColor(Theme::TEXT_PRIMARY_COLOR)
-                         .Align(Alignment::TopLeft),
-                     builder.Label("Dash")
-                         .Font(FontId::Small)
-                         .TextColor(Theme::TEXT_PRIMARY_COLOR)
-                         .Align(Alignment::TopLeft),
-                     builder.Label("Attack")
-                         .Font(FontId::Small)
-                         .TextColor(Theme::TEXT_PRIMARY_COLOR)
-                         .Align(Alignment::TopLeft));
+    const auto makeBindingRows = [&builder, &makeBindingButton](const std::size_t playerIndex,
+                                                                const PlayerKeyBindings& bindings) {
+        auto actionColumn = builder.Column()
+                                .Spacing(10.0f + Theme::BUTTON_PADDING_Y * 2.0f)
+                                .Align(Alignment::CenterLeft)
+                                .Add(builder.Label("Move Left")
+                                         .Font(FontId::Small)
+                                         .TextColor(Theme::TEXT_PRIMARY_COLOR)
+                                         .Align(Alignment::TopLeft),
+                                     builder.Label("Move Right")
+                                         .Font(FontId::Small)
+                                         .TextColor(Theme::TEXT_PRIMARY_COLOR)
+                                         .Align(Alignment::TopLeft),
+                                     builder.Label("Jump")
+                                         .Font(FontId::Small)
+                                         .TextColor(Theme::TEXT_PRIMARY_COLOR)
+                                         .Align(Alignment::TopLeft),
+                                     builder.Label("Dash")
+                                         .Font(FontId::Small)
+                                         .TextColor(Theme::TEXT_PRIMARY_COLOR)
+                                         .Align(Alignment::TopLeft),
+                                     builder.Label("Attack")
+                                         .Font(FontId::Small)
+                                         .TextColor(Theme::TEXT_PRIMARY_COLOR)
+                                         .Align(Alignment::TopLeft));
 
         auto keyColumn =
             builder.Column()
@@ -105,12 +104,11 @@ void KeybindSettingsScreen::Build(UIBuilder& builder) {
 
     const auto& playerBindings = GetAppCtx().settings.PlayerKeyBindingsByPlayer;
 
-    auto players =
-        builder.Row()
-            .Spacing(56.0f)
-            .Align(Alignment::TopCenter)
-            .Add(makePlayerColumn("PLAYER 1", 0, playerBindings[0]),
-                 makePlayerColumn("PLAYER 2", 1, playerBindings[1]));
+    auto players = builder.Row()
+                       .Spacing(56.0f)
+                       .Align(Alignment::TopCenter)
+                       .Add(makePlayerColumn("PLAYER 1", 0, playerBindings[0]),
+                            makePlayerColumn("PLAYER 2", 1, playerBindings[1]));
 
     auto actions =
         builder.Row()

@@ -25,9 +25,8 @@ void PauseScreen::Build(UIBuilder& builder) {
                                 .Align(Alignment::TopCenter)
                                 .OnClick([](AppCtx& ctx, ButtonData&) {
                                     spdlog::info("Options clicked from pause menu");
-                                    ctx.eventDispatcher.Enqueue(
-                                        NavigationEvent{.Action =
-                                                            NavigationAction::ShowKeybindSettings});
+                                    ctx.eventDispatcher.Enqueue(NavigationEvent{
+                                        .Action = NavigationAction::ShowKeybindSettings});
                                 }),
 
                             builder.Button("Main Menu")

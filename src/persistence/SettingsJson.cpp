@@ -1,9 +1,8 @@
 #include "smashorpass/persistence/SettingsJson.hpp"
 
-#include <nlohmann/json.hpp>
-
 #include <algorithm>
 #include <cstddef>
+#include <nlohmann/json.hpp>
 
 namespace sop {
 // Teach nlohmann::json how to serialize and deserialize these types.

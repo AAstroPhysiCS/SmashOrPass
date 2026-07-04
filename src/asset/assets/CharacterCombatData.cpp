@@ -68,7 +68,7 @@ createInnerOuterBuckets(const ChannelPlane& channel,
                         int bucketMatrixWidth,
                         int bucketMatrixHeight,
                         int channelValue) {
-    //Outer buckets store hurtbox edge pixels, split by grid cell.                       
+    // Outer buckets store hurtbox edge pixels, split by grid cell.
     // With continuous Hitboxes this should suffice to find an overlap -> less computation
     std::vector<std::vector<SDL_Point>> innerBuckets(bucketMatrixWidth * bucketMatrixHeight);
     std::vector<std::vector<SDL_Point>> outerBuckets(bucketMatrixWidth * bucketMatrixHeight);

@@ -96,50 +96,37 @@ void MatchResultsScreen::Build(UIBuilder& builder) {
                             .Align(Alignment::TopRight);
     m_Player2FallsLabel = p2FallsLabel.GetId();
 
-    auto descriptorColumn =
-        builder.Column()
-            .Spacing(8.0f)
-            .Add(builder.Label("Stat").Font(FontId::Small).TextColor(Theme::TEXT_PRIMARY_COLOR),
-                 builder.Label("Damage Dealt")
-                     .Font(FontId::Small)
-                     .TextColor(Theme::TEXT_PRIMARY_COLOR),
-                 builder.Label("Hits Landed")
-                     .Font(FontId::Small)
-                     .TextColor(Theme::TEXT_PRIMARY_COLOR),
-                 builder.Label("Head").Font(FontId::Small).TextColor(Theme::TEXT_PRIMARY_COLOR),
-                 builder.Label("Torso").Font(FontId::Small).TextColor(Theme::TEXT_PRIMARY_COLOR),
-                 builder.Label("Legs").Font(FontId::Small).TextColor(Theme::TEXT_PRIMARY_COLOR));
+    auto descriptorColumn = builder.Column().Spacing(8.0f).Add(
+        builder.Label("Stat").Font(FontId::Small).TextColor(Theme::TEXT_PRIMARY_COLOR),
+        builder.Label("Damage Dealt").Font(FontId::Small).TextColor(Theme::TEXT_PRIMARY_COLOR),
+        builder.Label("Hits Landed").Font(FontId::Small).TextColor(Theme::TEXT_PRIMARY_COLOR),
+        builder.Label("Head").Font(FontId::Small).TextColor(Theme::TEXT_PRIMARY_COLOR),
+        builder.Label("Torso").Font(FontId::Small).TextColor(Theme::TEXT_PRIMARY_COLOR),
+        builder.Label("Legs").Font(FontId::Small).TextColor(Theme::TEXT_PRIMARY_COLOR));
 
-    auto player1Column =
-        builder.Column()
-            .Spacing(8.0f)
-            .Add(builder.Label("P1")
-                     .Font(FontId::Small)
-                     .TextColor(Theme::PLAYER_1_COLOR)
-                     .Align(Alignment::TopRight),
-                 p1DamageDealtLabel,
-                 p1HitsLandedLabel,
-                 p1HeadLabel,
-                 p1TorsoLabel,
-                 p1LegsLabel);
+    auto player1Column = builder.Column().Spacing(8.0f).Add(builder.Label("P1")
+                                                                .Font(FontId::Small)
+                                                                .TextColor(Theme::PLAYER_1_COLOR)
+                                                                .Align(Alignment::TopRight),
+                                                            p1DamageDealtLabel,
+                                                            p1HitsLandedLabel,
+                                                            p1HeadLabel,
+                                                            p1TorsoLabel,
+                                                            p1LegsLabel);
 
-    auto player2Column =
-        builder.Column()
-            .Spacing(8.0f)
-            .Add(builder.Label("P2")
-                     .Font(FontId::Small)
-                     .TextColor(Theme::PLAYER_2_COLOR)
-                     .Align(Alignment::TopRight),
-                 p2DamageDealtLabel,
-                 p2HitsLandedLabel,
-                 p2HeadLabel,
-                 p2TorsoLabel,
-                 p2LegsLabel);
+    auto player2Column = builder.Column().Spacing(8.0f).Add(builder.Label("P2")
+                                                                .Font(FontId::Small)
+                                                                .TextColor(Theme::PLAYER_2_COLOR)
+                                                                .Align(Alignment::TopRight),
+                                                            p2DamageDealtLabel,
+                                                            p2HitsLandedLabel,
+                                                            p2HeadLabel,
+                                                            p2TorsoLabel,
+                                                            p2LegsLabel);
 
     if (m_MatchConfig.Mode != GameMode::Deathmatch) {
-        auto stocksLostLabel = builder.Label("Stocks Lost")
-                                   .Font(FontId::Small)
-                                   .TextColor(Theme::TEXT_PRIMARY_COLOR);
+        auto stocksLostLabel =
+            builder.Label("Stocks Lost").Font(FontId::Small).TextColor(Theme::TEXT_PRIMARY_COLOR);
         descriptorColumn.Add(stocksLostLabel);
 
         auto p1StocksLostLabel = builder.Label("0")
@@ -167,40 +154,36 @@ void MatchResultsScreen::Build(UIBuilder& builder) {
                      .Align(Alignment::TopCenter)
                      .Add(descriptorColumn, player1Column, player2Column);
 
-    auto actions =
-        builder.Row()
-            .Spacing(16.0f)
-            .Align(Alignment::TopCenter)
-            .Add(builder.Button("Restart Game")
-                     .Align(Alignment::TopCenter)
-                     .OnClick([this](AppCtx& ctx, ButtonData&) {
-                         spdlog::info("Restart game clicked from match results");
-                         ctx.eventDispatcher.Enqueue(NavigationEvent{
-                             .Action = NavigationAction::StartMatch,
-                             .Match = m_MatchConfig,
-                         });
-                     }),
-                 builder.Button("Main Menu")
-                     .Align(Alignment::TopCenter)
-                     .OnClick([](AppCtx& ctx, ButtonData&) {
-                         spdlog::info("Main menu clicked from match results");
-                         ctx.eventDispatcher.Enqueue(
-                             NavigationEvent{.Action = NavigationAction::ShowMainMenu});
-                     }),
-                 builder.Button("Exit")
-                     .Align(Alignment::TopCenter)
-                     .OnClick([](AppCtx& ctx, ButtonData&) {
-                         spdlog::info("Exit clicked from match results");
-                         ctx.eventDispatcher.Enqueue(ApplicationQuitEvent{});
-                     }));
+    auto actions = builder.Row()
+                       .Spacing(16.0f)
+                       .Align(Alignment::TopCenter)
+                       .Add(builder.Button("Restart Game")
+                                .Align(Alignment::TopCenter)
+                                .OnClick([this](AppCtx& ctx, ButtonData&) {
+                                    spdlog::info("Restart game clicked from match results");
+                                    ctx.eventDispatcher.Enqueue(NavigationEvent{
+                                        .Action = NavigationAction::StartMatch,
+                                        .Match = m_MatchConfig,
+                                    });
+                                }),
+                            builder.Button("Main Menu")
+                                .Align(Alignment::TopCenter)
+                                .OnClick([](AppCtx& ctx, ButtonData&) {
+                                    spdlog::info("Main menu clicked from match results");
+                                    ctx.eventDispatcher.Enqueue(
+                                        NavigationEvent{.Action = NavigationAction::ShowMainMenu});
+                                }),
+                            builder.Button("Exit")
+                                .Align(Alignment::TopCenter)
+                                .OnClick([](AppCtx& ctx, ButtonData&) {
+                                    spdlog::info("Exit clicked from match results");
+                                    ctx.eventDispatcher.Enqueue(ApplicationQuitEvent{});
+                                }));
 
     auto content = builder.Column()
                        .Spacing(18.0f)
                        .Align(Alignment::TopCenter)
-                       .Add(winnerLabel,
-                            roundsLabel,
-                            table,
-                            actions);
+                       .Add(winnerLabel, roundsLabel, table, actions);
 
     auto root = builder.Align(Alignment::Center, content);
     builder.SetRoot(root);
@@ -248,9 +231,7 @@ std::string MatchResultsScreen::MakeWinnerText() const {
 }
 
 std::string MatchResultsScreen::MakeRoundsText() const {
-    return std::format("Rounds: {} - {}",
-                       m_Results.Player1RoundsWon,
-                       m_Results.Player2RoundsWon);
+    return std::format("Rounds: {} - {}", m_Results.Player1RoundsWon, m_Results.Player2RoundsWon);
 }
 
 void MatchResultsScreen::SetValueText(const UIWidgetId id, const int value) {

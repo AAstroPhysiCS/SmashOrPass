@@ -65,8 +65,8 @@ class OverallStatsTracker {
     }
 
     [[nodiscard]] static MatchupType MatchupFor(const MatchConfig& config) {
-        const bool player2IsAi = config.PlayerControls.size() > 1 &&
-                                 config.PlayerControls[1] == PlayerControl::Agent;
+        const bool player2IsAi =
+            config.PlayerControls.size() > 1 && config.PlayerControls[1] == PlayerControl::Agent;
         return player2IsAi ? MatchupType::Player1VsAi : MatchupType::Player1VsPlayer2;
     }
 

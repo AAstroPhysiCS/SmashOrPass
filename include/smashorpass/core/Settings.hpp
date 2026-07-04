@@ -46,10 +46,9 @@ struct Settings {
         DeathmatchRoundsToWin = std::clamp(DeathmatchRoundsToWin, kMinRounds, kMaxRounds);
         SmashRoundsToWin = std::clamp(SmashRoundsToWin, kMinRounds, kMaxRounds);
         SmashStocksPerRound = std::clamp(SmashStocksPerRound, kMinStocks, kMaxStocks);
-        DeathmatchOutOfBoundsDamage =
-            std::clamp(DeathmatchOutOfBoundsDamage,
-                       kMinDeathmatchOutOfBoundsDamage,
-                       kMaxDeathmatchOutOfBoundsDamage);
+        DeathmatchOutOfBoundsDamage = std::clamp(DeathmatchOutOfBoundsDamage,
+                                                 kMinDeathmatchOutOfBoundsDamage,
+                                                 kMaxDeathmatchOutOfBoundsDamage);
     }
 };
 

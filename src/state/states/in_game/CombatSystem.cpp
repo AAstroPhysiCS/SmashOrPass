@@ -146,15 +146,13 @@ BucketRange getOverlappingBucketRange(const SDL_FRect& intersection,
                      static_cast<int>(std::floor((mirroredRight - 1.0f) / scaledCellSize)));
     } else {
         range.startX = std::max(0, static_cast<int>(std::floor(localLeft / scaledCellSize)));
-        range.endX =
-            std::min(grid.BucketMatrixWidth() - 1,
-                     static_cast<int>(std::floor((localRight - 1.0f) / scaledCellSize)));
+        range.endX = std::min(grid.BucketMatrixWidth() - 1,
+                              static_cast<int>(std::floor((localRight - 1.0f) / scaledCellSize)));
     }
 
     range.startY = std::max(0, static_cast<int>(std::floor(localTop / scaledCellSize)));
-    range.endY =
-        std::min(grid.BucketMatrixHeight() - 1,
-                 static_cast<int>(std::floor((localBottom - 1.0f) / scaledCellSize)));
+    range.endY = std::min(grid.BucketMatrixHeight() - 1,
+                          static_cast<int>(std::floor((localBottom - 1.0f) / scaledCellSize)));
 
     return range;
 }
@@ -307,7 +305,7 @@ bool checkIfHurtBoxWasHit(const std::unordered_map<std::uint64_t, bool>& attackP
     const int totalBuckets = defenderSubHurtBox.m_GridData.BucketMatrixWidth() *
                              defenderSubHurtBox.m_GridData.BucketMatrixHeight();
     std::vector<uint8_t> neededBuckets(totalBuckets, 0);
-    
+
     const IntersectionInfo intersection = intersects(defenderWorldBounds, hitboxRect);
     if (!intersection.overlaps) {
         return false;

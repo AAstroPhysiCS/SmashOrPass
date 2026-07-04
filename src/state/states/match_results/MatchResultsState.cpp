@@ -7,9 +7,7 @@
 
 namespace sop {
 
-MatchResultsState::MatchResultsState(AppCtx& ctx,
-                                     MatchConfig matchConfig,
-                                     MatchResults results)
+MatchResultsState::MatchResultsState(AppCtx& ctx, MatchConfig matchConfig, MatchResults results)
     : m_Screen(ctx, std::move(matchConfig)), m_Results(std::move(results)) {
     UIBuilder builder(m_Screen);
     m_Screen.Build(builder);
