@@ -363,7 +363,6 @@ HitResult detectOverlap(const WorldHitBox& attackerHitBox,
                         const WorldHurtBox& defenderHurtBox,
                         PlayerCombatDebugData* attackerDebugData,
                         PlayerCombatDebugData* defenderDebugData) {
-    HitResult result;
     const HitBox& attackerLocalHitBox = attackerHitBox.hitBox.get();
     const SDL_FRect attackerSpriteRect = attackerHitBox.spriteRect;
     const bool attackerFacingRight = attackerHitBox.facingRight;
