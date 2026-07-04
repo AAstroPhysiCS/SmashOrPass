@@ -229,6 +229,12 @@ Result<void> Player::OnEvent(AppCtx& ctx, const Event& event) {
     return Ok();
 }
 
+void Player::SetInputTranslationHelper(
+    InputTranslationHelper<InputAction> inputTranslationHelper) {
+    m_InputTranslationHelper = std::move(inputTranslationHelper);
+    m_InputQueue.clear();
+}
+
 Vec2 Player::LocalFramePointToBaselinePoint(const CharacterSpriteSheetFrame& frame,
                                             const SDL_FRect& spriteRect,
                                             const Vec2 localPoint,

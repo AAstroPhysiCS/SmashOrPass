@@ -17,6 +17,7 @@ class KeybindSettingsScreen : public UIScreen {
 
     void Build(UIBuilder& builder) final override;
     EventFlow OnEvent(AppCtx& ctx, const Event& event) final override;
+    void SetBackAction(NavigationAction action);
 
    private:
     enum class KeybindAction {
@@ -45,6 +46,7 @@ class KeybindSettingsScreen : public UIScreen {
                                                      KeybindAction action);
 
     std::optional<PendingBinding> m_PendingBinding;
+    NavigationAction m_BackAction = NavigationAction::ShowSettings;
 };
 
 }  // namespace sop

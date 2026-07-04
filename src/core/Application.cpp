@@ -185,6 +185,7 @@ Result<void> Application::OnEvent(const Event& event) {
                         case NavigationAction::ShowCharacterSelect:
                         case NavigationAction::ShowSettings:
                         case NavigationAction::ShowKeybindSettings:
+                        case NavigationAction::HideKeybindSettings:
                         case NavigationAction::ShowScoreboard:
                         case NavigationAction::ResumeMatch:
                             return Ok();

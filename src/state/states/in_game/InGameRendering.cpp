@@ -171,7 +171,7 @@ Result<void> InGameState::RenderUi(AppCtx& ctx) {
     TRY_VOID(m_GameScreen.OnRender(ctx));
 
     if (m_Paused) {
-        TRY_VOID(m_PauseScreen.OnRender(ctx));
+        TRY_VOID(ActivePauseScreen().OnRender(ctx));
     }
 
     return Ok();

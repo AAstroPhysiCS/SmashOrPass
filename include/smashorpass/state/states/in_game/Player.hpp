@@ -89,6 +89,7 @@ class Player {
     void ResetStocks(int stocks);
     void WinRound();
     void Respawn(SDL_FPoint position, bool facingRight, float health);
+    void SetInputTranslationHelper(InputTranslationHelper<InputAction> inputTranslationHelper);
 
     Result<void> Render(AppCtx& ctx, const Arena& arena) const;
     Result<void> RenderCollisionBox(AppCtx& ctx, const Arena& arena) const;

@@ -122,8 +122,7 @@ void KeybindSettingsScreen::Build(UIBuilder& builder) {
                      .Align(Alignment::TopCenter)
                      .OnClick([this](AppCtx& ctx, ButtonData&) {
                          m_PendingBinding.reset();
-                         ctx.eventDispatcher.Enqueue(
-                             NavigationEvent{.Action = NavigationAction::ShowSettings});
+                         ctx.eventDispatcher.Enqueue(NavigationEvent{.Action = m_BackAction});
                      }));
 
     auto content =
@@ -136,6 +135,11 @@ void KeybindSettingsScreen::Build(UIBuilder& builder) {
 
     auto root = builder.Align(Alignment::Center, content);
     builder.SetRoot(root);
+}
+
+// go back to Main Menu or Pause Screen
+void KeybindSettingsScreen::SetBackAction(const NavigationAction action) {
+    m_BackAction = action;
 }
 
 EventFlow KeybindSettingsScreen::OnEvent(AppCtx& ctx, const Event& event) {

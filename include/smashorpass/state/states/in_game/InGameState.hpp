@@ -17,6 +17,7 @@
 #include "smashorpass/state/states/in_game/Player.hpp"
 #include "smashorpass/state/states/in_game/ui/GameScreen.hpp"
 #include "smashorpass/state/states/in_game/ui/PauseScreen.hpp"
+#include "smashorpass/state/states/main_menu/ui/KeybindSettingsScreen.hpp"
 
 namespace sop {
 
@@ -58,9 +59,16 @@ class InGameState final : public State {
     }
 
    private:
+    enum class PauseView {
+        Menu,
+        KeybindSettings,
+    };
+
     // ---- Internal Functions
     void ResetFrameTimer();
     void TogglePause();
+    [[nodiscard]] UIScreen& ActivePauseScreen();
+    void RefreshHumanPlayerInputTranslations(AppCtx& ctx);
 
     Result<void> AdjustToWindow(AppCtx& ctx);
 
@@ -94,6 +102,7 @@ class InGameState final : public State {
     // ---- Internal Variables
     GameScreen m_GameScreen;
     PauseScreen m_PauseScreen;
+    KeybindSettingsScreen m_KeybindSettingsScreen;
 
     Arena m_Arena;
     MatchConfig m_MatchConfig;
@@ -111,6 +120,7 @@ class InGameState final : public State {
     int m_CurrentRound = 1;
     bool m_MatchFinished = false;
     bool m_Paused = false;
+    PauseView m_PauseView = PauseView::Menu;
 };
 
 }  // namespace sop

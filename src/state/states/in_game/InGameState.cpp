@@ -1,5 +1,6 @@
 #include "smashorpass/state/states/in_game/InGameState.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <string>
@@ -26,7 +27,10 @@ constexpr Clock::duration kAnimationTickDuration =
     duration_cast<Clock::duration>(std::chrono::duration<double>(1.0 / kAnimationTicksPerSecond));
 
 InGameState::InGameState(AppCtx& ctx, MatchConfig matchConfig)
-    : m_GameScreen(ctx), m_PauseScreen(ctx), m_MatchConfig(std::move(matchConfig)) {
+    : m_GameScreen(ctx),
+      m_PauseScreen(ctx),
+      m_KeybindSettingsScreen(ctx),
+      m_MatchConfig(std::move(matchConfig)) {
     UIBuilder gameScreenBuilder(m_GameScreen);
     m_GameScreen.Build(gameScreenBuilder);
     m_GameScreen.SetMode(m_MatchConfig.Mode);
@@ -34,6 +38,10 @@ InGameState::InGameState(AppCtx& ctx, MatchConfig matchConfig)
 
     UIBuilder pauseScreenBuilder(m_PauseScreen);
     m_PauseScreen.Build(pauseScreenBuilder);
+
+    m_KeybindSettingsScreen.SetBackAction(NavigationAction::HideKeybindSettings);
+    UIBuilder keybindSettingsBuilder(m_KeybindSettingsScreen);
+    m_KeybindSettingsScreen.Build(keybindSettingsBuilder);
 
     ResetFrameTimer();
 }
@@ -83,6 +91,7 @@ Result<void> InGameState::Initialize(AppCtx& ctx) {
     m_CurrentRound = 1;
     m_MatchFinished = false;
     m_Paused = false;
+    m_PauseView = PauseView::Menu;
     ResetFrameTimer();
     return Ok();
 }
@@ -92,7 +101,18 @@ Result<EventFlow> InGameState::OnEvent(AppCtx& ctx, const Event& event) {
     if (const auto* navigation = std::get_if<NavigationEvent>(&event.Payload)) {
         if (navigation->Action == NavigationAction::ResumeMatch) {
             m_Paused = false;
+            m_PauseView = PauseView::Menu;
             ResetFrameTimer();
+            return Ok(EventFlow::Consumed);
+        }
+        if (navigation->Action == NavigationAction::ShowKeybindSettings && m_Paused) {
+            m_KeybindSettingsScreen.RebuildUI();
+            m_PauseView = PauseView::KeybindSettings;
+            return Ok(EventFlow::Consumed);
+        }
+        if (navigation->Action == NavigationAction::HideKeybindSettings && m_Paused) {
+            RefreshHumanPlayerInputTranslations(ctx);
+            m_PauseView = PauseView::Menu;
             return Ok(EventFlow::Consumed);
         }
         return Ok(EventFlow::Passed);
@@ -101,7 +121,7 @@ Result<EventFlow> InGameState::OnEvent(AppCtx& ctx, const Event& event) {
     // Go into pause menu
     if (const auto* keyEvent = std::get_if<KeyEvent>(&event.Payload)) {
         if (!m_MatchFinished && keyEvent->Down && !keyEvent->Repeat &&
-            keyEvent->Key == SDLK_ESCAPE) {
+            keyEvent->Key == SDLK_ESCAPE && m_PauseView == PauseView::Menu) {
             TogglePause();
             return Ok(EventFlow::Consumed);
         }
@@ -109,7 +129,7 @@ Result<EventFlow> InGameState::OnEvent(AppCtx& ctx, const Event& event) {
 
     // Handle pause menu event handling
     if (m_Paused) {
-        const EventFlow pauseUiFlow = m_PauseScreen.OnEvent(ctx, event);
+        const EventFlow pauseUiFlow = ActivePauseScreen().OnEvent(ctx, event);
         if (pauseUiFlow == EventFlow::Consumed) {
             return Ok(EventFlow::Consumed);
         }
@@ -153,7 +173,7 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
     const std::chrono::duration<float> dt = std::chrono::duration<float>(elapsed);
 
     if (m_Paused) {
-        m_PauseScreen.OnUpdate(ctx);
+        ActivePauseScreen().OnUpdate(ctx);
         return Ok();
     }
 
@@ -234,7 +254,39 @@ void InGameState::ResetFrameTimer() {
 
 void InGameState::TogglePause() {
     m_Paused = !m_Paused;
+    if (!m_Paused) {
+        m_PauseView = PauseView::Menu;
+    }
     ResetFrameTimer();
+}
+
+UIScreen& InGameState::ActivePauseScreen() {
+    switch (m_PauseView) {
+        case PauseView::Menu:
+            return m_PauseScreen;
+        case PauseView::KeybindSettings:
+            return m_KeybindSettingsScreen;
+    }
+
+    return m_PauseScreen;
+}
+
+// used when Keybinds are changed during the game
+void InGameState::RefreshHumanPlayerInputTranslations(AppCtx& ctx) {
+    const std::size_t playerCount =
+        std::min(m_Players.size(), ctx.settings.PlayerKeyBindingsByPlayer.size());
+
+    for (std::size_t playerIndex = 0; playerIndex < playerCount; ++playerIndex) {
+        if (playerIndex >= m_MatchConfig.PlayerControls.size() ||
+            m_MatchConfig.PlayerControls[playerIndex] != PlayerControl::Human) {
+            continue;
+        }
+
+        InputTranslationHelper<InputAction> input;
+        FillInputTranslationFromBindings(input,
+                                         ctx.settings.PlayerKeyBindingsByPlayer[playerIndex]);
+        m_Players[playerIndex].SetInputTranslationHelper(std::move(input));
+    }
 }
 
 Result<void> InGameState::AdjustToWindow(AppCtx& ctx) {

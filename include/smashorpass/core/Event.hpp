@@ -51,6 +51,7 @@ enum class NavigationAction {
     ShowCharacterSelect,
     ShowSettings,
     ShowKeybindSettings,
+    HideKeybindSettings,
     ShowScoreboard,
     StartMatch,
     ResumeMatch,

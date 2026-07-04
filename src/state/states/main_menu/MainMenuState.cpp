@@ -69,6 +69,8 @@ Result<EventFlow> MainMenuState::OnEvent(AppCtx& ctx, const Event& event) {
                 m_KeybindSettingsScreen.RebuildUI();
                 m_View = View::KeybindSettings;
                 return Ok(EventFlow::Consumed);
+            case NavigationAction::HideKeybindSettings:
+                return Ok(EventFlow::Passed);
             case NavigationAction::ShowScoreboard:
                 m_ScoreboardScreen.RebuildUI();
                 m_View = View::Scoreboard;
