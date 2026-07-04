@@ -85,7 +85,6 @@ struct MovementState {
 
 struct MovementResult {
     SDL_FPoint PositionDelta{0.0f, 0.0f};
-    bool FacingRightChanged = false;
     PlayerActionState ActionState = PlayerActionState::IDLE;
 };
 

@@ -125,7 +125,7 @@ void TryApplyMove(MovementState& state, const MovementInput& input, const Moveme
 
     const float movementFactor = state.Grounded ? 1.0f : config.AirMovementFactor;
     state.Velocity.x += horizontalIntent * config.WalkAcceleration * movementFactor;
-    state.FacingRight = state.Velocity.x > 0.0f;
+    state.FacingRight = horizontalIntent > 0.0f;
 }
 
 void ApplyGravity(MovementState& state, const MovementConfig& config) {
@@ -190,8 +190,6 @@ PlayerActionState ApplyMoves(MovementState& state,
 MovementResult PlayerMovement::Tick(MovementState& state,
                                     const MovementInput& input,
                                     const MovementConfig& config) {
-    const bool wasFacingRight = state.FacingRight;
-
     TickCooldowns(state, input);
     RefreshJumpWindows(state, input, config);
 
@@ -204,7 +202,6 @@ MovementResult PlayerMovement::Tick(MovementState& state,
 
     return MovementResult{
         .PositionDelta = state.Velocity,
-        .FacingRightChanged = wasFacingRight != state.FacingRight,
         .ActionState = actionState,
     };
 }
