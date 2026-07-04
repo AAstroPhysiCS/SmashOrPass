@@ -322,9 +322,7 @@ Result<void> Player::TickAnimations(AppCtx& ctx, const Arena& arena) {
     TRY(asset, ctx.assets.GetAssetData(m_Asset));
 
     TRY(animation, GetAnimationToShow(ctx, arena));
-    if (animation != m_CurrentAnimation) {
-        m_CurrentAnimationFrame = 0;
-    }
+    const bool animationChanged = animation != m_CurrentAnimation;
     m_CurrentAnimation = animation;
     const auto sheet = asset.get().m_SpriteSheets.find(animation);
     if (sheet == asset.get().m_SpriteSheets.end() || sheet->second.m_Frames.empty()) {
@@ -333,7 +331,6 @@ Result<void> Player::TickAnimations(AppCtx& ctx, const Arena& arena) {
     }
 
     const std::vector<CharacterSpriteSheetFrame>& frames = sheet->second.m_Frames;
-    const bool animationChanged = animation != m_CurrentAnimation;
 
     if (animationChanged) {
         m_CurrentAnimationFrame = 0;

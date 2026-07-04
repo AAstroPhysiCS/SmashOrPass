@@ -62,6 +62,10 @@ void TryStartDash(MovementState& state, const MovementInput& input, const Moveme
         return;
     }
 
+    if (state.Attack.MinimumTicksRemaining > 0) {
+        return;
+    }
+
     if (!state.Grounded && !state.Dash.AirDashAvailable) {
         return;
     }
@@ -76,6 +80,7 @@ void TryStartDash(MovementState& state, const MovementInput& input, const Moveme
     state.FacingRight = state.Dash.Direction > 0.0f;
     state.Dash.TicksRemaining = config.DashTicks;
     state.Dash.CooldownTicksRemaining = config.DashCooldownTicks;
+    state.Attack = MovementAttackState{};
 
     if (!state.Grounded) {
         state.Dash.AirDashAvailable = false;
