@@ -177,4 +177,57 @@ Result<void> InGameState::RenderUi(AppCtx& ctx) {
     return Ok();
 }
 
+Result<void> InGameState::RenderLoadingScreen(AppCtx& ctx) {
+    const SDL_FPoint logicalSize = ctx.displayMetrics.LogicalSize();
+    const SDL_FRect screenRect{
+        .x = 0.0f,
+        .y = 0.0f,
+        .w = logicalSize.x,
+        .h = logicalSize.y,
+    };
+
+    TRY_VOID(ctx.renderer.FillRect(screenRect, Color{18, 18, 24, 255}));
+
+    const SDL_FRect panelRect{
+        .x = logicalSize.x * 0.5f - 180.0f,
+        .y = logicalSize.y * 0.5f - 70.0f,
+        .w = 360.0f,
+        .h = 140.0f,
+    };
+    TRY_VOID(ctx.renderer.FillRect(panelRect, Color{32, 34, 42, 245}));
+    TRY_VOID(ctx.renderer.DrawRect(panelRect, Color{110, 118, 140, 255}));
+
+    constexpr char kLoadingText[] = "Loading match";
+    TRY(textSize, ctx.renderer.MeasureText(FontId::Medium, kLoadingText));
+    TRY_VOID(ctx.renderer.DrawText(FontId::Medium,
+                                   panelRect.x + (panelRect.w - textSize.x) * 0.5f,
+                                   panelRect.y + 28.0f,
+                                   kLoadingText,
+                                   Color{235, 238, 245, 255}));
+
+    constexpr float barWidth = 52.0f;
+    constexpr float barHeight = 12.0f;
+    constexpr float barGap = 12.0f;
+    const float barsWidth = barWidth * 3.0f + barGap * 2.0f;
+    const float barStartX = panelRect.x + (panelRect.w - barsWidth) * 0.5f;
+    const float barY = panelRect.y + 82.0f;
+    constexpr std::array<Color, 3> barColors{
+        Color{255, 82, 82, 255},
+        Color{80, 160, 255, 255},
+        Color{255, 220, 75, 255},
+    };
+
+    for (std::size_t i = 0; i < barColors.size(); ++i) {
+        const SDL_FRect barRect{
+            .x = barStartX + static_cast<float>(i) * (barWidth + barGap),
+            .y = barY,
+            .w = barWidth,
+            .h = barHeight,
+        };
+        TRY_VOID(ctx.renderer.FillRect(barRect, barColors[i]));
+    }
+
+    return Ok();
+}
+
 }  // namespace sop

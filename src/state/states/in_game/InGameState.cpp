@@ -90,6 +90,7 @@ Result<void> InGameState::Initialize(AppCtx& ctx) {
 
     m_CurrentRound = 1;
     m_MatchFinished = false;
+    m_WaitingForAssets = true;
     m_Paused = false;
     m_PauseView = PauseView::Menu;
     ResetFrameTimer();
@@ -134,6 +135,10 @@ Result<EventFlow> InGameState::OnEvent(AppCtx& ctx, const Event& event) {
             return Ok(EventFlow::Consumed);
         }
         return Ok(EventFlow::Passed);
+    }
+
+    if (m_WaitingForAssets) {
+        return Ok(EventFlow::Consumed);
     }
 
     // Handle game screen event handling
@@ -181,6 +186,17 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
         return Ok();
     }
 
+    if (m_WaitingForAssets) {
+        TRY(loaded, AreMatchAssetsLoaded(ctx));
+        if (!loaded) {
+            return Ok();
+        }
+
+        m_WaitingForAssets = false;
+        ResetFrameTimer();
+        return Ok();
+    }
+
     // Game Logic
     int gameLogicTicks = 0;
     while (now - m_PreviousGameLogicTick >= kGameLogicTickDuration &&
@@ -218,6 +234,22 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
     return Ok();
 }
 
+Result<bool> InGameState::AreMatchAssetsLoaded(AppCtx& ctx) {
+    TRY(arenaLoaded, ctx.assets.IsAssetActuallyLoaded(m_MatchConfig.ArenaAsset));
+    if (!arenaLoaded) {
+        return Ok(false);
+    }
+
+    for (const Asset<CharacterAssetData>& characterAsset : m_MatchConfig.CharacterAssets) {
+        TRY(characterLoaded, ctx.assets.IsAssetActuallyLoaded(characterAsset));
+        if (!characterLoaded) {
+            return Ok(false);
+        }
+    }
+
+    return Ok(true);
+}
+
 void InGameState::SyncGameScreen() {
     if (m_Players.size() < 2) {
         return;
@@ -234,6 +266,12 @@ void InGameState::SyncGameScreen() {
 
 Result<void> InGameState::OnRender(AppCtx& ctx) {
     TRY_VOID(AdjustToWindow(ctx));
+
+    if (m_WaitingForAssets) {
+        TRY_VOID(RenderLoadingScreen(ctx));
+        return Ok();
+    }
+
     TRY_VOID(RenderBackdrop(ctx));
     TRY_VOID(RenderPlayers(ctx));
     TRY_VOID(RenderEffects(ctx));

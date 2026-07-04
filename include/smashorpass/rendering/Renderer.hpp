@@ -142,6 +142,7 @@ class Renderer final {
                               std::span<const SDL_Vertex> vertices,
                               std::span<const int> indices = {});
 
+    Result<Vec2> MeasureText(FontId id, std::string_view text);
     Result<void> DrawText(
         FontId id, float x, float y, std::string_view text, Color color = Color::White());
 
@@ -170,7 +171,6 @@ class Renderer final {
     Result<void> RestoreTextureState(SDL_Texture* texture, const TextureStateBackup& backup) const;
     Result<void> ApplyTextureState(SDL_Texture* texture, Color tint, SDL_BlendMode blendMode) const;
 
-    Result<Vec2> MeasureText(FontId id, std::string_view text);
     TTF_Font* GetFontById(FontId id);
 
    private:

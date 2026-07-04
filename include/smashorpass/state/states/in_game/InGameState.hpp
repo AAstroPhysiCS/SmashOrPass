@@ -77,6 +77,7 @@ class InGameState final : public State {
     Result<void> TickAnimation(AppCtx& ctx);
     Result<void> TickEffects(AppCtx& ctx, std::chrono::duration<float> dt);
     Result<void> SolveCombat(AppCtx& ctx);
+    Result<bool> AreMatchAssetsLoaded(AppCtx& ctx);
     void SyncGameScreen();
     Result<void> ResolveDeathsAndRespawns(AppCtx& ctx);
     void ResolveDeathmatchDeaths(AppCtx& ctx,
@@ -98,6 +99,7 @@ class InGameState final : public State {
     Result<void> RenderArenaCollisionBoxes(AppCtx& ctx);
     Result<void> RenderDebugBoxes(AppCtx& ctx);
     Result<void> RenderUi(AppCtx& ctx);
+    Result<void> RenderLoadingScreen(AppCtx& ctx);
 
     // ---- Internal Variables
     GameScreen m_GameScreen;
@@ -119,6 +121,7 @@ class InGameState final : public State {
     Clock::time_point m_PreviousAnimationTick;
     int m_CurrentRound = 1;
     bool m_MatchFinished = false;
+    bool m_WaitingForAssets = true;
     bool m_Paused = false;
     PauseView m_PauseView = PauseView::Menu;
 };
