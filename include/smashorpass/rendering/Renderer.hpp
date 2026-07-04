@@ -181,7 +181,5 @@ class Renderer final {
     TTF_Font* m_BigFont = nullptr;
     TTF_Font* m_MediumFont = nullptr;
     TTF_Font* m_SmallFont = nullptr;
-
-    friend class UIScreen;  // for MeasureText
 };
 }  // namespace sop
