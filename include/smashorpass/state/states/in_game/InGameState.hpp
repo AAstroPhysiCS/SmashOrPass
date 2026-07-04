@@ -45,7 +45,7 @@ class InGameState final : public State {
     Result<void> OnUpdate(AppCtx& ctx) final;
     Result<void> OnRender(AppCtx& ctx) final;
 
-    // to keep Debug Menu flexible and allow for >2 Players
+    // to keep Debug Menu flexible and allow for >2 Players if we ever want that
     [[nodiscard]] std::size_t GetPlayerCount() const {
         return m_Players.size();
     }

@@ -180,9 +180,6 @@ Result<std::optional<WorldHitBox>> Player::GetCurrentHitBox(AppCtx& ctx) const {
     if (!spriteRect) {
         return Ok(std::nullopt);
     }
-    // need: facingRight, Position, Hitbox
-    // const int worldX = spriteRect.value().x + hitBox.m_GridData.bounds.x * kPlayerScale;
-    // const int worldY = spriteRect.value().y + hitBox.m_GridData.bounds.y * kPlayerScale;
 
     return Ok(WorldHitBox{hitBox, *spriteRect, m_FacingRight});
 }
@@ -207,9 +204,6 @@ Result<std::optional<WorldHurtBox>> Player::GetCurrentHurtBox(AppCtx& ctx) const
     if (!spriteRect) {
         return Ok(std::nullopt);
     }
-    // need: facingRight, Position, Hitbox
-    // const int worldX = spriteRect.value().x + hitBox.m_GridData.bounds.x * kPlayerScale;
-    // const int worldY = spriteRect.value().y + hitBox.m_GridData.bounds.y * kPlayerScale;
 
     return Ok(WorldHurtBox{hurtBox, *spriteRect, m_FacingRight});
 }

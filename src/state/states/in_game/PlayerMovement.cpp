@@ -123,6 +123,7 @@ void TryApplyJump(MovementState& state, const MovementConfig& config) {
 }
 
 void TryApplyMove(MovementState& state, const MovementInput& input, const MovementConfig& config) {
+    // Horizontal Intent checks if left or right were pressed
     const float horizontalIntent = input.HorizontalIntent();
     if (horizontalIntent == 0.0f) {
         return;
@@ -172,6 +173,7 @@ void ApplyPassivePhysics(MovementState& state,
 PlayerActionState ApplyMoves(MovementState& state,
                              const MovementInput& input,
                              const MovementConfig& config) {
+    // Stun > Dash > Attack > Normal Movement
     if (state.HitstunTicksRemaining > 0) {
         --state.HitstunTicksRemaining;
         ApplyGravity(state, config);

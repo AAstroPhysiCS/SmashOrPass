@@ -6,9 +6,9 @@
 #include <cstddef>
 
 namespace sop {
-
+// Teach nlohmann::json how to serialize and deserialize these types.
 namespace {
-
+// convert KeyCodes to int and back, to persist them
 [[nodiscard]] int KeycodeToJson(const SDL_Keycode key) {
     return static_cast<int>(key);
 }

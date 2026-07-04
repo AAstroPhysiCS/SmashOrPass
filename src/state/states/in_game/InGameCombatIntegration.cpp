@@ -48,6 +48,10 @@ void RecordHitLocationStats(const HitResult& hitResult,
 }  // namespace
 
 Result<void> InGameState::SolveCombat(AppCtx& ctx) {
+    // for each Attacker - Defender pair
+    // get the Attacker Hitbox and Defender Hurtbox
+    // check for each Defender SubHurtBox (most vulnerable (Head) first)
+    // if there are Overlapping Pixels between Hit & Hurtbox (not really boxes)
     for (auto& debugData : m_PlayerCombatDebugData) {
         debugData = {};
     }
@@ -83,6 +87,7 @@ Result<void> InGameState::SolveCombat(AppCtx& ctx) {
                 continue;
             }
 
+            // stats
             if (attackerIndex < m_MatchStats.size()) {
                 ++m_MatchStats[attackerIndex].HitsLanded;
                 m_MatchStats[attackerIndex].DamageDealt += appliedDamage;

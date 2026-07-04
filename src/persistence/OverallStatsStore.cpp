@@ -66,7 +66,7 @@ Result<OverallStatsTracker> OverallStatsStore::Load(const std::filesystem::path&
 }
 
 Result<void> OverallStatsStore::Save(const std::filesystem::path& path,
-                                     const OverallStatsTracker& stats) {
+                                     const OverallStatsTracker& stats) {                                
     std::error_code error;
     std::filesystem::create_directories(path.parent_path(), error);
     if (error) {

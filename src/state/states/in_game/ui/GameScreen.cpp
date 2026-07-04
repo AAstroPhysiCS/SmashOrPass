@@ -45,14 +45,6 @@ void GameScreen::OnUpdate(AppCtx&) {
         return;
     }
 
-    // TODO:
-    // update player controllers
-    // apply gravity / movement
-    // resolve collisions
-    // resolve hits / knockback / HP
-    // advance particles / effects
-    // detect round win / match win
-
     UpdateHudText();
 }
 

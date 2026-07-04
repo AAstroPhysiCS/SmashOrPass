@@ -33,6 +33,7 @@ Result<void> AppCtx::Initialize() {
 }
 
 Result<void> AppCtx::InitializeUserData() {
+    // loads persisted Overall Stats and Settings (Rounds & Keybinds)
     auto userDataPath = UserDataPath::Get();
     if (!userDataPath) {
         spdlog::warn("Failed to resolve user data path: {}", userDataPath.error());

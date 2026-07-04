@@ -136,14 +136,6 @@ Result<EventFlow> DebugState::OnEvent(AppCtx&, const Event& event) {
         return Ok(EventFlow::Consumed);
     }
 
-    /*switch (event.RawEvent->type) {
-        case SDL_EVENT_KEY_DOWN:
-        case SDL_EVENT_KEY_UP:
-        case SDL_EVENT_TEXT_INPUT:
-            return Ok(io.WantCaptureKeyboard ? EventFlow::Consumed : EventFlow::Passed);
-        default:
-            return Ok(EventFlow::Passed);
-    }*/
     return Ok(EventFlow::Passed);
 }
 

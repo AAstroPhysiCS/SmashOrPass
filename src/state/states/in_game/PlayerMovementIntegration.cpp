@@ -59,6 +59,8 @@ Result<void> Player::TickGameLogic(AppCtx& ctx, const Arena& arena, const Moveme
     const bool wasAttacking = m_MovementState.Attack.IsActive();
 
     const MovementResult movement = PlayerMovement::Tick(m_MovementState, input, m_MovementConfig);
+    // check if Attack was started, if yes clear the map of player hits
+    // -> can hit everybody again with an attack
     if (!wasAttacking && m_MovementState.Attack.IsActive()) {
         InitAttack();
     }

@@ -187,9 +187,13 @@ DefinedHitbox defineHitbox(const HitBox& attackerHitBox,
                              attackerHitBox.m_GridData.BucketMatrixHeight();
     std::vector<uint8_t> neededBuckets(totalBuckets, 0);
     std::unordered_map<int, SDL_FRect> bucketRectsByHurtValue;
+    
+    // Grid Cell size, scaled to the players. Used for Bucket Overlap computations later
     const float scaledCellSize =
         static_cast<float>(attackerHitBox.m_GridData.cellSize) * kPlayerScale;
 
+    // check for each subHurtBox, where it overlaps with the Hitbox
+    // then only select the Overlapped Grid Cells (Buckets)
     for (const auto& [value, subHurtBox] : defenderHurtBox.m_SubHurtBoxes) {
         const SDL_FRect subWorldBounds = transformRectToWorldspace(
             subHurtBox.m_GridData.bounds, defenderSpriteRect, defenderFacingRight);
@@ -198,15 +202,13 @@ DefinedHitbox defineHitbox(const HitBox& attackerHitBox,
             continue;
         }
 
-        // need to adjust this too - this is hurtbox coordinates in the hitboxes local space
-        // TODO: also need to factor in the scaling factor at some point
+        // hurtbox coordinates in the hitboxes local space
         const float localLeft = intersection.rect.x - attackWorldBounds.x;
         const float localTop = intersection.rect.y - attackWorldBounds.y;
         const float localRight = localLeft + intersection.rect.w;
         const float localBottom = localTop + intersection.rect.h;
 
         // mark all buckets that are inside the intersection rectangle
-        // need to adjust the logic for isFacingRight
         int startBucketX, endBucketX;
         if (attackerFacingRight) {
             const float mirroredLeft = attackWorldBounds.w - localRight;
@@ -246,10 +248,6 @@ DefinedHitbox defineHitbox(const HitBox& attackerHitBox,
     DefinedHitbox definedHitbox;
     definedHitbox.bucketRectsByHurtValue = std::move(bucketRectsByHurtValue);
     definedHitbox.attackPixels.reserve(4096);
-
-    // TODO:
-    // -> um += 1 erhöhen, dann checken obs 1 ist
-    // need some add to hashmap logic
 
     for (int bucketIndex = 0; bucketIndex < totalBuckets; bucketIndex++) {
         if (!neededBuckets[bucketIndex]) {
@@ -293,9 +291,10 @@ bool checkIfHurtBoxWasHit(const std::unordered_map<std::uint64_t, bool>& attackP
                              defenderSubHurtBox.m_GridData.BucketMatrixHeight();
     std::vector<uint8_t> neededBuckets(totalBuckets, 0);
 
+    // Grid Cell size, scaled to the players. Used for Bucket Overlap computations later
     const float scaledCellSize =
         static_cast<float>(defenderSubHurtBox.m_GridData.cellSize) * kPlayerScale;
-    // hitboxRect
+    
     const IntersectionInfo intersection = intersects(defenderWorldBounds, hitboxRect);
     if (!intersection.overlaps) {
         return false;
@@ -307,7 +306,6 @@ bool checkIfHurtBoxWasHit(const std::unordered_map<std::uint64_t, bool>& attackP
     const float localBottom = localTop + intersection.rect.h;
 
     // mark all buckets that are inside the intersection rectangle
-    // TODO: make this step an extra function (its the same in defineHitbox)
     int startBucketX, endBucketX;
     if (defenderFacingRight) {
         const float mirroredLeft = defenderWorldBounds.w - localRight;
@@ -345,7 +343,7 @@ bool checkIfHurtBoxWasHit(const std::unordered_map<std::uint64_t, bool>& attackP
     if (defenderDebugData != nullptr)
         defenderDebugData->hurtBoxBounds.emplace_back(transformRectToWorldspace(
             defenderSubHurtBox.m_GridData.bounds, defenderSpriteRect, defenderFacingRight));
-    // first check all outer pixels, then also the inner ones
+    // first check all outer pixels for overlaps, then also the inner ones
     for (int bucketIndex : orderedBuckets) {
         if (isInHitbox(attackPixels,
                        defenderSubHurtBox.m_OuterBuckets[bucketIndex],

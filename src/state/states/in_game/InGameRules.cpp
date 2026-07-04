@@ -34,6 +34,8 @@ void PushUniquePlayerIndex(std::vector<std::size_t>& players, const std::size_t 
 }
 
 [[nodiscard]] float ApplyOutOfBoundsDamage(Player& player, const int damage) {
+    // In Default Deathmatch you are allowed to go out of bounds and respawn
+    // here is optionally applied damage
     const float previousHealth = player.Health();
     player.ReduceHealth(static_cast<float>(damage));
     return previousHealth - player.Health();
@@ -52,6 +54,10 @@ void PushUniquePlayerIndex(std::vector<std::size_t>& players, const std::size_t 
 }  // namespace
 
 Result<void> InGameState::ResolveDeathsAndRespawns(AppCtx& ctx) {
+    // Smash -> only dies when out of bounds
+    // Deathmatch -> only dies when no health left
+    // (Can also mean out of bounds if you set outOfBoundsDamage to 100)
+    // use Vectors so both players can be checked and draws are possible
     std::vector<std::size_t> blastZonePlayers;
     std::vector<std::size_t> outOfHealthPlayers;
     for (std::size_t playerIndex = 0; playerIndex < m_Players.size(); ++playerIndex) {
@@ -90,7 +96,7 @@ void InGameState::ResolveDeathmatchDeaths(AppCtx& ctx,
         PushUniquePlayerIndex(roundOutPlayers, playerIndex);
     }
 
-    // Out of Bounds, depending on Settings this is allowed or punished
+    // Out of Bounds, depending on Settings this is allowed or punished (0-100 damage)
     for (const std::size_t playerIndex : blastZonePlayers) {
         PushUniquePlayerIndex(defeatedPlayers, playerIndex);
 
@@ -140,11 +146,13 @@ void InGameState::ResolveSmashDeaths(AppCtx& ctx,
         return;
     }
 
+    // first reduce Stocks, then check whether the Round is over
     for (const std::size_t playerIndex : blastZonePlayers) {
         RecordPlayerDefeat(playerIndex, true);
         m_Players[playerIndex].LoseStock();
     }
-    
+
+    // allow draws
     if (m_Players.size() == 2 &&
         TryResolveTwoPlayerRoundEnd(ctx, m_Players[0].Stocks() == 0, m_Players[1].Stocks() == 0)) {
         return;
@@ -158,6 +166,7 @@ void InGameState::ResolveSmashDeaths(AppCtx& ctx,
 bool InGameState::TryResolveTwoPlayerRoundEnd(AppCtx& ctx,
                                               const bool player1Out,
                                               const bool player2Out) {
+    // replay the round if both are out at the same time
     if (player1Out && player2Out) {
         RestartRound();
         return true;

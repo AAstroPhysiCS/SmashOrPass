@@ -27,6 +27,7 @@ namespace {
 
 }  // namespace
 
+// separate KeybindSettingsScreen, that can be accessed from both Main Menu and In-Game Pause Menu
 KeybindSettingsScreen::KeybindSettingsScreen(AppCtx& ctx) : UIScreen(ctx) {}
 
 void KeybindSettingsScreen::Build(UIBuilder& builder) {

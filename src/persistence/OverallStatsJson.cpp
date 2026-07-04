@@ -3,7 +3,7 @@
 #include <nlohmann/json.hpp>
 
 namespace sop {
-
+// Teach nlohmann::json how to serialize and deserialize these types.
 void to_json(nlohmann::json& json, const PlayerMatchStats& stats) {
     json = nlohmann::json{
         {"damage_dealt", stats.DamageDealt},

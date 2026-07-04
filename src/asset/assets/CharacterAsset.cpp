@@ -322,7 +322,7 @@ ChannelPlane getFrameChannelFromSurface(const unsigned char* pixels,
                 static_cast<unsigned char>((static_cast<int>(p[channelOffset]) * p[3]) / 255);
 
             // hitboxes are absolute, hurtboxes are grouped by their blue channel value
-            // each group gets the same amount of damage (3=head -> max damage etc.)
+            // each group gets the same amount of damage (3=head group-> max damage etc.)
             if (channel[x][y] != 0) {
                 if (isHitbox) {
                     channel[x][y] = 1;

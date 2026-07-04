@@ -102,7 +102,7 @@ bool ResolveCollision(CollisionBody& player,
                       const SDL_FRect& platformRect,
                       const float verticalVelocity,
                       const CollisionSolveConfig& config) {
-    // between platform Boxes and Player Collision Boxes
+    // between Platform Boxes and Player Collision Boxes
     // get Overlap and then determine in which direction the player should be pushed
     const SDL_FPoint overlap = getOverlap(player.Rect, platformRect);
     if (overlap.x == 0.0f && overlap.y == 0.0f) {
@@ -147,7 +147,7 @@ bool ResolveCollision(CollisionBody& player1,
     }
 
     // when one player stands on top of the other, only the top one is pushed up, the bottom player
-    // is not pushed down when players are next to each other they are both pushed out
+    // is not pushed down. When players are next to each other they are both pushed out
     if (ShouldResolveAsFloor(
             player1, overlap, player1VerticalVelocity, player2VerticalVelocity, config)) {
         pushPlayer(player1, overlap, -1.0f, true);

@@ -31,6 +31,7 @@ constexpr std::array<Color, 4> kMarkerColors{
 [[nodiscard]] std::array<SDL_Vertex, 3> MakeMarkerTriangle(const float tipX,
                                                            const float tipY,
                                                            const SDL_FColor color) {
+    // Renders simple colored Triangles over players so you can distinguish them
     const float baseY = tipY - kMarkerHeight;
 
     return std::array<SDL_Vertex, 3>{
@@ -55,6 +56,10 @@ constexpr std::array<Color, 4> kMarkerColors{
 }  // namespace
 
 Result<void> InGameState::RenderDebugBoxes(AppCtx& ctx) {
+    // Render Boxes;
+    // Collisionbox, Hit & Hurt or Combat Hit & Hurt
+    // Combat Hit are only the cells that are checked for overlap
+    // Combat Hurt are the Subhurtboxes that are used for the check
     if (!ctx.debugRender.renderPlayerBoxes) {
         return Ok();
     }

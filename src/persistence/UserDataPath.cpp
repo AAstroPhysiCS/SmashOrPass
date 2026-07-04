@@ -8,6 +8,7 @@
 namespace sop {
 
 Result<std::filesystem::path> UserDataPath::Get() {
+    // use unique pointer so its automatically freed
     using SdlPathPtr = std::unique_ptr<char, decltype(&SDL_free)>;
     SdlPathPtr path{SDL_GetPrefPath("SmashOrPass", "SmashOrPass"), SDL_free};
     if (!path) {
