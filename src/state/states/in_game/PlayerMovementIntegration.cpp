@@ -67,6 +67,7 @@ Result<void> Player::TickGameLogic(AppCtx& ctx, const Arena& arena, const Moveme
     m_Position.y += movement.PositionDelta.y;
     m_FacingRight = m_MovementState.FacingRight;
 
+    // Grounded will be set by collision detection
     m_MovementState.Grounded = false;
 
     m_State = movement.ActionState;

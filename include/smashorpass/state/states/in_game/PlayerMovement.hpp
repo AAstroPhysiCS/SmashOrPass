@@ -43,6 +43,9 @@ struct MovementConfig {
     int DashCooldownTicks = 54;
     float DashSpeed = 11.0f;
 
+    int GroundJumpGraceTicks = 8;
+    int JumpBufferTicks = 8;
+
     int TotalAttackTicks = 72;
     int MinAttackTicks = 28;
 };
@@ -72,6 +75,8 @@ struct MovementState {
     bool Grounded = false;
     bool FacingRight = true;
     bool DashJumpAvailable = false;
+    int GroundJumpGraceTicksRemaining = 0;
+    int JumpBufferTicksRemaining = 0;
     int HitstunTicksRemaining = 0;
 
     MovementDashState Dash{};

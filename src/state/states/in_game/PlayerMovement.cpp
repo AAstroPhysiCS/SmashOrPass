@@ -31,6 +31,28 @@ void RefreshAirOptions(MovementState& state) {
     state.DashJumpAvailable = false;
 }
 
+void RefreshJumpWindows(MovementState& state,
+                        const MovementInput& input,
+                        const MovementConfig& config) {
+    if (state.Grounded) {
+        state.GroundJumpGraceTicksRemaining = config.GroundJumpGraceTicks;
+    }
+
+    if (input.JumpPressed) {
+        state.JumpBufferTicksRemaining = std::max(1, config.JumpBufferTicks);
+    }
+}
+
+void TickJumpWindows(MovementState& state) {
+    if (!state.Grounded && state.GroundJumpGraceTicksRemaining > 0) {
+        --state.GroundJumpGraceTicksRemaining;
+    }
+
+    if (state.JumpBufferTicksRemaining > 0) {
+        --state.JumpBufferTicksRemaining;
+    }
+}
+
 void TryStartDash(MovementState& state, const MovementInput& input, const MovementConfig& config) {
     if (!input.DashPressed) {
         return;
@@ -79,16 +101,19 @@ void TryStartAttack(MovementState& state,
     state.Velocity.x = 0.0f;
 }
 
-void TryApplyJump(MovementState& state, const MovementInput& input, const MovementConfig& config) {
-    if (!input.JumpPressed) {
+void TryApplyJump(MovementState& state, const MovementConfig& config) {
+    if (state.JumpBufferTicksRemaining <= 0) {
         return;
     }
 
-    if (state.Grounded) {
+    if (state.Grounded || state.GroundJumpGraceTicksRemaining > 0) {
         state.Velocity.y = config.JumpVelocity;
+        state.GroundJumpGraceTicksRemaining = 0;
+        state.JumpBufferTicksRemaining = 0;
     } else if (state.DashJumpAvailable) {
         state.Velocity.y = config.JumpVelocity;
         state.DashJumpAvailable = false;
+        state.JumpBufferTicksRemaining = 0;
     }
 }
 
@@ -143,7 +168,7 @@ PlayerActionState ApplyMoves(MovementState& state,
         return PlayerActionState::ATTACKING;
     }
 
-    TryApplyJump(state, input, config);
+    TryApplyJump(state, config);
     TryApplyMove(state, input, config);
     ApplyGravity(state, config);
     ApplyFriction(state, config);
@@ -163,12 +188,14 @@ MovementResult PlayerMovement::Tick(MovementState& state,
     const bool wasFacingRight = state.FacingRight;
 
     TickCooldowns(state, input);
+    RefreshJumpWindows(state, input, config);
 
     if (state.Grounded) {
         RefreshAirOptions(state);
     }
 
     const PlayerActionState actionState = ApplyMoves(state, input, config);
+    TickJumpWindows(state);
 
     return MovementResult{
         .PositionDelta = state.Velocity,
