@@ -3,7 +3,6 @@
 #include "smashorpass/core/AppCtx.hpp"
 #include "smashorpass/rendering/Renderer.hpp"
 #include "smashorpass/ui/UIBuilder.hpp"
-#include "spdlog/spdlog.h"
 
 namespace sop {
 
