@@ -27,6 +27,18 @@ namespace {
     return std::find(players.begin(), players.end(), playerIndex) != players.end();
 }
 
+void PushUniquePlayerIndex(std::vector<std::size_t>& players, const std::size_t playerIndex) {
+    if (!ContainsPlayerIndex(players, playerIndex)) {
+        players.push_back(playerIndex);
+    }
+}
+
+[[nodiscard]] float ApplyOutOfBoundsDamage(Player& player, const int damage) {
+    const float previousHealth = player.Health();
+    player.ReduceHealth(static_cast<float>(damage));
+    return previousHealth - player.Health();
+}
+
 [[nodiscard]] SDL_FPoint RespawnPosition(const std::size_t playerIndex, const Arena& arena) {
     SDL_FPoint spawnPosition = PlayerStartPosition(playerIndex);
     spawnPosition.y = static_cast<float>(arena.dimensions.y) - kRespawnHeightAboveArena;
@@ -68,14 +80,32 @@ Result<void> InGameState::ResolveDeathsAndRespawns(AppCtx& ctx) {
 void InGameState::ResolveDeathmatchDeaths(AppCtx& ctx,
                                           const std::span<const std::size_t> blastZonePlayers,
                                           const std::span<const std::size_t> outOfHealthPlayers) {
-    std::vector<std::size_t> defeatedPlayers;
+    std::vector<std::size_t> defeatedPlayers = {};
+    std::vector<std::size_t> roundOutPlayers = {};
     defeatedPlayers.reserve(blastZonePlayers.size() + outOfHealthPlayers.size());
+    roundOutPlayers.reserve(blastZonePlayers.size() + outOfHealthPlayers.size());
+
     for (const std::size_t playerIndex : outOfHealthPlayers) {
-        defeatedPlayers.push_back(playerIndex);
+        PushUniquePlayerIndex(defeatedPlayers, playerIndex);
+        PushUniquePlayerIndex(roundOutPlayers, playerIndex);
     }
+
+    // Out of Bounds, depending on Settings this is allowed or punished
     for (const std::size_t playerIndex : blastZonePlayers) {
-        if (!ContainsPlayerIndex(defeatedPlayers, playerIndex)) {
-            defeatedPlayers.push_back(playerIndex);
+        PushUniquePlayerIndex(defeatedPlayers, playerIndex);
+
+        if (ContainsPlayerIndex(outOfHealthPlayers, playerIndex)) {
+            continue;
+        }
+
+        const float appliedDamage = ApplyOutOfBoundsDamage(
+            m_Players[playerIndex], ctx.settings.DeathmatchOutOfBoundsDamage);
+        if (playerIndex < m_MatchStats.size()) {
+            m_MatchStats[playerIndex].DamageTaken += appliedDamage;
+        }
+
+        if (IsOutOfHealth(m_Players[playerIndex])) {
+            PushUniquePlayerIndex(roundOutPlayers, playerIndex);
         }
     }
 
@@ -83,21 +113,22 @@ void InGameState::ResolveDeathmatchDeaths(AppCtx& ctx,
         RecordPlayerDefeat(playerIndex, false);
     }
 
-    if (m_Players.size() == 2 && !outOfHealthPlayers.empty()) {
-        const bool player1Out = ContainsPlayerIndex(outOfHealthPlayers, 0);
-        const bool player2Out = ContainsPlayerIndex(outOfHealthPlayers, 1);
+    // allow draws
+    if (m_Players.size() == 2 && !roundOutPlayers.empty()) {
+        const bool player1Out = ContainsPlayerIndex(roundOutPlayers, 0);
+        const bool player2Out = ContainsPlayerIndex(roundOutPlayers, 1);
 
         if (TryResolveTwoPlayerRoundEnd(ctx, player1Out, player2Out)) {
             return;
         }
     }
 
-    for (const std::size_t playerIndex : outOfHealthPlayers) {
+    for (const std::size_t playerIndex : roundOutPlayers) {
         RespawnPlayerAtArenaSpawn(playerIndex, kDefaultPlayerHealth);
     }
 
     for (const std::size_t playerIndex : blastZonePlayers) {
-        if (!ContainsPlayerIndex(outOfHealthPlayers, playerIndex)) {
+        if (!ContainsPlayerIndex(roundOutPlayers, playerIndex)) {
             RespawnPlayerAtArenaSpawn(playerIndex, m_Players[playerIndex].Health());
         }
     }
@@ -113,7 +144,7 @@ void InGameState::ResolveSmashDeaths(AppCtx& ctx,
         RecordPlayerDefeat(playerIndex, true);
         m_Players[playerIndex].LoseStock();
     }
-
+    
     if (m_Players.size() == 2 &&
         TryResolveTwoPlayerRoundEnd(ctx, m_Players[0].Stocks() == 0, m_Players[1].Stocks() == 0)) {
         return;

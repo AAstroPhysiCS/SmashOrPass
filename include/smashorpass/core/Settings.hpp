@@ -20,11 +20,14 @@ struct Settings {
     static constexpr int kMaxRounds = 9;
     static constexpr int kMinStocks = 1;
     static constexpr int kMaxStocks = 9;
+    static constexpr int kMinDeathmatchOutOfBoundsDamage = 0;
+    static constexpr int kMaxDeathmatchOutOfBoundsDamage = 100;
     static constexpr int kPlayerKeyBindingCount = 2;
 
     int DeathmatchRoundsToWin = 3;
     int SmashRoundsToWin = 3;
     int SmashStocksPerRound = 3;
+    int DeathmatchOutOfBoundsDamage = 0;
 
     std::array<PlayerKeyBindings, kPlayerKeyBindingCount> PlayerKeyBindingsByPlayer{
         PlayerKeyBindings{.MoveLeft = SDLK_A,
@@ -43,6 +46,10 @@ struct Settings {
         DeathmatchRoundsToWin = std::clamp(DeathmatchRoundsToWin, kMinRounds, kMaxRounds);
         SmashRoundsToWin = std::clamp(SmashRoundsToWin, kMinRounds, kMaxRounds);
         SmashStocksPerRound = std::clamp(SmashStocksPerRound, kMinStocks, kMaxStocks);
+        DeathmatchOutOfBoundsDamage =
+            std::clamp(DeathmatchOutOfBoundsDamage,
+                       kMinDeathmatchOutOfBoundsDamage,
+                       kMaxDeathmatchOutOfBoundsDamage);
     }
 };
 

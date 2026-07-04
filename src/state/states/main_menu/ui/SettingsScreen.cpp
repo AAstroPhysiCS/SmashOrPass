@@ -17,6 +17,7 @@ void SettingsScreen::Build(UIBuilder& builder) {
     m_DeathmatchRoundsLabel = g_InvalidWidgetId;
     m_SmashRoundsLabel = g_InvalidWidgetId;
     m_SmashStocksLabel = g_InvalidWidgetId;
+    m_DeathmatchOutOfBoundsDamageLabel = g_InvalidWidgetId;
 
     const auto makeControlRow = [this, &builder](const int value, const SettingValue setting) {
         auto valueLabel = builder.Label(std::format("{}", value))
@@ -33,6 +34,9 @@ void SettingsScreen::Build(UIBuilder& builder) {
                 break;
             case SettingValue::SmashStocks:
                 m_SmashStocksLabel = valueLabel.GetId();
+                break;
+            case SettingValue::DeathmatchOutOfBoundsDamage:
+                m_DeathmatchOutOfBoundsDamageLabel = valueLabel.GetId();
                 break;
         }
 
@@ -67,6 +71,10 @@ void SettingsScreen::Build(UIBuilder& builder) {
                  builder.Label("Smash Stocks")
                      .Font(FontId::Medium)
                      .TextColor(Theme::TEXT_PRIMARY_COLOR)
+                     .Align(Alignment::TopLeft),
+                 builder.Label("Deathmatch Out Damage")
+                     .Font(FontId::Medium)
+                     .TextColor(Theme::TEXT_PRIMARY_COLOR)
                      .Align(Alignment::TopLeft));
 
     auto controlsColumn =
@@ -77,7 +85,9 @@ void SettingsScreen::Build(UIBuilder& builder) {
                                 SettingValue::DeathmatchRounds),
                  makeControlRow(GetAppCtx().settings.SmashRoundsToWin, SettingValue::SmashRounds),
                  makeControlRow(GetAppCtx().settings.SmashStocksPerRound,
-                                SettingValue::SmashStocks));
+                                SettingValue::SmashStocks),
+                 makeControlRow(GetAppCtx().settings.DeathmatchOutOfBoundsDamage,
+                                SettingValue::DeathmatchOutOfBoundsDamage));
 
     auto table = builder.Row()
                      .Spacing(40.0f)
@@ -127,6 +137,9 @@ void SettingsScreen::AdjustSetting(AppCtx& ctx, const SettingValue setting, cons
         case SettingValue::SmashStocks:
             ctx.settings.SmashStocksPerRound += delta;
             break;
+        case SettingValue::DeathmatchOutOfBoundsDamage:
+            ctx.settings.DeathmatchOutOfBoundsDamage += delta * 5;
+            break;
     }
 
     ctx.settings.Clamp();
@@ -147,6 +160,7 @@ void SettingsScreen::UpdateSettingLabels() {
     SetValueLabel(m_DeathmatchRoundsLabel, settings.DeathmatchRoundsToWin);
     SetValueLabel(m_SmashRoundsLabel, settings.SmashRoundsToWin);
     SetValueLabel(m_SmashStocksLabel, settings.SmashStocksPerRound);
+    SetValueLabel(m_DeathmatchOutOfBoundsDamageLabel, settings.DeathmatchOutOfBoundsDamage);
 }
 
 void SettingsScreen::SaveSettings(AppCtx& ctx) const {

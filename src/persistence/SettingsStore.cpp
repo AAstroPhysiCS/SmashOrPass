@@ -10,7 +10,7 @@ namespace sop {
 
 namespace {
 
-constexpr int kSettingsVersion = 2;
+constexpr int kSettingsVersion = 3;
 
 [[nodiscard]] std::string IoError(const std::filesystem::path& path, const char* operation) {
     return std::string{"Failed to "} + operation + " settings '" + path.string() + "'";

@@ -16,6 +16,7 @@ class SettingsScreen : public UIScreen {
         DeathmatchRounds,
         SmashRounds,
         SmashStocks,
+        DeathmatchOutOfBoundsDamage,
     };
 
     void AdjustSetting(AppCtx& ctx, SettingValue setting, int delta);
@@ -27,6 +28,7 @@ class SettingsScreen : public UIScreen {
     UIWidgetId m_DeathmatchRoundsLabel = g_InvalidWidgetId;
     UIWidgetId m_SmashRoundsLabel = g_InvalidWidgetId;
     UIWidgetId m_SmashStocksLabel = g_InvalidWidgetId;
+    UIWidgetId m_DeathmatchOutOfBoundsDamageLabel = g_InvalidWidgetId;
 };
 
 }  // namespace sop

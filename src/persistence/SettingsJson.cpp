@@ -45,6 +45,7 @@ void to_json(nlohmann::json& json, const Settings& settings) {
         {"deathmatch_rounds", settings.DeathmatchRoundsToWin},
         {"smash_rounds", settings.SmashRoundsToWin},
         {"smash_stocks", settings.SmashStocksPerRound},
+        {"deathmatch_out_of_bounds_damage", settings.DeathmatchOutOfBoundsDamage},
         {"player_key_bindings", settings.PlayerKeyBindingsByPlayer},
     };
 }
@@ -55,6 +56,8 @@ void from_json(const nlohmann::json& json, Settings& settings) {
         json.value("deathmatch_rounds", defaults.DeathmatchRoundsToWin);
     settings.SmashRoundsToWin = json.value("smash_rounds", defaults.SmashRoundsToWin);
     settings.SmashStocksPerRound = json.value("smash_stocks", defaults.SmashStocksPerRound);
+    settings.DeathmatchOutOfBoundsDamage =
+        json.value("deathmatch_out_of_bounds_damage", defaults.DeathmatchOutOfBoundsDamage);
 
     const auto keyBindingsIt = json.find("player_key_bindings");
     if (keyBindingsIt != json.end() && keyBindingsIt->is_array()) {
