@@ -3,6 +3,8 @@ SmashOrPass - The Game
 
 # Responsibilities
 
+These files are the ones that we consider them to be worth showing off
+
 | Person                                            | Topic                              | Related folders/files                                                                                                                                                                                                                                    |
 | ------------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [Okan Güclü](https://github.com/AAstroPhysiCS)    | All UI-related systems | [src/ui](https://github.com/AAstroPhysiCS/SmashOrPass/tree/main/src/ui), [include/smashorpass/ui](https://github.com/AAstroPhysiCS/SmashOrPass/tree/main/include/smashorpass/ui), [GameScreen and PauseScreen](https://github.com/AAstroPhysiCS/SmashOrPass/blob/main/include/smashorpass/state/states/in_game/ui), [MenuScreen](https://github.com/AAstroPhysiCS/SmashOrPass/blob/main/src/state/states/main_menu/ui/MenuScreen.cpp), [CharacterSelectScreen](https://github.com/AAstroPhysiCS/SmashOrPass/blob/main/src/state/states/main_menu/ui/CharacterSelectScreen.cpp), etc...
