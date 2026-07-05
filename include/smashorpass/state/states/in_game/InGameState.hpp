@@ -118,7 +118,6 @@ class InGameState final : public State {
     using Clock = std::chrono::steady_clock;
     Clock::time_point m_PreviousUpdateTime;
     Clock::time_point m_PreviousGameLogicTick;
-    Clock::time_point m_PreviousAnimationTick;
     int m_CurrentRound = 1;
     bool m_MatchFinished = false;
     bool m_WaitingForAssets = true;

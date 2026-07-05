@@ -87,6 +87,7 @@ void Player::Respawn(const SDL_FPoint position, const bool facingRight, const fl
     m_PlayersHitByCurrentAttack.clear();
     m_CurrentAnimation = CharacterAnimation::Idle;
     m_CurrentAnimationFrame = 0;
+    m_AnimationFrameAccumulator = 0;
     SyncCollisionBodyToAnchor();
 }
 
