@@ -18,13 +18,10 @@ namespace sop {
 
 constexpr int kGameLogicTicksPerSecond = 120;  // 120
 constexpr int kGameLogicMaxCatchUpTicks = 10;
-constexpr int kAnimationTicksPerSecond = 60;  // 60
-constexpr int kAnimationMaxCatchUpTicks = 10;
+constexpr int kAnimationFramesPerSecond = 60;  // 60
 // Derived from above
 constexpr Clock::duration kGameLogicTickDuration =
     duration_cast<Clock::duration>(std::chrono::duration<double>(1.0 / kGameLogicTicksPerSecond));
-constexpr Clock::duration kAnimationTickDuration =
-    duration_cast<Clock::duration>(std::chrono::duration<double>(1.0 / kAnimationTicksPerSecond));
 
 InGameState::InGameState(AppCtx& ctx, MatchConfig matchConfig)
     : m_GameScreen(ctx),
@@ -201,27 +198,15 @@ Result<void> InGameState::OnUpdate(AppCtx& ctx) {
     int gameLogicTicks = 0;
     while (now - m_PreviousGameLogicTick >= kGameLogicTickDuration &&
            gameLogicTicks < kGameLogicMaxCatchUpTicks) {
+        // Runs one fixed simulation tick: player logic, collisions, animation-frame update, then
+        // combat. Animation frames advance through an accumulator, currently every second logic
+        // tick at 60 FPS.
         TRY_VOID(TickGameLogic(ctx));
         m_PreviousGameLogicTick += kGameLogicTickDuration;
         ++gameLogicTicks;
     }
     if (gameLogicTicks == kGameLogicMaxCatchUpTicks) {
         m_PreviousGameLogicTick = now;
-    }
-
-    // ---- Update Ticks
-    // Animations
-    int animationTicks = 0;
-    while (now - m_PreviousAnimationTick >= kAnimationTickDuration &&
-           animationTicks < kAnimationMaxCatchUpTicks) {
-        TRY_VOID(TickAnimation(ctx));
-        m_PreviousAnimationTick += kAnimationTickDuration;
-        ++animationTicks;
-        // Tick Combat with Animations, since Hit and Hurtboxes are derived from Animations
-        TRY_VOID(SolveCombat(ctx));
-    }
-    if (animationTicks == kAnimationMaxCatchUpTicks) {
-        m_PreviousAnimationTick = now;
     }
 
     // Effects (every frame)
@@ -287,7 +272,6 @@ void InGameState::ResetFrameTimer() {
     const Clock::time_point now = Clock::now();
     m_PreviousUpdateTime = now;
     m_PreviousGameLogicTick = now;
-    m_PreviousAnimationTick = now;
 }
 
 void InGameState::TogglePause() {
@@ -363,6 +347,8 @@ Result<void> InGameState::TickGameLogic(AppCtx& ctx) {
     }
 
     TRY_VOID(SolveCollisions(ctx));
+    TRY_VOID(TickAnimation(ctx));
+    TRY_VOID(SolveCombat(ctx));
 
     return Ok();
 }
@@ -393,7 +379,8 @@ Result<void> InGameState::SolveCollisions(AppCtx& ctx) {
 
 Result<void> InGameState::TickAnimation(AppCtx& ctx) {
     for (Player& player : m_Players) {
-        TRY_VOID(player.TickAnimations(ctx, m_Arena));
+        TRY_VOID(player.TickAnimations(
+            ctx, m_Arena, kAnimationFramesPerSecond, kGameLogicTicksPerSecond));
     }
     return Ok();
 }

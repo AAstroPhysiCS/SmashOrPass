@@ -306,7 +306,10 @@ Result<void> Player::DispatchSwordFrameEffects(AppCtx& ctx,
     return Ok();
 }
 
-Result<void> Player::TickAnimations(AppCtx& ctx, const Arena& arena) {
+Result<void> Player::TickAnimations(AppCtx& ctx,
+                                    const Arena& arena,
+                                    const int animationFramesPerSecond,
+                                    const int gameLogicTicksPerSecond) {
     TRY(asset, ctx.assets.GetAssetData(m_Asset));
 
     TRY(animation, GetAnimationToShow());
@@ -315,6 +318,7 @@ Result<void> Player::TickAnimations(AppCtx& ctx, const Arena& arena) {
     const auto sheet = asset.get().m_SpriteSheets.find(animation);
     if (sheet == asset.get().m_SpriteSheets.end() || sheet->second.m_Frames.empty()) {
         m_CurrentAnimationFrame = 0;
+        m_AnimationFrameAccumulator = 0;
         return Ok();
     }
 
@@ -322,8 +326,17 @@ Result<void> Player::TickAnimations(AppCtx& ctx, const Arena& arena) {
 
     if (animationChanged) {
         m_CurrentAnimationFrame = 0;
+        m_AnimationFrameAccumulator = 0;
     } else {
-        m_CurrentAnimationFrame = (m_CurrentAnimationFrame + 1) % static_cast<int>(frames.size());
+        // Runs once per game-logic tick. Accumulate animation-frame credit so animations can
+        // advance at animationFramesPerSecond(60Hz) while simulation runs at
+        // gameLogicTicksPerSecond(120Hz).
+        m_AnimationFrameAccumulator += animationFramesPerSecond;
+        while (m_AnimationFrameAccumulator >= gameLogicTicksPerSecond) {
+            m_AnimationFrameAccumulator -= gameLogicTicksPerSecond;
+            m_CurrentAnimationFrame =
+                (m_CurrentAnimationFrame + 1) % static_cast<int>(frames.size());
+        }
     }
 
     const CharacterSpriteSheetFrame& frame =

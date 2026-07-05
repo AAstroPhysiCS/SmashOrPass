@@ -71,7 +71,10 @@ class Player {
 
     Result<void> TickGameLogic(AppCtx& ctx, const Arena& arena);
     Result<void> TickGameLogic(AppCtx& ctx, const Arena& arena, const MovementInput& input);
-    Result<void> TickAnimations(AppCtx& ctx, const Arena& arena);
+    Result<void> TickAnimations(AppCtx& ctx,
+                                const Arena& arena,
+                                int animationFramesPerSecond,
+                                int gameLogicTicksPerSecond);
     Result<void> SyncCollisionBodyToPosition(AppCtx& ctx);
     void ResetCollisionForTick();
     Result<void> ResolveArenaCollisionsForTick(AppCtx& ctx, const Arena& arena);
@@ -132,6 +135,7 @@ class Player {
 
     CharacterAnimation m_CurrentAnimation = CharacterAnimation::Idle;
     int m_CurrentAnimationFrame = 0;
+    int m_AnimationFrameAccumulator = 0;
 
     CharacterAnimation m_PreviousEffectAnimation = CharacterAnimation::Idle;
     int m_PreviousEffectFrameIndex = -1;
